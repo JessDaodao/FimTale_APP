@@ -86,6 +86,15 @@ public class UserDetailActivity extends AppCompatActivity {
     private int totalPages = 1;
     private boolean isLoading = false;
     private String currentUsername;
+    private long editorVersion = com.app.fimtale.editor.EditorChanges.version();
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (editorVersion != com.app.fimtale.editor.EditorChanges.version()) {
+            editorVersion = com.app.fimtale.editor.EditorChanges.version();
+            loadUserTopics(currentUsername, 1);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

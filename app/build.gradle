@@ -26,6 +26,10 @@ android {
 
         buildConfigField 'String', 'SITE_URL', groovy.json.JsonOutput.toJson(siteUrl.replaceAll('/+$', ''))
         buildConfigField 'String', 'API_URL', groovy.json.JsonOutput.toJson(apiUrl.replaceAll('/+$', '') + '/')
+        // Public widget keys from ft-front's runtime config; override for another deployment.
+        buildConfigField 'String', 'TURNSTILE_SITE_KEY', groovy.json.JsonOutput.toJson(providers.gradleProperty('fimtaleTurnstileSiteKey').getOrElse('0x4AAAAAACmSAXnazxHVfJuk'))
+        buildConfigField 'String', 'HCAPTCHA_SITE_KEY', groovy.json.JsonOutput.toJson(providers.gradleProperty('fimtaleHCaptchaSiteKey').getOrElse('73382eae-4fea-41a8-8352-431ad5dc98f4'))
+        buildConfigField 'String', 'TENCENT_CAPTCHA_APP_ID', groovy.json.JsonOutput.toJson(providers.gradleProperty('fimtaleTencentCaptchaAppId').getOrElse('189973578'))
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

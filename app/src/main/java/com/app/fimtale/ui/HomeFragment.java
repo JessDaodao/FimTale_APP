@@ -79,6 +79,7 @@ public class HomeFragment extends Fragment {
     private Timer bannerTimer;
     private Handler bannerHandler = new Handler(Looper.getMainLooper());
     private View rootView;
+    private long editorVersion = com.app.fimtale.editor.EditorChanges.version();
 
     @Nullable
     @Override
@@ -97,6 +98,16 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        requireActivity().addMenuProvider(new androidx.core.view.MenuProvider() {
+            @Override public void onCreateMenu(@NonNull android.view.Menu menu, @NonNull android.view.MenuInflater inflater) {
+                inflater.inflate(R.menu.home_menu, menu);
+            }
+            @Override public boolean onMenuItemSelected(@NonNull android.view.MenuItem item) {
+                if (item.getItemId() != R.id.action_publish) return false;
+                startActivity(new Intent(requireContext(), com.app.fimtale.DraftsActivity.class)); return true;
+            }
+        }, getViewLifecycleOwner(), androidx.lifecycle.Lifecycle.State.RESUMED);
 
         if (scrollView != null) {
             return;
@@ -386,6 +397,9 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (editorVersion != com.app.fimtale.editor.EditorChanges.version()) {
+            editorVersion = com.app.fimtale.editor.EditorChanges.version(); loadContent();
+        }
         if (emptyStateLayout != null && emptyStateLayout.getVisibility() == View.VISIBLE ) {
             loadContent();
         }

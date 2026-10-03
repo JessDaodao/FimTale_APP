@@ -39,4 +39,10 @@ public interface ChapterCacheDao {
 
     @Query("DELETE FROM cached_chapter_menus")
     void deleteAllMenus();
+
+    @Query("DELETE FROM cached_chapter_menus WHERE rootTopicId = :workId")
+    void deleteWorkMenu(int workId);
+
+    @Query("DELETE FROM cached_chapters WHERE rootTopicId = :workId")
+    void deleteWorkChapters(int workId);
 }

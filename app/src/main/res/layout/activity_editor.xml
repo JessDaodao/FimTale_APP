@@ -1,0 +1,24 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="?android:attr/colorBackground">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:navigationIcon="@drawable/ic_arrow_back" app:menu="@menu/editor_menu"/>
+    <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/editorProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:indeterminate="true"/>
+    <TextView android:id="@+id/editorStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp" android:paddingVertical="4dp" android:textSize="12sp" android:textColor="?attr/colorOnSurfaceVariant" android:accessibilityLiveRegion="polite"/>
+    <com.google.android.material.button.MaterialButton android:id="@+id/editorRetry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="重试加载" android:visibility="gone"/>
+    <FrameLayout android:id="@+id/editorForm" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:visibility="gone">
+        <LinearLayout android:id="@+id/editorWritingPanel" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+            <com.app.fimtale.editor.BbCodeEditText android:id="@+id/editorBody" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+                android:hint="@string/editor_start_writing" android:paddingHorizontal="20dp" android:paddingVertical="16dp" android:gravity="top|start" android:background="@null"
+                android:inputType="textMultiLine|textCapSentences" android:imeOptions="flagNoExtractUi" android:textSize="18sp" android:lineSpacingExtra="6dp"
+                android:scrollbars="vertical" android:saveEnabled="false"/>
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorSurfaceVariant"/>
+            <LinearLayout android:id="@+id/editorFormatBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="8dp">
+                <com.google.android.material.button.MaterialButton android:id="@+id/editorBold" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="粗体" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
+                <com.google.android.material.button.MaterialButton android:id="@+id/editorItalic" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="斜体" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
+                <com.google.android.material.button.MaterialButton android:id="@+id/editorQuote" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="引用" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
+                <com.google.android.material.button.MaterialButton android:id="@+id/editorImage" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="图片" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
+                <com.google.android.material.button.MaterialButton android:id="@+id/editorSource" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/editor_show_source" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
+            </LinearLayout>
+        </LinearLayout>
+        <include layout="@layout/editor_metadata"/>
+    </FrameLayout>
+</LinearLayout>

@@ -71,6 +71,10 @@ public class ProfileFragment extends Fragment {
 
         btnFavorites = view.findViewById(R.id.btnFavorites);
         btnHistory = view.findViewById(R.id.btnHistory);
+        view.findViewById(R.id.btnPublish).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), com.app.fimtale.DraftsActivity.class)));
+        view.findViewById(R.id.btnMyWorks).setOnClickListener(v -> startActivity(new Intent(requireContext(), UserDetailActivity.class)
+                .putExtra(UserDetailActivity.EXTRA_USERNAME, UserPreferences.getUserName(requireContext()))));
 
         setupButtons();
         setupEmptyState();

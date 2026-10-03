@@ -334,6 +334,13 @@ public class ReaderActivity extends AppCompatActivity {
         topToolbar.setNavigationOnClickListener(v -> finish());
         topToolbar.inflateMenu(R.menu.menu_reader);
         topToolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_edit_content) {
+                if (workData != null && editorAccess.canEdit(workData.getAuthorInfo())) {
+                    startActivity(currentTopicId == 0 ? EditorActivity.workIntent(this, rootTopicId)
+                            : EditorActivity.chapterIntent(this, rootTopicId, currentTopicId));
+                }
+                return true;
+            }
             if (item.getItemId() == R.id.action_open_site) {
                 com.app.fimtale.utils.DialogHelper.openSite(this, "/work/" + rootTopicId
                         + (currentTopicId > 0 ? "/chapter/" + currentTopicId : ""));
@@ -682,6 +689,20 @@ public class ReaderActivity extends AppCompatActivity {
     }
     
     private TopicDetailResponse workData;
+    private final com.app.fimtale.editor.AuthoringAccess editorAccess = new com.app.fimtale.editor.AuthoringAccess(this);
+    private long editorVersion;
+
+    private void updateEditorMenu() {
+        if (topToolbar != null && topToolbar.getMenu().findItem(R.id.action_edit_content) != null)
+            topToolbar.getMenu().findItem(R.id.action_edit_content).setVisible(workData != null && editorAccess.canEdit(workData.getAuthorInfo()));
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        editorAccess.refresh(this::updateEditorMenu);
+        long version = com.app.fimtale.editor.EditorChanges.version(rootTopicId);
+        if (version != editorVersion) { editorVersion = version; isLoadingChapter = false; loadWorkNavigation(); }
+    }
     private boolean contentReady;
     private void loadWorkNavigation() {
         RetrofitClient.getInstance().getWork(rootTopicId).enqueue(new Callback<TopicDetailResponse>() {
@@ -704,6 +725,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
     private void applyNavigation(TopicDetailResponse data) {
         workData = data;
+        updateEditorMenu();
         chapterList = data.getMenu();
         filteredChapterList.clear(); filteredChapterList.addAll(chapterList);
         if (chapterListAdapter != null) chapterListAdapter.updateData(filteredChapterList);
@@ -869,6 +891,7 @@ public class ReaderActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        editorAccess.close();
         super.onDestroy();
         progressSaveHandler.removeCallbacks(progressSaveRunnable);
         unregisterReceiver(batteryReceiver);

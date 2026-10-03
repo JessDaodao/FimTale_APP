@@ -1,5 +1,6 @@
 package com.app.fimtale.network;
 import com.app.fimtale.model.*;
+import com.app.fimtale.editor.*;
 import java.util.List;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -7,6 +8,10 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
+    @GET("work/get_drafts") Call<List<OnlineDraft.Summary>> getDrafts(@Header("Token") String token, @Query("prefix") List<String> prefixes);
+    @GET("work/get_draft") Call<OnlineDraft> getDraft(@Header("Token") String token, @Query("draft_key") String key);
+    @POST("work/save_draft") Call<OnlineDraft> saveDraft(@Header("Token") String token, @Body OnlineDraft.Save draft);
+    @POST("work/delete_draft") Call<Void> deleteDraft(@Header("Token") String token, @Body OnlineDraft.Delete draft);
     @GET("user/get_user") Call<CurrentUser> getCurrentUser(@Header("Token") String token);
     @POST("user/logout") Call<ResponseBody> logout(@Header("Token") String token);
     @GET("search/search_works") Call<TopicListResponse> getTopicList(
@@ -15,6 +20,15 @@ public interface FimTaleApiService {
     @GET("work/get_curated_works") Call<CuratedResponse> getCuratedWorks(@Query("page") int page);
     @GET("work/get_work") Call<TopicDetailResponse> getWork(@Query("work_id") int workId);
     @GET("work/get_chapter") Call<ChapterResponse> getChapter(@Query("chapter_id") int chapterId);
+    @GET("user/get_user_auth") Call<UserAuth> getUserAuth(@Header("Token") String token);
+    @GET("work/get_work") Call<WorkEditResponse> getWorkForEdit(@Query("work_id") int workId, @Query("for_edit") boolean forEdit);
+    @GET("work/get_chapter") Call<ChapterResponse> getChapterForEdit(@Query("chapter_id") int chapterId, @Query("for_edit") boolean forEdit);
+    @POST("work/create_update_work") Call<SaveResult> saveWork(@Header("Token") String token, @Body WorkInput work,
+            @Query("captcha_response") String captcha, @Query("captcha_type") String captchaType);
+    @POST("work/create_update_chapter") Call<SaveResult> saveChapter(@Header("Token") String token, @Body ChapterInput chapter);
+    @GET("tag/list_tags") Call<List<TagGroup>> getEditorTags(@Query("page") int page,
+            @Query("per_page") int perPage, @Query("keyword") String keyword, @Query("type_names") List<String> types);
+    @Multipart @POST("misc/upload_image") Call<String> uploadImage(@Header("Token") String token, @Part okhttp3.MultipartBody.Part file);
     @GET("user/list_read_progress") Call<HistoryResponse> getHistory(@Query("page") int page);
     @GET("work/get_favorite_works") Call<FavoritesResponse> getFavorites(@Query("page") int page);
     @GET("user/get_user_page_header") Call<UserDetailResponse> getUserDetail(@Query("username") String username);

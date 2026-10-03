@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; padding: 20px 8px; font: 16px system-ui, sans-serif; text-align: center; }
+    #widget { display: inline-block; max-width: 100%; }
+    #status { padding: 16px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div id="widget"></div>
+  <p id="status" role="status">正在加载验证，请稍候…</p>
+  <script>
+    'use strict';
+    const config = /*CONFIG*/;
+    let complete = false;
+    let timer;
+    const status = document.getElementById('status');
+    function problem() {
+      if (!complete) status.textContent = '验证暂未完成，可以继续等待，或在上方重试、更换验证方式。';
+    }
+    function interactive() { clearTimeout(timer); status.textContent = '请完成下方或弹出的验证。'; }
+    function success(token) {
+      if (complete || typeof token !== 'string' || !token) return;
+      complete = true;
+      clearTimeout(timer);
+      window.__ftCaptchaResult = { token: token, provider: config.provider };
+      status.textContent = '验证完成，正在返回编辑器…';
+    }
+    timer = setTimeout(problem, 15000);
+    const script = document.createElement('script');
+    script.onerror = problem;
+    if (config.provider === 'turnstile') {
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.onload = function () {
+        try {
+          turnstile.render('#widget', {
+            sitekey: config.key, theme: 'auto', language: 'zh-cn', callback: success,
+            'error-callback': problem, 'expired-callback': problem, 'timeout-callback': problem,
+            'unsupported-callback': problem, 'before-interactive-callback': interactive
+          });
+        } catch (e) { problem(); }
+      };
+    } else if (config.provider === 'hcaptcha') {
+      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit&onload=hcaptchaReady';
+      window.hcaptchaReady = function () {
+        try {
+          hcaptcha.render('widget', {
+            sitekey: config.key, hl: 'zh-CN', callback: success,
+            'error-callback': problem, 'expired-callback': problem,
+            'open-callback': interactive, 'close-callback': problem
+          });
+        } catch (e) { problem(); }
+      };
+    } else if (config.provider === 'tencent') {
+      script.src = 'https://ca.turing.captcha.qcloud.com/TJNCaptcha-global.js';
+      script.onload = function () {
+        try {
+          const widget = new TencentCaptcha(document.getElementById('widget'), config.key, function (result) {
+            if (result.ret === 0 && result.ticket && result.randstr && !result.ticket.startsWith('trerror')) {
+              success(JSON.stringify({ ticket: result.ticket, randstr: result.randstr }));
+            } else problem();
+          }, { type: 'embed', userLanguage: 'zh-cn', ready: interactive });
+          widget.show();
+        } catch (e) { problem(); }
+      };
+    }
+    document.head.appendChild(script);
+  </script>
+</body>
+</html>

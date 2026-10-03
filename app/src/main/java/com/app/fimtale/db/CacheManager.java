@@ -108,6 +108,14 @@ public class CacheManager {
 
     // --- Cache management ---
 
+    public void invalidateWork(int workId, Runnable onComplete) {
+        executor.execute(() -> {
+            dao.deleteWorkMenu(workId);
+            dao.deleteWorkChapters(workId);
+            mainHandler.post(onComplete);
+        });
+    }
+
     public void getTotalCacheSize(Callback<Long> callback) {
         executor.execute(() -> {
             long size = dao.getTotalCacheSize();

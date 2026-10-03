@@ -1,0 +1,15 @@
+<resources>
+    <string name="drafts_title">草稿箱</string>
+    <string name="drafts_local_hint">在线草稿与网站同步，按最近保存时间排列</string>
+    <string name="drafts_empty">还没有草稿\n点击下方按钮，开始写作</string>
+    <string name="draft_create">新建草稿</string>
+    <string name="draft_options">草稿选项</string>
+    <string name="editor_metadata">文章信息</string>
+    <string name="editor_start_writing">开始写作…</string>
+    <string name="editor_done_metadata">完成</string>
+    <string name="editor_submit_action">发表</string>
+    <string name="editor_show_source">源码</string>
+    <string name="editor_hide_source">收起源码</string>
+    <string name="editor_show_source_description">显示全部 BBCode 标签</string>
+    <string name="editor_hide_source_description">收起标签，显示正文格式</string>
+</resources>

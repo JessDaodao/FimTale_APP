@@ -12,7 +12,8 @@ public final class RetrofitClient {
     private RetrofitClient() {}
     public static synchronized FimTaleApiService getInstance() {
         if (service == null) {
-            OkHttpClient client = new OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).addInterceptor(chain -> {
+            // A lost POST response must not be retried automatically: creating a work/chapter is not idempotent.
+            OkHttpClient client = new OkHttpClient.Builder().retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false).addInterceptor(chain -> {
                 Request original = chain.request();
                 Request.Builder request = original.newBuilder();
                 String token = UserPreferences.getToken(FimTaleApplication.getInstance());

@@ -1,0 +1,29 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="?android:attr/colorBackground">
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipChildren="false">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/draftsList" android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:paddingBottom="12dp"/>
+        <TextView android:id="@+id/draftsEmpty" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center" android:padding="32dp"
+            android:text="@string/drafts_empty" android:textAppearance="?attr/textAppearanceBodyLarge" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <ProgressBar android:id="@+id/draftsProgress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:visibility="gone"/>
+        <!-- Bound the surface's match_parent height; wrap_content here lets it fill the page. -->
+        <FrameLayout android:id="@+id/toolbarContainer"
+            android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" android:layout_margin="16dp"
+            android:clipChildren="false" android:clipToPadding="false">
+            <!-- Match the profile header's Material elevation overlay, not just its base color. -->
+            <com.google.android.material.card.MaterialCardView android:id="@+id/draftsHeaderSurface"
+                android:layout_width="match_parent" android:layout_height="match_parent"
+                android:alpha="0" android:stateListAnimator="@null"
+                app:cardBackgroundColor="?android:attr/colorBackground" app:cardCornerRadius="16dp"
+                app:cardElevation="4dp" app:strokeWidth="0dp"
+                android:importantForAccessibility="no"/>
+            <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="match_parent"
+                android:background="@null" android:elevation="4dp" android:outlineProvider="none" android:stateListAnimator="@null"
+                app:navigationIcon="@drawable/ic_arrow_back" app:navigationIconTint="?attr/colorOnSurface" app:titleTextColor="?attr/colorOnSurface">
+                <TextView android:id="@+id/tvToolbarTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/drafts_title" android:textSize="21sp" android:textColor="?attr/colorOnSurface"/>
+            </com.google.android.material.appbar.MaterialToolbar>
+        </FrameLayout>
+    </FrameLayout>
+    <com.google.android.material.button.MaterialButton android:id="@+id/draftsCreate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="16dp" android:text="@string/draft_create" app:icon="@drawable/ic_edit"/>
+</LinearLayout>

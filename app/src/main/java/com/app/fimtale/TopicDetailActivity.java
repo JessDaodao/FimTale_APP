@@ -115,6 +115,9 @@ public class TopicDetailActivity extends AppCompatActivity {
     private Markwon markwon;
     private int currentTopicId;
     private AuthorInfo currentAuthor;
+    private TopicDetailResponse editableWork;
+    private final com.app.fimtale.editor.AuthoringAccess editorAccess = new com.app.fimtale.editor.AuthoringAccess(this);
+    private long editorVersion;
     
     private String currentTopicTitle;
     private String currentTopicIntro;
@@ -168,6 +171,7 @@ public class TopicDetailActivity extends AppCompatActivity {
                 .build();
 
         currentTopicId = getIntent().getIntExtra(EXTRA_TOPIC_ID, -1);
+        editorVersion = com.app.fimtale.editor.EditorChanges.version(currentTopicId);
         if (currentTopicId != -1) {
             fetchTopicDetail(currentTopicId);
         } else {
@@ -245,8 +249,44 @@ public class TopicDetailActivity extends AppCompatActivity {
         return true;
     }
 
+    @Override public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_edit_work).setVisible(editorAccess.canEdit(currentAuthor));
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        editorAccess.refresh(this::invalidateOptionsMenu);
+        long version = com.app.fimtale.editor.EditorChanges.version(currentTopicId);
+        if (version != editorVersion) { editorVersion = version; fetchTopicDetail(currentTopicId); }
+    }
+
+    @Override protected void onDestroy() {
+        editorAccess.close();
+        super.onDestroy();
+    }
+
+    private void showEditorActions() {
+        if (!editorAccess.canEdit(currentAuthor)) return;
+        new MaterialAlertDialogBuilder(this).setTitle("编辑文章与章节")
+                .setItems(new String[]{"编辑作品信息与序言", "发表新章节", "编辑已有章节"}, (dialog, which) -> {
+                    if (which == 0) startActivity(EditorActivity.workIntent(this, currentTopicId));
+                    else if (which == 1) startActivity(EditorActivity.chapterIntent(this, currentTopicId, 0));
+                    else {
+                        List<ChapterMenuItem> chapters = editableWork.getMenu();
+                        if (chapters.isEmpty()) { Toast.makeText(this, "还没有章节，可先发表新章节", Toast.LENGTH_SHORT).show(); return; }
+                        String[] titles = new String[chapters.size()];
+                        for (int i = 0; i < titles.length; i++) titles[i] = chapters.get(i).getTitle();
+                        new MaterialAlertDialogBuilder(this).setTitle("选择要编辑的章节")
+                                .setItems(titles, (d, index) -> startActivity(EditorActivity.chapterIntent(this, currentTopicId, chapters.get(index).getId())))
+                                .setNegativeButton("取消", null).show();
+                    }
+                }).setNegativeButton("取消", null).show();
+    }
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_edit_work) { showEditorActions(); return true; }
         if (item.getItemId() == R.id.action_more) {
             showMoreMenu();
             return true;
@@ -513,9 +553,11 @@ public class TopicDetailActivity extends AppCompatActivity {
     }
 
     private void updateUI(TopicDetailResponse data) {
+        editableWork = data;
         TopicInfo topic = data.getTopicInfo();
         AuthorInfo author = data.getAuthorInfo();
         this.currentAuthor = author;
+        invalidateOptionsMenu();
         List<ChapterMenuItem> chapters = data.getMenu();
 
         currentTopicTitle = topic.getTitle();

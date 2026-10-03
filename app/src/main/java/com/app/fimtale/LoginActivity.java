@@ -108,6 +108,7 @@ public class LoginActivity extends AppCompatActivity {
                         CookieManager.getInstance().flush();
                         if (loginMode) {
                             Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
+                            setResult(RESULT_OK);
                             finish();
                         }
                     } else {
