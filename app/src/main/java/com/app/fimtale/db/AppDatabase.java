@@ -20,7 +20,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     INSTANCE = Room.databaseBuilder(
                             context.getApplicationContext(),
                             AppDatabase.class,
-                            "fimtale_cache.db"
+                            "fimtale_work_cache.db"
                     ).fallbackToDestructiveMigration().build();
                 }
             }

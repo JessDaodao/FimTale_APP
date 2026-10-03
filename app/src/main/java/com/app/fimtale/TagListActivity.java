@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.app.fimtale.adapter.TagAdapter;
 import com.app.fimtale.model.TagInfo;
-import com.app.fimtale.model.TagListResponse;
+import com.app.fimtale.model.TagGroup;
 import com.app.fimtale.network.FimTaleApiService;
 import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.utils.UserPreferences;
@@ -38,7 +38,7 @@ public class TagListActivity extends AppCompatActivity {
     private boolean isToolbarElevated = false;
     private ObjectAnimator elevationAnimator;
     private View loadingOverlay;
-    private String currentSortBy = "default";
+    private String keyword = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,30 +99,31 @@ public class TagListActivity extends AppCompatActivity {
     private void loadTags() {
         isLoading = true;
         FimTaleApiService apiService = RetrofitClient.getInstance();
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
 
-        Call<TagListResponse> call = apiService.getTags(apiKey, apiPass, currentPage, currentSortBy);
-        call.enqueue(new Callback<TagListResponse>() {
+        Call<List<TagGroup>> call = apiService.getTags(currentPage, keyword);
+        call.enqueue(new Callback<List<TagGroup>>() {
             @Override
-            public void onResponse(Call<TagListResponse> call, Response<TagListResponse> response) {
+            public void onResponse(Call<List<TagGroup>> call, Response<List<TagGroup>> response) {
                 isLoading = false;
-                if (response.isSuccessful() && response.body() != null) {
-                    TagListResponse data = response.body();
-                    totalPages = data.getTotalPage();
-                    if (data.getTagArray() != null) {
-                        tagList.addAll(data.getTagArray());
-                        adapter.notifyDataSetChanged();
+                if (response.isSuccessful()) {
+                    List<TagGroup> data = response.body() == null ? java.util.Collections.emptyList() : response.body();
+                    int count = 0;
+                    for (TagGroup group : data) {
+                        if (group.tags != null) { tagList.addAll(group.tags); count += group.tags.size(); }
                     }
+                    totalPages = count >= 20 ? currentPage + 1 : currentPage;
+                    adapter.notifyDataSetChanged();
                 } else {
+                    if (currentPage > 1) currentPage--;
                     Toast.makeText(TagListActivity.this, "加载标签失败", Toast.LENGTH_SHORT).show();
                 }
                 hideLoadingOverlay();
             }
 
             @Override
-            public void onFailure(Call<TagListResponse> call, Throwable t) {
+            public void onFailure(Call<List<TagGroup>> call, Throwable t) {
                 isLoading = false;
+                if (currentPage > 1) currentPage--;
                 Toast.makeText(TagListActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 hideLoadingOverlay();
             }
@@ -136,30 +137,14 @@ public class TagListActivity extends AppCompatActivity {
     }
 
     private void showFilterDialog() {
-        final String[] options = {"默认排序", "更新时间", "作品数"};
-        final String[] values = {"default", "updated", "topicsum"};
-
-        int checkedItem = 0;
-        for (int i = 0; i < values.length; i++) {
-            if (values[i].equals(currentSortBy)) {
-                checkedItem = i;
-                break;
-            }
-        }
-
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("选择排序方式")
-                .setSingleChoiceItems(options, checkedItem, (dialog, which) -> {
-                    currentSortBy = values[which];
-                    dialog.dismiss();
-                    currentPage = 1;
-                    tagList.clear();
-                    adapter.notifyDataSetChanged();
-                    loadingOverlay.setVisibility(View.VISIBLE);
-                    loadingOverlay.setAlpha(1f);
-                    loadTags();
-                })
-                .show();
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setSingleLine(true); input.setText(keyword); input.setHint("标签名称");
+        new MaterialAlertDialogBuilder(this).setTitle("搜索标签").setView(input)
+                .setPositiveButton("搜索", (dialog, which) -> {
+                    if (isLoading) return;
+                    keyword = input.getText().toString().trim(); currentPage = 1;
+                    tagList.clear(); adapter.notifyDataSetChanged(); loadTags();
+                }).setNegativeButton("取消", null).show();
     }
 
     private void hideLoadingOverlay() {

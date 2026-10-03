@@ -4,7 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
-import com.app.fimtale.model.ChapterMenuItem;
+import com.app.fimtale.model.TopicDetailResponse;
 import com.app.fimtale.utils.UserPreferences;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -83,20 +83,20 @@ public class CacheManager {
 
     // --- Chapter menu ---
 
-    public void getChapterMenu(int rootTopicId, Callback<List<ChapterMenuItem>> callback) {
+    public void getChapterMenu(int rootTopicId, Callback<TopicDetailResponse> callback) {
         executor.execute(() -> {
             CachedChapterMenu cached = dao.getChapterMenu(rootTopicId);
-            List<ChapterMenuItem> menu = null;
+            TopicDetailResponse menu = null;
             if (cached != null && cached.menuJson != null) {
                 menu = gson.fromJson(cached.menuJson,
-                        new TypeToken<List<ChapterMenuItem>>() {}.getType());
+                        TopicDetailResponse.class);
             }
-            List<ChapterMenuItem> finalMenu = menu;
+            TopicDetailResponse finalMenu = menu;
             mainHandler.post(() -> callback.onResult(finalMenu));
         });
     }
 
-    public void cacheChapterMenu(int rootTopicId, List<ChapterMenuItem> menu) {
+    public void cacheChapterMenu(int rootTopicId, TopicDetailResponse menu) {
         executor.execute(() -> {
             CachedChapterMenu cached = new CachedChapterMenu();
             cached.rootTopicId = rootTopicId;

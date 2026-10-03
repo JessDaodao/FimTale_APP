@@ -147,22 +147,22 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="请先配置 API Key 和 Pass"
+            android:text="登录后查看收藏与阅读历史"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:layout_marginBottom="16dp"/>
 
         <Button
-            android:id="@+id/btnConfigureApi"
+            android:id="@+id/btnLogin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="配置 API"/>
+            android:text="登录 FimTale"/>
 
         <TextView
             android:id="@+id/tvWhyHow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="为什么 &amp; 怎么配置？"
+            android:text="使用帮助"
             android:textColor="?attr/colorPrimary"
             android:textSize="12sp"
             android:clickable="true"

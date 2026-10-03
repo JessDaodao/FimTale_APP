@@ -7,4 +7,5 @@
         android:title="详情"
         app:iconTint="?attr/colorOnBackground"
         app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_open_site" android:title="在网站查看" app:showAsAction="never" />
 </menu>

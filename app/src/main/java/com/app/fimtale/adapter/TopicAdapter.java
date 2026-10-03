@@ -161,7 +161,7 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         Chip chip = new Chip(group.getContext());
         chip.setText(text);
         chip.setCheckable(false);
-        chip.setClickable(true);
+        chip.setClickable(!isStatus);
         chip.setChipStrokeWidth(0);
         chip.setEnsureMinTouchTargetSize(false);
         
@@ -185,7 +185,7 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             chip.setTextColor(typedValue.data);
         }
 
-        chip.setOnClickListener(v -> {
+        if (!isStatus) chip.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), TagArticlesActivity.class);
             intent.putExtra(TagArticlesActivity.EXTRA_TAG_NAME, text);
             v.getContext().startActivity(intent);

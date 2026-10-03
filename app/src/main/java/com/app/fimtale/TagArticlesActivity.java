@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.app.fimtale.adapter.TopicAdapter;
-import com.app.fimtale.model.TagDetailResponse;
+import com.app.fimtale.model.TopicListResponse;
 import com.app.fimtale.model.TagInfo;
 import com.app.fimtale.model.Topic;
 import com.app.fimtale.model.TopicViewItem;
@@ -37,6 +37,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class TagArticlesActivity extends AppCompatActivity {
+    public static final String EXTRA_WORK_TYPE = "work_type";
+    private int workType;
 
     public static final String EXTRA_TAG_NAME = "tag_name";
 
@@ -53,7 +55,7 @@ public class TagArticlesActivity extends AppCompatActivity {
     private int currentPage = 1;
     private int totalPages = 1;
     private boolean isLoading = false;
-    private String currentSortBy = "default";
+    private String currentSortBy = "";
     private TagInfo tagInfo;
     private MenuItem tagInfoMenuItem;
 
@@ -70,6 +72,8 @@ public class TagArticlesActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(typedValue.data);
 
         tagName = getIntent().getStringExtra(EXTRA_TAG_NAME);
+        workType = getIntent().getIntExtra(EXTRA_WORK_TYPE, 0);
+        if (workType != 0) tagName = workType == 2 ? "图集" : "帖子";
         if (tagName == null) {
             finish();
             return;
@@ -164,7 +168,7 @@ public class TagArticlesActivity extends AppCompatActivity {
 
     private void showFilterDialog() {
         final String[] options = {"默认排序", "发表时间", "更新时间", "最后评论", "字数排序", "评论数排序", "阅读数排序", "总体评分"};
-        final String[] values = {"default", "publish", "update", "lasttime", "wordcount", "replies", "views", "rating"};
+        final String[] values = {"", "created_at", "last_chapter_at", "commented_at", "count_character", "count_comment", "count_view", "wilson_score"};
 
         int checkedItem = 0;
         for (int i = 0; i < values.length; i++) {
@@ -199,6 +203,15 @@ public class TagArticlesActivity extends AppCompatActivity {
     }
 
     private void fetchTagTopics() {
+        if (currentPage == 1 && workType == 0 && tagInfo == null) {
+            RetrofitClient.getInstance().getTag(tagName).enqueue(new Callback<TagInfo>() {
+                @Override public void onResponse(Call<TagInfo> call, Response<TagInfo> response) {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (response.isSuccessful()) { tagInfo = response.body(); updateTagInfoMenuItemVisibility(); }
+                }
+                @Override public void onFailure(Call<TagInfo> call, Throwable t) {}
+            });
+        }
         if (isLoading) return;
         isLoading = true;
 
@@ -208,16 +221,15 @@ public class TagArticlesActivity extends AppCompatActivity {
             appBarLayout.setVisibility(View.INVISIBLE);
         }
 
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
-
-        RetrofitClient.getInstance().getTagTopics(tagName, apiKey, apiPass, currentPage, currentSortBy).enqueue(new Callback<TagDetailResponse>() {
+        (workType == 0
+                ? RetrofitClient.getInstance().getTagTopics(tagName, currentPage, com.app.fimtale.network.SearchQuery.rank(currentSortBy))
+                : RetrofitClient.getInstance().getTopicList(currentPage, com.app.fimtale.network.SearchQuery.type(workType), com.app.fimtale.network.SearchQuery.rank(currentSortBy))).enqueue(new Callback<TopicListResponse>() {
             @Override
-            public void onResponse(@NonNull Call<TagDetailResponse> call, @NonNull Response<TagDetailResponse> response) {
+            public void onResponse(@NonNull Call<TopicListResponse> call, @NonNull Response<TopicListResponse> response) {
                 isLoading = false;
                 progressBar.setVisibility(View.GONE);
-                if (response.isSuccessful() && response.body() != null && response.body().getStatus() == 1) {
-                    TagDetailResponse data = response.body();
+                if (response.isSuccessful() && response.body() != null) {
+                    TopicListResponse data = response.body();
                     
                     totalPages = data.getTotalPage();
                     
@@ -250,11 +262,7 @@ public class TagArticlesActivity extends AppCompatActivity {
                         appBarLayout.animate().alpha(1f).setDuration(300).start();
                     }
                     
-                    if (data.getTagInfo() != null) {
-                        TagArticlesActivity.this.tagInfo = data.getTagInfo();
-                        toolbar.setTitle("# " + data.getTagInfo().getName());
-                        updateTagInfoMenuItemVisibility();
-                    }
+
                 } else {
                     if (currentPage > 1) currentPage--;
                     Toast.makeText(TagArticlesActivity.this, "加载失败", Toast.LENGTH_SHORT).show();
@@ -263,7 +271,7 @@ public class TagArticlesActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(@NonNull Call<TagDetailResponse> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<TopicListResponse> call, @NonNull Throwable t) {
                 isLoading = false;
                 if (currentPage > 1) currentPage--;
                 progressBar.setVisibility(View.GONE);

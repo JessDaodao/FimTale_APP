@@ -32,27 +32,10 @@ public class HelpActivity extends AppCompatActivity {
 
         container = findViewById(R.id.container);
 
-        addText("为什么需要配置API凭据？\n\n" +
-                "该应用基于FimTale API运行，为了安全着想，用户访问API时必须提供APIKey和APIPass，你可以在FimTale上免费获取APIKey和APIPass\n" +
-                "主站：https://fimtale.com\n" +
-                "备用：https://fimtale.net\n\n" +
-                "详细步骤：");
-
-        addImage("img/1.png");
-
-        addText("在登录FimTale账户后，进入设置菜单");
-
-        addImage("img/2.png");
-
-        addText("在“基本资料”选项卡内，找到“我的API令牌”部分，点击“添加新的令牌”");
-
-        addImage("img/3.png");
-
-        addText("稍等片刻，你会看见新生成的令牌，分别是APIKey和APIPass，复制这两个令牌（只复制图中红框圈住的部分）");
-
-        addImage("img/4.png");
-
-        addText("然后，回到APP，点击这个按钮，输入APIKey和APIPass，再点击“保存”即可");
+        addText("浏览与阅读\n\n首页、搜索、作品详情和阅读器可以直接使用。\n\n" +
+                "登录与同步\n\n在个人页登录 FimTale 账户后，可查看收藏和阅读历史，并同步阅读进度。\n" +
+                "内容过滤可在设置中管理，与网站账户保持一致。\n\n" +
+                "网站：" + com.app.fimtale.network.SiteUrls.SITE);
     }
 
     private void addText(String text) {
@@ -69,29 +52,4 @@ public class HelpActivity extends AppCompatActivity {
         container.addView(textView);
     }
 
-    private void addImage(String assetPath) {
-        ShapeableImageView imageView = new ShapeableImageView(this);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.topMargin = (int) (16 * getResources().getDisplayMetrics().density);
-        params.bottomMargin = (int) (16 * getResources().getDisplayMetrics().density);
-        imageView.setLayoutParams(params);
-        imageView.setAdjustViewBounds(true);
-        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-
-        float radius = 12 * getResources().getDisplayMetrics().density;
-        imageView.setShapeAppearanceModel(ShapeAppearanceModel.builder()
-                .setAllCorners(CornerFamily.ROUNDED, radius)
-                .build());
-
-        try {
-            InputStream is = getAssets().open(assetPath);
-            Bitmap bitmap = BitmapFactory.decodeStream(is);
-            imageView.setImageBitmap(bitmap);
-            is.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        container.addView(imageView);
-    }
 }

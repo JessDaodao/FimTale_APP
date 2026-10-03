@@ -45,7 +45,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Collectors;
 
-import com.app.fimtale.model.MainPageResponse;
 import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.utils.UserPreferences;
 import com.app.fimtale.utils.DialogHelper;
@@ -63,7 +62,7 @@ public class HomeFragment extends Fragment {
     private LinearLayout btnGallery;
     private LinearLayout btnPosts;
     private LinearLayout btnTags;
-    private Button btnConfigureApi;
+    private Button btnLogin;
     private TextView tvWhyHow;
     private TabLayout tabLayout;
     private ViewPager2 bannerViewPager;
@@ -119,7 +118,7 @@ public class HomeFragment extends Fragment {
         tabLayout = view.findViewById(R.id.tabLayout);
         viewMoreButton = view.findViewById(R.id.viewMoreButton);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
-        btnConfigureApi = view.findViewById(R.id.btnConfigureApi);
+        btnLogin = view.findViewById(R.id.btnLogin);
         tvWhyHow = view.findViewById(R.id.tvWhyHow);
 
         setupBannerViewPager();
@@ -129,19 +128,19 @@ public class HomeFragment extends Fragment {
         setupEmptyState();
         setupQuickAccess();
 
-        checkCredentialsAndLoad();
+        loadContent();
     }
 
     private void setupQuickAccess() {
         btnGallery.setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), com.app.fimtale.TagArticlesActivity.class);
-            intent.putExtra(com.app.fimtale.TagArticlesActivity.EXTRA_TAG_NAME, "画廊");
+            intent.putExtra(com.app.fimtale.TagArticlesActivity.EXTRA_WORK_TYPE, 2);
             startActivity(intent);
         });
 
         btnPosts.setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), com.app.fimtale.TagArticlesActivity.class);
-            intent.putExtra(com.app.fimtale.TagArticlesActivity.EXTRA_TAG_NAME, "帖子");
+            intent.putExtra(com.app.fimtale.TagArticlesActivity.EXTRA_WORK_TYPE, 3);
             startActivity(intent);
         });
 
@@ -152,10 +151,8 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupEmptyState() {
-        btnConfigureApi.setOnClickListener(v -> {
-            DialogHelper.showApiCredentialsDialog(getContext(), () -> {
-                checkCredentialsAndLoad();
-            });
+        btnLogin.setOnClickListener(v -> {
+            DialogHelper.openLogin(requireContext());
         });
         tvWhyHow.setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), com.app.fimtale.HelpActivity.class);
@@ -163,17 +160,10 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void checkCredentialsAndLoad() {
-        if (UserPreferences.isUserConfigured(getContext())) {
-            emptyStateLayout.setVisibility(View.GONE);
-            swipeRefreshLayout.setVisibility(View.VISIBLE);
-            fetchHomePageData();
-        } else {
-            emptyStateLayout.setVisibility(View.VISIBLE);
-            swipeRefreshLayout.setVisibility(View.GONE);
-            progressBar.setVisibility(View.GONE);
-            errorTextView.setVisibility(View.GONE);
-        }
+    private void loadContent() {
+        emptyStateLayout.setVisibility(View.GONE);
+        swipeRefreshLayout.setVisibility(View.VISIBLE);
+        fetchHomePageData();
     }
 
     private void setupSwipeRefresh() {
@@ -275,148 +265,57 @@ public class HomeFragment extends Fragment {
         fetchHomePageData(true);
     }
 
+    private int homeRequest;
     private void fetchHomePageData(boolean animate) {
-        if (!swipeRefreshLayout.isRefreshing()) {
-            progressBar.setVisibility(View.VISIBLE);
-            errorTextView.setVisibility(View.GONE);
-            scrollView.setVisibility(View.INVISIBLE);
-            contentLayout.setVisibility(View.VISIBLE);
-        }
-
-        String apiKey = UserPreferences.getApiKey(getContext());
-        String apiPass = UserPreferences.getApiPass(getContext());
-
-        RetrofitClient.getInstance().getHomePage(apiKey, apiPass).enqueue(new Callback<MainPageResponse>() {
-            @Override
-            public void onResponse(Call<MainPageResponse> call, Response<MainPageResponse> response) {
-                if (!isAdded()) return;
-                
+        final int request = ++homeRequest;
+        progressBar.setVisibility(View.VISIBLE);
+        errorTextView.setVisibility(View.GONE);
+        contentLayout.setVisibility(View.VISIBLE);
+        scrollView.setVisibility(View.VISIBLE);
+        scrollView.setAlpha(1f);
+        quickAccessLayout.setVisibility(View.VISIBLE);
+        viewFlipper.setVisibility(View.VISIBLE);
+        viewMoreButton.setVisibility(View.VISIBLE);
+        RetrofitClient.getInstance().getFeed(1).enqueue(new Callback<com.app.fimtale.model.TopicListResponse>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.TopicListResponse> call, Response<com.app.fimtale.model.TopicListResponse> response) {
+                if (!isAdded() || request != homeRequest) return;
+                progressBar.setVisibility(View.GONE);
+                swipeRefreshLayout.setRefreshing(false);
                 if (response.isSuccessful() && response.body() != null) {
-                    errorTextView.setVisibility(View.GONE);
-                    MainPageResponse data = response.body();
-                    
-                    stopBannerAutoScroll();
-                    bannerList.clear();
-                    if (data.getEditorRecommendTopicArray() != null) {
-                        bannerList.addAll(data.getEditorRecommendTopicArray());
-                    }
-                    bannerAdapter.notifyDataSetChanged();
-                    bannerViewPager.setCurrentItem(0, false);
-                    if (!bannerList.isEmpty()) {
-                        bannerViewPager.setVisibility(View.VISIBLE);
-                        startBannerAutoScroll();
-                    } else {
-                        bannerViewPager.setVisibility(View.GONE);
-                    }
-
-                    Runnable updateDataRunnable = () -> {
-                        topicListHot.clear();
-                        topicListNew.clear();
-                        
-                        if (data.getNewlyPostTopicArray() != null) {
-                            topicListHot.addAll(data.getNewlyPostTopicArray().stream()
-                                    .map(TopicViewItem::new)
-                                    .collect(Collectors.toList()));
-                        }
-                        
-                        if (data.getNewlyUpdateTopicArray() != null) {
-                            topicListNew.addAll(data.getNewlyUpdateTopicArray().stream()
-                                    .map(TopicViewItem::new)
-                                    .collect(Collectors.toList()));
-                        }
-
-                        adapterHot.notifyDataSetChanged();
-                        adapterNew.notifyDataSetChanged();
-                        
-                        quickAccessLayout.setVisibility(View.VISIBLE);
-                        viewFlipper.setVisibility(View.VISIBLE);
-                        int tabPos = tabLayout.getSelectedTabPosition();
-                        if (viewFlipper.getDisplayedChild() != tabPos) {
-                            viewFlipper.setDisplayedChild(tabPos);
-                        }
-
-                        viewMoreButton.setVisibility(View.VISIBLE);
-                    };
-
-                    Runnable animationRunnable = () -> {
-                        progressBar.setVisibility(View.GONE);
-                        progressBar.setAlpha(1f);
-
-                        scrollView.setAlpha(0f);
-                        scrollView.setScaleX(0.9f);
-                        scrollView.setScaleY(0.9f);
-                        scrollView.setVisibility(View.VISIBLE);
-
-                        updateDataRunnable.run();
-
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                            ValueAnimator blurAnimator = ValueAnimator.ofFloat(50f, 0f);
-                            blurAnimator.setDuration(500);
-                            blurAnimator.addUpdateListener(animation -> {
-                                float val = (float) animation.getAnimatedValue();
-                                if (val > 0.1f) {
-                                    scrollView.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(val, val, android.graphics.Shader.TileMode.CLAMP));
-                                } else {
-                                    scrollView.setRenderEffect(null);
-                                }
-                            });
-                            blurAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(android.animation.Animator animation) {
-                                    scrollView.setRenderEffect(null);
-                                    scrollView.invalidate();
-                                }
-                            });
-                            blurAnimator.start();
-                        }
-
-                        android.view.animation.PathInterpolator interpolator = new android.view.animation.PathInterpolator(1.00f, 0.00f, 0.28f, 1.00f);
-
-                        scrollView.animate()
-                                .alpha(1f)
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setInterpolator(interpolator)
-                                .setDuration(500)
-                                .start();
-                    };
-
-                    if (animate) {
-                        if (progressBar.getVisibility() == View.VISIBLE) {
-                            progressBar.animate()
-                                    .alpha(0f)
-                                    .setDuration(300)
-                                    .withEndAction(animationRunnable)
-                                    .start();
-                        } else {
-                            animationRunnable.run();
-                        }
-                    } else {
-                        updateDataRunnable.run();
-                        progressBar.setVisibility(View.GONE);
-                        scrollView.setVisibility(View.VISIBLE);
-                        scrollView.setAlpha(1f);
-                        scrollView.setScaleX(1f);
-                        scrollView.setScaleY(1f);
-                    }
-                    
-                } else {
-                    showError();
-                }
-                
-                if (swipeRefreshLayout.isRefreshing()) {
-                    swipeRefreshLayout.setRefreshing(false);
+                    topicListHot.clear();
+                    for (com.app.fimtale.model.Topic topic : response.body().getTopicArray()) topicListHot.add(new TopicViewItem(topic));
+                    adapterHot.notifyDataSetChanged();
+                } else { errorTextView.setText("推荐作品加载失败，下拉重试"); errorTextView.setVisibility(View.VISIBLE); }
+            }
+            @Override public void onFailure(Call<com.app.fimtale.model.TopicListResponse> call, Throwable t) {
+                if (!isAdded() || request != homeRequest) return;
+                progressBar.setVisibility(View.GONE);
+                swipeRefreshLayout.setRefreshing(false);
+                errorTextView.setText("加载失败，下拉重试"); errorTextView.setVisibility(View.VISIBLE);
+            }
+        });
+        RetrofitClient.getInstance().getTopicList(1, null, com.app.fimtale.network.SearchQuery.rank("last_chapter_at"))
+                .enqueue(new Callback<com.app.fimtale.model.TopicListResponse>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.TopicListResponse> call, Response<com.app.fimtale.model.TopicListResponse> response) {
+                if (!isAdded() || request != homeRequest) return;
+                if (response.isSuccessful() && response.body() != null) {
+                    topicListNew.clear();
+                    for (com.app.fimtale.model.Topic topic : response.body().getTopicArray()) topicListNew.add(new TopicViewItem(topic));
+                    adapterNew.notifyDataSetChanged();
                 }
             }
-
-            @Override
-            public void onFailure(Call<MainPageResponse> call, Throwable t) {
-                if (!isAdded()) return;
-                showError();
-                if (swipeRefreshLayout.isRefreshing()) {
-                    swipeRefreshLayout.setRefreshing(false);
-                }
+            @Override public void onFailure(Call<com.app.fimtale.model.TopicListResponse> call, Throwable t) {}
+        });
+        RetrofitClient.getInstance().getCuratedWorks(1).enqueue(new Callback<com.app.fimtale.model.CuratedResponse>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.CuratedResponse> call, Response<com.app.fimtale.model.CuratedResponse> response) {
+                if (!isAdded() || request != homeRequest) return;
+                stopBannerAutoScroll(); bannerList.clear();
+                if (response.isSuccessful() && response.body() != null && response.body().items != null) bannerList.addAll(response.body().items);
+                bannerAdapter.notifyDataSetChanged();
+                bannerViewPager.setVisibility(bannerList.isEmpty() ? View.GONE : View.VISIBLE);
+                if (!bannerList.isEmpty()) { bannerViewPager.setCurrentItem(0, false); startBannerAutoScroll(); }
             }
+            @Override public void onFailure(Call<com.app.fimtale.model.CuratedResponse> call, Throwable t) {}
         });
     }
 
@@ -487,9 +386,8 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (emptyStateLayout != null && emptyStateLayout.getVisibility() == View.VISIBLE 
-                && UserPreferences.isUserConfigured(getContext())) {
-            checkCredentialsAndLoad();
+        if (emptyStateLayout != null && emptyStateLayout.getVisibility() == View.VISIBLE ) {
+            loadContent();
         }
         if (bannerAdapter != null && bannerAdapter.getItemCount() > 0) {
             startBannerAutoScroll();

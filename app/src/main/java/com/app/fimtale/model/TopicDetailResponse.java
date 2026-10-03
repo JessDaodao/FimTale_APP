@@ -1,33 +1,25 @@
 package com.app.fimtale.model;
-
 import com.google.gson.annotations.SerializedName;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-
 public class TopicDetailResponse {
-    @SerializedName("Status")
-    private int status;
-
-    @SerializedName("TopicInfo")
-    private TopicInfo topicInfo;
-
-    @SerializedName("AuthorInfo")
-    private AuthorInfo authorInfo;
-
-    @SerializedName("ParentInfo")
-    private TopicInfo parentInfo;
-
-    @SerializedName("Menu")
-    private List<ChapterMenuItem> menu;
-
-    public int getStatus() { return status; }
-    public TopicInfo getTopicInfo() { return topicInfo; }
-    public AuthorInfo getAuthorInfo() { return authorInfo; }
-    public TopicInfo getParentInfo() { return parentInfo; }
-    public List<ChapterMenuItem> getMenu() { return menu; }
-    
-    public void setStatus(int status) { this.status = status; }
-    public void setTopicInfo(TopicInfo topicInfo) { this.topicInfo = topicInfo; }
-    public void setAuthorInfo(AuthorInfo authorInfo) { this.authorInfo = authorInfo; }
-    public void setParentInfo(TopicInfo parentInfo) { this.parentInfo = parentInfo; }
-    public void setMenu(List<ChapterMenuItem> menu) { this.menu = menu; }
+    private TopicInfo work;
+    private List<ChapterMenuItem> chapters;
+    @SerializedName("chapter_edges") public List<ChapterEdge> chapterEdges;
+    public TopicInfo getTopicInfo() { return work; }
+    public AuthorInfo getAuthorInfo() { return work == null ? null : work.getUser(); }
+    public List<ChapterMenuItem> getMenu() {
+        List<ChapterMenuItem> result = new ArrayList<>();
+        if (chapters != null) for (ChapterMenuItem chapter : chapters) {
+            if (!chapter.isDeleted()) result.add(chapter);
+        }
+        result.sort(Comparator.comparingInt(ChapterMenuItem::getOrderNum).thenComparingInt(ChapterMenuItem::getId));
+        return result;
+    }
+    public static class ChapterEdge {
+        @SerializedName("from_chapter_id") public Integer from;
+        @SerializedName("to_chapter_id") public Integer to;
+        public String label;
+    }
 }

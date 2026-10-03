@@ -185,16 +185,14 @@ public class UserDetailActivity extends AppCompatActivity {
 
     private void loadData(String username) {
         if (loadingMask != null) loadingMask.setVisibility(View.VISIBLE);
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
 
-        RetrofitClient.getInstance().getUserDetail(username, apiKey, apiPass).enqueue(new Callback<UserDetailResponse>() {
+        RetrofitClient.getInstance().getUserDetail(username).enqueue(new Callback<UserDetailResponse>() {
             @Override
             public void onResponse(Call<UserDetailResponse> call, Response<UserDetailResponse> response) {
                 hideLoadingMask();
                 if (response.isSuccessful() && response.body() != null) {
                     UserDetailResponse data = response.body();
-                    if (data.getStatus() == 1 && data.getUserInfo() != null) {
+                    if (data.getId() > 0) {
                         bindData(data);
                     } else {
                         Toast.makeText(UserDetailActivity.this, "获取用户信息失败", Toast.LENGTH_SHORT).show();
@@ -223,14 +221,14 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     private void bindData(UserDetailResponse data) {
-        UserDetailResponse.UserInfo info = data.getUserInfo();
+        UserDetailResponse info = data;
 
         tvUsername.setText(info.getUserName());
-        tvUserRole.setText("LV." + info.getGradeInfo().getGrade());
+        tvUserRole.setText("LV." + info.getLevel());
 
         if (!TextUtils.isEmpty(info.getLastSeen())) {
             try {
-                long timestamp = Long.parseLong(info.getLastSeen()) * 1000L;
+                long timestamp = java.time.OffsetDateTime.parse(info.getLastSeen()).toInstant().toEpochMilli();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
                 tvLastSeen.setText("最后活动: " + sdf.format(new Date(timestamp)));
             } catch (Exception e) {
@@ -266,25 +264,25 @@ public class UserDetailActivity extends AppCompatActivity {
                  .into(ivBackground);
         }
 
-        String avatarUrl = "https://fimtale.com/upload/avatar/large/" + info.getId() + ".png";
+        String avatarUrl = info.getAvatar();
         Glide.with(this)
              .load(avatarUrl)
              .placeholder(R.drawable.ic_person)
              .into(ivAvatar);
 
         chipGroupBadges.removeAllViews();
-        if (info.getBadges() != null) {
+        if (info.badges != null) {
             int bgColor = resolveThemeColor(com.google.android.material.R.attr.colorPrimaryContainer);
             int textColor = resolveThemeColor(com.google.android.material.R.attr.colorOnPrimaryContainer);
-            for (String badge : info.getBadges()) {
-                addChip(chipGroupBadges, badge, bgColor, textColor);
+            for (UserDetailResponse.Badge badge : info.badges) {
+                addChip(chipGroupBadges, badge.name, bgColor, textColor);
             }
         }
 
         chipGroupMedals.removeAllViews();
-        if (info.getMedals() != null && !info.getMedals().isEmpty()) {
+        if (info.medals != null && !info.medals.isEmpty()) {
             tvMedalsTitle.setVisibility(View.VISIBLE);
-            for (String medal : info.getMedals()) {
+            for (UserDetailResponse.Medal medal : info.medals) {
                 addMedalChip(chipGroupMedals, medal);
             }
         } else {
@@ -292,7 +290,8 @@ public class UserDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void addMedalChip(ChipGroup group, String medalName) {
+    private void addMedalChip(ChipGroup group, UserDetailResponse.Medal medal) {
+        String medalName = medal.name;
         Chip chip = new Chip(this);
         chip.setText(""); 
         chip.setChipBackgroundColor(ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
@@ -305,7 +304,7 @@ public class UserDetailActivity extends AppCompatActivity {
         chip.setCloseIconVisible(false);
         chip.setChipStrokeWidth(0);
 
-        String medalUrl = "https://fimtale.com/static/img/medals/" + medalName + ".png";
+        String medalUrl = com.app.fimtale.network.SiteUrls.media(medal.image);
         int iconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 44, getResources().getDisplayMetrics());
         chip.setChipIconSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics()));
 
@@ -366,22 +365,19 @@ public class UserDetailActivity extends AppCompatActivity {
         if (isLoading) return;
         isLoading = true;
 
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
-
-        RetrofitClient.getInstance().getUserTopics(username, apiKey, apiPass, page).enqueue(new Callback<TopicListResponse>() {
+        RetrofitClient.getInstance().getUserTopics(username, "work", page).enqueue(new Callback<com.app.fimtale.model.UserWorksResponse>() {
             @Override
-            public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
+            public void onResponse(Call<com.app.fimtale.model.UserWorksResponse> call, Response<com.app.fimtale.model.UserWorksResponse> response) {
                 if (isFinishing() || isDestroyed()) return;
                 isLoading = false;
                 if (response.isSuccessful() && response.body() != null) {
-                    TopicListResponse data = response.body();
-                    if (data.getStatus() == 1 && data.getTopicArray() != null) {
+                    TopicListResponse data = response.body().content;
+                    if (data != null) {
                         if (page == 1) {
                             topicList.clear();
                         }
                         
-                        currentPage = data.getPage();
+                        currentPage = page;
                         totalPages = data.getTotalPage();
                         
                         int startInsertPos = topicList.size();
@@ -409,7 +405,7 @@ public class UserDetailActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<TopicListResponse> call, Throwable t) {
+            public void onFailure(Call<com.app.fimtale.model.UserWorksResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed()) return;
                 isLoading = false;
                 // 不做处理

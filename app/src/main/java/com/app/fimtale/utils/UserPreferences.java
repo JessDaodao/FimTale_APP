@@ -9,9 +9,6 @@ import java.util.List;
 
 public class UserPreferences {
     private static final String PREF_NAME = "fimtale_prefs";
-    private static final String KEY_API_KEY = "api_key";
-    private static final String KEY_API_PASS = "api_pass";
-    private static final String KEY_COOKIES = "cookies";
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_USER_NAME = "user_name";
     private static final String KEY_SEARCH_HISTORY = "search_history";
@@ -23,45 +20,28 @@ public class UserPreferences {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
-    public static void saveCredentials(Context context, String apiKey, String apiPass) {
-        getPrefs(context).edit()
-                .putString(KEY_API_KEY, apiKey)
-                .putString(KEY_API_PASS, apiPass)
-                .apply();
+    private static SharedPreferences session(Context context) {
+        return context.getSharedPreferences("fimtale_session", Context.MODE_PRIVATE);
     }
-
-    public static void saveCookies(Context context, String cookies) {
-        if (!isSafeMode(context)) {
-            cookies = cookies + "; CarbonBBS_SafeMode=0";
-        }
-        getPrefs(context).edit()
-                .putString(KEY_COOKIES, cookies)
-                .apply();
+    public static void saveToken(Context context, String token) {
+        session(context).edit().putString("token", token).apply();
     }
-
-    public static String getCookies(Context context) {
-        String cookies = getPrefs(context).getString(KEY_COOKIES, "");
-        if (!isSafeMode(context)) {
-            if (!cookies.contains("CarbonBBS_SafeMode=0")) {
-                 cookies = cookies + "; CarbonBBS_SafeMode=0";
-            }
-        } else {
-             cookies = cookies.replace("; CarbonBBS_SafeMode=0", "");
-             cookies = cookies.replace("CarbonBBS_SafeMode=0;", "");
-             cookies = cookies.replace("CarbonBBS_SafeMode=0", "");
-        }
-        return cookies;
+    public static String getToken(Context context) {
+        return session(context).getString("token", "");
     }
-
-    public static void setSafeMode(Context context, boolean safeMode) {
-        getPrefs(context).edit()
-                .putBoolean("safe_mode", safeMode)
-                .apply();
+    public static void saveAvatar(Context context, String avatar) {
+        session(context).edit().putString("avatar", avatar).apply();
     }
-
-    public static boolean isSafeMode(Context context) {
-        return getPrefs(context).getBoolean("safe_mode", true);
+    public static String getAvatar(Context context) {
+        return session(context).getString("avatar", "");
     }
+    public static void clearSession(Context context) {
+        session(context).edit().clear().apply();
+        android.webkit.CookieManager.getInstance().setCookie(
+                com.app.fimtale.network.SiteUrls.SITE, "ft_token=; Path=/; Max-Age=0; Secure");
+        android.webkit.CookieManager.getInstance().flush();
+    }
+    public static boolean isLoggedIn(Context context) { return !getToken(context).isEmpty(); }
 
     public static void setAutoUpdate(Context context, boolean autoUpdate) {
         getPrefs(context).edit()
@@ -104,51 +84,23 @@ public class UserPreferences {
     }
 
     public static void saveUserId(Context context, String userId) {
-        getPrefs(context).edit()
+        session(context).edit()
                 .putString(KEY_USER_ID, userId)
                 .apply();
     }
 
     public static String getUserId(Context context) {
-        return getPrefs(context).getString(KEY_USER_ID, "");
+        return session(context).getString(KEY_USER_ID, "");
     }
 
     public static void saveUserName(Context context, String userName) {
-        getPrefs(context).edit()
+        session(context).edit()
                 .putString(KEY_USER_NAME, userName)
                 .apply();
     }
 
     public static String getUserName(Context context) {
-        return getPrefs(context).getString(KEY_USER_NAME, "");
-    }
-
-    public static String getUserApiKey(Context context) {
-        return getPrefs(context).getString(KEY_API_KEY, "");
-    }
-
-    public static String getUserApiPass(Context context) {
-        return getPrefs(context).getString(KEY_API_PASS, "");
-    }
-
-    public static String getApiKey(Context context) {
-        return getUserApiKey(context);
-    }
-
-    public static String getApiPass(Context context) {
-        return getUserApiPass(context);
-    }
-
-    public static boolean isLoggedIn(Context context) {
-        String key = getApiKey(context);
-        String pass = getApiPass(context);
-        return !key.isEmpty() && !pass.isEmpty();
-    }
-
-    public static boolean isUserConfigured(Context context) {
-        String key = getUserApiKey(context);
-        String pass = getUserApiPass(context);
-        return !key.isEmpty() && !pass.isEmpty();
+        return session(context).getString(KEY_USER_NAME, "");
     }
 
     public static void saveSearchHistory(Context context, String query) {
@@ -198,17 +150,6 @@ public class UserPreferences {
             }
         }
         getPrefs(context).edit().putString(KEY_SEARCH_HISTORY, sb.toString()).apply();
-    }
-
-    public static void clear(Context context) {
-        String apiKey = getUserApiKey(context);
-        String apiPass = getUserApiPass(context);
-
-        getPrefs(context).edit().clear().apply();
-
-        if (!apiKey.isEmpty() || !apiPass.isEmpty()) {
-            saveCredentials(context, apiKey, apiPass);
-        }
     }
 
     public static long getMaxCacheSize(Context context) {

@@ -53,7 +53,7 @@ public class ArticleFragment extends Fragment {
     private FrameLayout contentContainer;
     private ProgressBar progressBar;
     private LinearLayout emptyStateLayout;
-    private Button btnConfigureApi;
+    private Button btnLogin;
     private TextView tvWhyHow;
     private TextView tvNoResults;
     private android.widget.PopupWindow historyPopupWindow;
@@ -65,8 +65,9 @@ public class ArticleFragment extends Fragment {
     private int currentPage = 1;
     private int totalPages = 1;
     private boolean isLoading = false;
+    private Call<TopicListResponse> topicsCall;
     private String currentQuery = null;
-    private String currentSortBy = "default";
+    private String currentSortBy = "";
 
     @Nullable
     @Override
@@ -83,7 +84,7 @@ public class ArticleFragment extends Fragment {
         contentContainer = view.findViewById(R.id.content_container);
         progressBar = view.findViewById(R.id.progressBar);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
-        btnConfigureApi = view.findViewById(R.id.btnConfigureApi);
+        btnLogin = view.findViewById(R.id.btnLogin);
         tvWhyHow = view.findViewById(R.id.tvWhyHow);
         tvNoResults = view.findViewById(R.id.tvNoResults);
 
@@ -207,7 +208,7 @@ public class ArticleFragment extends Fragment {
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
-        checkCredentialsAndLoad();
+        loadContent();
     }
 
     private void showSearchHistoryPopup(View anchorView, androidx.appcompat.widget.SearchView searchView) {
@@ -267,10 +268,8 @@ public class ArticleFragment extends Fragment {
     }
 
     private void setupEmptyState() {
-        btnConfigureApi.setOnClickListener(v -> {
-            DialogHelper.showApiCredentialsDialog(getContext(), () -> {
-                checkCredentialsAndLoad();
-            });
+        btnLogin.setOnClickListener(v -> {
+            DialogHelper.openLogin(requireContext());
         });
         tvWhyHow.setOnClickListener(v -> {
             android.content.Intent intent = new android.content.Intent(getContext(), com.app.fimtale.HelpActivity.class);
@@ -278,21 +277,11 @@ public class ArticleFragment extends Fragment {
         });
     }
 
-    private void checkCredentialsAndLoad() {
-        if (UserPreferences.isUserConfigured(getContext())) {
-            emptyStateLayout.setVisibility(View.GONE);
-            swipeRefreshLayout.setVisibility(View.VISIBLE);
-            swipeRefreshLayout.setEnabled(true);
-            loadTopics(false);
-        } else {
-            emptyStateLayout.setVisibility(View.VISIBLE);
-            swipeRefreshLayout.setVisibility(View.VISIBLE);
-            swipeRefreshLayout.setEnabled(false);
-            progressBar.setVisibility(View.GONE);
-            if (recyclerView != null) {
-                recyclerView.setVisibility(View.GONE);
-            }
-        }
+    private void loadContent() {
+        emptyStateLayout.setVisibility(View.GONE);
+        swipeRefreshLayout.setVisibility(View.VISIBLE);
+        swipeRefreshLayout.setEnabled(true);
+        loadTopics(false);
     }
 
     private void setupRecyclerView() {
@@ -361,15 +350,14 @@ public class ArticleFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (emptyStateLayout != null && emptyStateLayout.getVisibility() == View.VISIBLE 
-                && UserPreferences.isUserConfigured(getContext())) {
-            checkCredentialsAndLoad();
+        if (emptyStateLayout != null && emptyStateLayout.getVisibility() == View.VISIBLE ) {
+            loadContent();
         }
     }
 
     private void showFilterDialog() {
         final String[] options = {"默认排序", "发表时间", "更新时间", "最后评论", "字数排序", "评论数排序", "阅读数排序", "总体评分"};
-        final String[] values = {"default", "publish", "update", "lasttime", "wordcount", "replies", "views", "rating"};
+        final String[] values = {"", "created_at", "last_chapter_at", "commented_at", "count_character", "count_comment", "count_view", "wilson_score"};
         
         int checkedItem = 0;
         for (int i = 0; i < values.length; i++) {
@@ -391,8 +379,12 @@ public class ArticleFragment extends Fragment {
     }
 
     private void loadTopics(boolean isRefresh) {
-        if (isLoading) return;
+        if (isLoading) {
+            if (currentPage != 1) return;
+            if (topicsCall != null) topicsCall.cancel();
+        }
         isLoading = true;
+        final int requestedPage = currentPage;
         
         if (tvNoResults != null) {
             tvNoResults.setVisibility(View.GONE);
@@ -409,18 +401,15 @@ public class ArticleFragment extends Fragment {
             }
         }
 
-        String apiKey = UserPreferences.getApiKey(getContext());
-        String apiPass = UserPreferences.getApiPass(getContext());
-
-        RetrofitClient.getInstance().getTopicList(apiKey, apiPass, currentPage, currentQuery, currentSortBy).enqueue(new Callback<TopicListResponse>() {
+        topicsCall = RetrofitClient.getInstance().getTopicList(requestedPage, com.app.fimtale.network.SearchQuery.keywords(currentQuery), com.app.fimtale.network.SearchQuery.rank(currentSortBy));
+        topicsCall.enqueue(new Callback<TopicListResponse>() {
             @Override
             public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
-                if (!isAdded()) return;
+                if (!isAdded() || call.isCanceled() || call != topicsCall) return;
                 isLoading = false;
                 
                 if (response.isSuccessful() && response.body() != null) {
                     TopicListResponse data = response.body();
-                    currentPage = data.getPage();
                     totalPages = data.getTotalPage();
                     
                     if (isRefresh || currentPage == 1) {
@@ -515,8 +504,9 @@ public class ArticleFragment extends Fragment {
                     }
                     
                 } else {
+                    currentPage = Math.max(1, requestedPage - 1);
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(getContext(), "加载失败: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), com.app.fimtale.network.ApiErrors.message(response), Toast.LENGTH_SHORT).show();
                 }
                 
                 swipeRefreshLayout.setRefreshing(false);
@@ -524,8 +514,9 @@ public class ArticleFragment extends Fragment {
 
             @Override
             public void onFailure(Call<TopicListResponse> call, Throwable t) {
-                if (!isAdded()) return;
+                if (!isAdded() || call.isCanceled() || call != topicsCall) return;
                 isLoading = false;
+                currentPage = Math.max(1, requestedPage - 1);
                 progressBar.setVisibility(View.GONE);
                 swipeRefreshLayout.setRefreshing(false);
                 Toast.makeText(getContext(), "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();

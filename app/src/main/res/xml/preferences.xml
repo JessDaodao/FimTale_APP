@@ -17,10 +17,10 @@
             app:defaultValue="true"
             app:iconSpaceReserved="false" />
 
-        <SwitchPreferenceCompat
-            app:key="safe_mode"
-            app:title="安全模式"
-            app:defaultValue="true"
+        <Preference
+            app:key="content_filters"
+            app:title="内容过滤"
+            app:summary="管理网站内容过滤偏好"
             app:iconSpaceReserved="false" />
 
         <Preference
@@ -74,9 +74,9 @@
         app:iconSpaceReserved="false">
 
         <Preference
-            app:key="api_credentials"
-            app:title="配置 API 凭据"
-            app:summary="配置"
+            app:key="account"
+            app:title="账户与会话"
+            app:summary="登录或管理网站会话"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>

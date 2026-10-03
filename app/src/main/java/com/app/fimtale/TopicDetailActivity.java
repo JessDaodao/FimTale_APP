@@ -265,7 +265,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         
         TextView btnCopyLink = view.findViewById(R.id.btnCopyLink);
         btnCopyLink.setOnClickListener(v -> {
-            String link = "https://fimtale.com/t/" + currentTopicId;
+            String link = com.app.fimtale.network.SiteUrls.work(currentTopicId);
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText("FimTale Link", link);
             if (clipboard != null) {
@@ -273,6 +273,11 @@ public class TopicDetailActivity extends AppCompatActivity {
                 Toast.makeText(this, "链接已复制", Toast.LENGTH_SHORT).show();
             }
             bottomSheetDialog.dismiss();
+        });
+
+        view.findViewById(R.id.btnOpenSite).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            com.app.fimtale.utils.DialogHelper.openSite(this, "/work/" + currentTopicId);
         });
 
         TextView btnSaveShareImage = view.findViewById(R.id.btnSaveShareImage);
@@ -374,7 +379,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         commentCountText.setText(String.valueOf(currentCommentCount));
         favoriteCountText.setText(String.valueOf(currentFavoriteCount));
 
-        String link = "https://fimtale.com/t/" + currentTopicId;
+        String link = com.app.fimtale.network.SiteUrls.work(currentTopicId);
         try {
             QRCodeWriter writer = new QRCodeWriter();
             BitMatrix bitMatrix = writer.encode(link, BarcodeFormat.QR_CODE, 400, 400);
@@ -476,14 +481,10 @@ public class TopicDetailActivity extends AppCompatActivity {
         appBarLayout.setVisibility(View.INVISIBLE);
         startReadingButton.setVisibility(View.INVISIBLE);
 
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
-        String format = "md";
-
-        RetrofitClient.getInstance().getTopicDetail(topicId, apiKey, apiPass, format).enqueue(new Callback<TopicDetailResponse>() {
+        RetrofitClient.getInstance().getWork(topicId).enqueue(new Callback<TopicDetailResponse>() {
             @Override
             public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
-                if (response.isSuccessful() && response.body() != null && response.body().getStatus() == 1) {
+                if (response.isSuccessful() && response.body() != null) {
                     TopicDetailResponse data = response.body();
                     
                     progressBar.setVisibility(View.GONE);
@@ -499,7 +500,7 @@ public class TopicDetailActivity extends AppCompatActivity {
                     updateUI(data);
                 } else {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(TopicDetailActivity.this, "加载失败: " + response.message(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(TopicDetailActivity.this, com.app.fimtale.network.ApiErrors.message(response), Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -515,7 +516,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         TopicInfo topic = data.getTopicInfo();
         AuthorInfo author = data.getAuthorInfo();
         this.currentAuthor = author;
-        TopicInfo parentInfo = data.getParentInfo();
         List<ChapterMenuItem> chapters = data.getMenu();
 
         currentTopicTitle = topic.getTitle();
@@ -529,7 +529,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         String cleanedHtml = processedContent.first;
         String extractedImageUrl = processedContent.second;
 
-        boolean isIntroPage = (parentInfo != null && parentInfo.getId() == topic.getId());
+        boolean isIntroPage = true;
         String finalCoverUrl = extractedImageUrl;
         if (finalCoverUrl == null && !TextUtils.isEmpty(topic.getBackground())) {
             finalCoverUrl = topic.getBackground();
@@ -558,7 +558,7 @@ public class TopicDetailActivity extends AppCompatActivity {
 
             authorNameTextView.setText(author.getUserName());
             
-            String authorAvatarUrl = "https://fimtale.com/upload/avatar/large/" + author.getId() + ".png";
+            String authorAvatarUrl = author.getAvatar();
             Glide.with(this)
                     .load(authorAvatarUrl)
                     .placeholder(R.drawable.ic_person)
@@ -607,64 +607,23 @@ public class TopicDetailActivity extends AppCompatActivity {
             intro = intro.replaceAll("(!\\[.*?\\]\\(.*?\\))", "\n\n$1\n\n");
         }
         currentTopicIntro = intro;
-        markwon.setMarkdown(contentTextView, intro);
+        markwon.setMarkdown(contentTextView, com.app.fimtale.utils.BbCode.toMarkdown(
+                (intro == null ? "" : intro) + "\n\n" + (topic.getContent() == null ? "" : topic.getContent())));
         
-        Object branches = topic.getBranches();
-        if (branches instanceof Map) {
-            Map<?, ?> branchesMap = (Map<?, ?>) branches;
-            if (branchesMap.containsKey("开始阅读")) {
-                Object val = branchesMap.get("开始阅读");
-                if (val instanceof Number) {
-                    firstChapterId = ((Number) val).intValue();
-                }
-            }
-        } else if (branches instanceof LinkedTreeMap) {
-            LinkedTreeMap<?, ?> branchesMap = (LinkedTreeMap<?, ?>) branches;
-            if (branchesMap.containsKey("开始阅读")) {
-                 Object val = branchesMap.get("开始阅读");
-                if (val instanceof Number) {
-                    firstChapterId = ((Number) val).intValue();
-                }
-            }
-        }
-
-        if (firstChapterId != -1) {
-            startReadingButton.setVisibility(View.VISIBLE);
-            startReadingButton.setAlpha(0f);
-            startReadingButton.animate().alpha(1f).setDuration(300).start();
-        } else {
-            startReadingButton.setVisibility(View.GONE);
-        }
-
-        if (chapters != null && !chapters.isEmpty()) {
-            List<ChapterMenuItem> filteredChapters = new java.util.ArrayList<>();
-            
-            int prefaceId = chapters.get(0).getId();
-            fetchPrefaceContent(prefaceId);
-
-            for (int i = 1; i < chapters.size(); i++) {
-                ChapterMenuItem item = chapters.get(i);
-                if (item.getId() != currentTopicId) {
-                    filteredChapters.add(item);
-                }
-            }
-
-            if (!filteredChapters.isEmpty()) {
-                chapterListContainer.setVisibility(View.VISIBLE);
-                chapterAdapter = new ChapterAdapter(filteredChapters, item -> {
-                    Intent intent = new Intent(TopicDetailActivity.this, ReaderActivity.class);
-                    intent.putExtra(ReaderActivity.EXTRA_TOPIC_ID, item.getId());
-                    startActivity(intent);
-                });
-                rvChapters.setAdapter(chapterAdapter);
-            } else {
-                chapterListContainer.setVisibility(View.GONE);
-            }
-        } else {
-            chapterListContainer.setVisibility(View.GONE);
-        }
+        // Preface belongs to the work; every directory entry is a real chapter.
+        java.util.List<TopicDetailResponse.ChapterEdge> roots = com.app.fimtale.model.ChapterNavigation.choices(data, 0);
+        firstChapterId = roots.size() == 1 && roots.get(0).to != null ? roots.get(0).to : 0;
+        startReadingButton.setVisibility(View.VISIBLE);
+        startReadingButton.setAlpha(1f);
+        chapterListContainer.setVisibility(chapters.isEmpty() ? View.GONE : View.VISIBLE);
+        chapterAdapter = new ChapterAdapter(chapters, item -> {
+            Intent intent = new Intent(this, ReaderActivity.class);
+            intent.putExtra(ReaderActivity.EXTRA_WORK_ID, currentTopicId);
+            intent.putExtra(ReaderActivity.EXTRA_CHAPTER_ID, item.getId());
+            startActivity(intent);
+        });
+        rvChapters.setAdapter(chapterAdapter);
     }
-
 
     private void updateCoverTags(TopicTags tags) {
         if (tags == null) return;
@@ -766,7 +725,7 @@ public class TopicDetailActivity extends AppCompatActivity {
             chip.setTextColor(typedValue.data);
         }
 
-        chip.setOnClickListener(v -> {
+        if (!isStatus) chip.setOnClickListener(v -> {
             Intent intent = new Intent(this, TagArticlesActivity.class);
             intent.putExtra(TagArticlesActivity.EXTRA_TAG_NAME, text);
             startActivity(intent);
@@ -817,7 +776,8 @@ public class TopicDetailActivity extends AppCompatActivity {
         startReadingButton.setOnClickListener(v -> {
             if (firstChapterId != -1) {
                 Intent intent = new Intent(this, ReaderActivity.class);
-                intent.putExtra(ReaderActivity.EXTRA_TOPIC_ID, firstChapterId);
+                intent.putExtra(ReaderActivity.EXTRA_WORK_ID, currentTopicId);
+                intent.putExtra(ReaderActivity.EXTRA_CHAPTER_ID, firstChapterId);
                 startActivity(intent);
             }
         });
@@ -831,32 +791,4 @@ public class TopicDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void fetchPrefaceContent(int prefaceId) {
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
-        String format = "md";
-
-        RetrofitClient.getInstance().getTopicDetail(prefaceId, apiKey, apiPass, format).enqueue(new Callback<TopicDetailResponse>() {
-            @Override
-            public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
-                if (isFinishing() || isDestroyed()) return;
-                
-                if (response.isSuccessful() && response.body() != null && response.body().getStatus() == 1) {
-                    TopicInfo topic = response.body().getTopicInfo();
-                    if (topic != null && !TextUtils.isEmpty(topic.getContent())) {
-                        String content = topic.getContent();
-                        if (content != null) {
-                            content = content.replaceAll("(!\\[.*?\\]\\(.*?\\))", "\n\n$1\n\n");
-                        }
-                        markwon.setMarkdown(contentTextView, content);
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
-                // 不做处理
-            }
-        });
-    }
 }

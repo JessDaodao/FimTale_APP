@@ -92,7 +92,8 @@ public class HistoryActivity extends AppCompatActivity {
         adapter = new HistoryAdapter();
         adapter.setOnItemClickListener(topic -> {
             Intent intent = new Intent(HistoryActivity.this, ReaderActivity.class);
-            intent.putExtra(ReaderActivity.EXTRA_TOPIC_ID, topic.getMainId());
+            intent.putExtra(ReaderActivity.EXTRA_CHAPTER_ID, topic.getChapterId());
+            intent.putExtra(ReaderActivity.EXTRA_WORK_ID, topic.getWorkId());
             intent.putExtra(ReaderActivity.EXTRA_INITIAL_PROGRESS, topic.getProgress());
             startActivity(intent);
         });
@@ -107,32 +108,26 @@ public class HistoryActivity extends AppCompatActivity {
         if (isLoading) return;
         isLoading = true;
         swipeRefresh.setRefreshing(true);
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
 
-        RetrofitClient.getInstance().getHistory(apiKey, apiPass, page).enqueue(new Callback<HistoryResponse>() {
+        RetrofitClient.getInstance().getHistory(page).enqueue(new Callback<HistoryResponse>() {
             @Override
             public void onResponse(Call<HistoryResponse> call, Response<HistoryResponse> response) {
                 isLoading = false;
                 swipeRefresh.setRefreshing(false);
                 hideLoadingOverlay();
                 if (response.isSuccessful() && response.body() != null) {
-                    if (response.body().getStatus() == 1) {
-                        currentPage = response.body().getPage();
-                        totalPages = response.body().getTotalPage();
-                        
-                        if (page == 1) {
-                            adapter.setHistoryTopics(response.body().getHistoryTopics());
-                            RecyclerView recyclerView = findViewById(R.id.recyclerView);
-                            recyclerView.scrollToPosition(0);
-                        } else {
-                            adapter.addHistoryTopics(response.body().getHistoryTopics());
-                        }
+                    currentPage = page;
+                    totalPages = response.body().getTotalPage();
+
+                    if (page == 1) {
+                        adapter.setHistoryTopics(response.body().getHistoryTopics());
+                        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+                        recyclerView.scrollToPosition(0);
                     } else {
-                        Toast.makeText(HistoryActivity.this, "加载失败: 状态错误", Toast.LENGTH_SHORT).show();
+                        adapter.addHistoryTopics(response.body().getHistoryTopics());
                     }
                 } else {
-                    Toast.makeText(HistoryActivity.this, "加载失败: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(HistoryActivity.this, com.app.fimtale.network.ApiErrors.message(response), Toast.LENGTH_SHORT).show();
                 }
             }
 

@@ -83,7 +83,8 @@ import retrofit2.Response;
 
 public class ReaderActivity extends AppCompatActivity {
 
-    public static final String EXTRA_TOPIC_ID = "topic_id";
+    public static final String EXTRA_WORK_ID = "work_id";
+    public static final String EXTRA_CHAPTER_ID = "chapter_id";
     public static final String EXTRA_INITIAL_PROGRESS = "initial_progress";
 
     private ViewPager2 viewPager;
@@ -218,17 +219,15 @@ public class ReaderActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reader);
 
-        currentTopicId = getIntent().getIntExtra(EXTRA_TOPIC_ID, -1);
-        if (currentTopicId == -1) {
+        currentTopicId = getIntent().getIntExtra(EXTRA_CHAPTER_ID, 0);
+        rootTopicId = getIntent().getIntExtra(EXTRA_WORK_ID, 0);
+        if (rootTopicId <= 0 || currentTopicId < 0) {
             finish();
             return;
         }
         initialTopicId = currentTopicId;
         initialProgress = getIntent().getDoubleExtra(EXTRA_INITIAL_PROGRESS, -1d);
-        if (initialProgress > 1d) {
-            initialProgress = initialProgress / 100d;
-        }
-        initialProgress = clamp01(initialProgress);
+        if (initialProgress >= 0) initialProgress = clamp01(initialProgress);
 
         viewPager = findViewById(R.id.viewPager);
         recyclerView = findViewById(R.id.recyclerView);
@@ -335,6 +334,11 @@ public class ReaderActivity extends AppCompatActivity {
         topToolbar.setNavigationOnClickListener(v -> finish());
         topToolbar.inflateMenu(R.menu.menu_reader);
         topToolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_open_site) {
+                com.app.fimtale.utils.DialogHelper.openSite(this, "/work/" + rootTopicId
+                        + (currentTopicId > 0 ? "/chapter/" + currentTopicId : ""));
+                return true;
+            }
             if (item.getItemId() == R.id.action_info) {
                 if (rootTopicId != -1) {
                     Intent intent = new Intent(this, TopicDetailActivity.class);
@@ -512,7 +516,7 @@ public class ReaderActivity extends AppCompatActivity {
                 topToolbar.setTranslationY(-topToolbar.getBottom());
                 bottomSheetContainer.setTranslationY(menuOverlay.getHeight() - bottomSheetContainer.getTop());
                 
-                fetchChapterContent(currentTopicId);
+                loadWorkNavigation();
             }
         });
 
@@ -677,65 +681,102 @@ public class ReaderActivity extends AppCompatActivity {
         fetchChapterContent(topicId, false);
     }
     
-    private void fetchChapterContent(int topicId, boolean scrollToEnd) {
-        if (isLoadingChapter) return;
-        isLoadingChapter = true;
-        canTriggerChapterChange = false;
-
-        fullChapterContent = "加载中...";
-        if (viewPager.getVisibility() == View.VISIBLE) {
-            calculatePages();
-        } else {
-            prepareVerticalContent();
-        }
-
-        CacheManager.getInstance(this).getChapter(topicId, cached -> {
-            if (cached != null) {
-                applyCachedChapter(cached, scrollToEnd);
-                // Load menu from cache
-                CacheManager.getInstance(this).getChapterMenu(cached.rootTopicId, menu -> {
-                    if (menu != null && menu.size() > 1) {
-                        chapterList = menu;
-                        filteredChapterList.clear();
-                        for (int i = 1; i < menu.size(); i++) {
-                            filteredChapterList.add(menu.get(i));
-                        }
-                        if (chapterListAdapter != null) {
-                            chapterListAdapter.updateData(filteredChapterList);
-                        }
-                    }
-                    preloadNextChapter();
+    private TopicDetailResponse workData;
+    private boolean contentReady;
+    private void loadWorkNavigation() {
+        RetrofitClient.getInstance().getWork(rootTopicId).enqueue(new Callback<TopicDetailResponse>() {
+            @Override public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                if (response.isSuccessful() && response.body() != null && response.body().getTopicInfo() != null) {
+                    applyNavigation(response.body());
+                    CacheManager.getInstance(ReaderActivity.this).cacheChapterMenu(rootTopicId, workData);
+                    fetchChapterContent(currentTopicId);
+                } else { showReadError("无法加载作品目录，请返回后重试"); }
+            }
+            @Override public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
+                CacheManager.getInstance(ReaderActivity.this).getChapterMenu(rootTopicId, data -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (data != null) { applyNavigation(data); fetchChapterContent(currentTopicId); }
+                    else showReadError("网络错误，且没有离线目录");
                 });
-            } else {
-                fetchFromNetwork(topicId, scrollToEnd);
             }
         });
     }
-
-    private void applyCachedChapter(CachedChapter cached, boolean scrollToEnd) {
-        isLoadingChapter = false;
-
-        rootTopicId = cached.rootTopicId;
-        chapterTitle = cached.title;
-        currentPostId = cached.postId;
-        topToolbar.setTitle(chapterTitle);
-        tvChapterTitle.setText(chapterTitle);
-
-        String content = cached.content;
-        if (content != null) {
-            fullChapterContent = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT).toString();
-            parseContent(content);
-        } else {
-            fullChapterContent = "无内容";
-            parsedSegments.clear();
-            parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, "无内容"));
+    private void applyNavigation(TopicDetailResponse data) {
+        workData = data;
+        chapterList = data.getMenu();
+        filteredChapterList.clear(); filteredChapterList.addAll(chapterList);
+        if (chapterListAdapter != null) chapterListAdapter.updateData(filteredChapterList);
+    }
+    private int cacheKey(int chapterId) { return chapterId == 0 ? -rootTopicId : chapterId; }
+    private void fetchChapterContent(int topicId, boolean scrollToEnd) {
+        if (isLoadingChapter) return;
+        isLoadingChapter = true;
+        contentReady = false;
+        canTriggerChapterChange = false;
+        fullChapterContent = "加载中...";
+        if (viewPager.getVisibility() == View.VISIBLE) calculatePages(); else prepareVerticalContent();
+        if (topicId == 0 && workData != null) {
+            TopicInfo work = workData.getTopicInfo();
+            displayChapter(0, work.getTitle(), work.getContent(), scrollToEnd);
+            return;
         }
-
-        currentTopicId = cached.topicId;
-
-        prepareVerticalContent();
-        calculatePages();
-        positionReader(cached.topicId, scrollToEnd);
+        CacheManager.getInstance(this).getChapter(cacheKey(topicId), cached -> {
+            if (isFinishing() || isDestroyed()) return;
+            if (cached != null && cached.rootTopicId == rootTopicId) {
+                applyCachedChapter(cached, scrollToEnd);
+                preloadNextChapter();
+            } else fetchFromNetwork(topicId, scrollToEnd);
+        });
+    }
+    private void showReadError(String message) {
+        contentReady = false;
+        isLoadingChapter = false;
+        fullChapterContent = message;
+        parsedSegments.clear(); parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, message));
+        prepareVerticalContent(); calculatePages();
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+    private void displayChapter(int id, String title, String content, boolean scrollToEnd) {
+        CachedChapter cached = new CachedChapter();
+        cached.topicId = cacheKey(id); cached.rootTopicId = rootTopicId; cached.postId = id;
+        cached.title = title; cached.content = content;
+        CacheManager.getInstance(this).cacheChapter(cached.topicId, rootTopicId, id, title, content, null);
+        applyCachedChapter(cached, scrollToEnd);
+        preloadNextChapter();
+    }
+    private void applyCachedChapter(CachedChapter cached, boolean scrollToEnd) {
+        contentReady = true;
+        isLoadingChapter = false;
+        chapterTitle = cached.title == null ? "" : cached.title;
+        currentPostId = cached.postId;
+        currentTopicId = cached.postId;
+        currentProgress = 0;
+        topToolbar.setTitle(chapterTitle); tvChapterTitle.setText(chapterTitle);
+        String content = com.app.fimtale.utils.BbCode.toMarkdown(cached.content);
+        fullChapterContent = content.isEmpty() ? "无内容" : content;
+        parseContent(fullChapterContent);
+        prepareVerticalContent(); calculatePages();
+        positionReader(currentTopicId, scrollToEnd);
+        if (initialProgress < 0 && currentTopicId == initialTopicId && UserPreferences.isLoggedIn(this)) {
+            final int loadedChapter = currentTopicId;
+            RetrofitClient.getInstance().saveReadingProgress(new com.app.fimtale.model.ReadProgress(rootTopicId, loadedChapter, 0))
+                    .enqueue(new Callback<com.app.fimtale.model.ReadProgress>() {
+                @Override public void onResponse(Call<com.app.fimtale.model.ReadProgress> call, Response<com.app.fimtale.model.ReadProgress> response) {
+                    if (isFinishing() || isDestroyed() || currentTopicId != loadedChapter) return;
+                    if (response.isSuccessful() && response.body() != null && response.body().progress > 0) {
+                        final double progress = response.body().progress;
+                        new com.google.android.material.dialog.MaterialAlertDialogBuilder(ReaderActivity.this)
+                                .setMessage("继续上次的阅读进度？").setPositiveButton("继续", (d, w) -> {
+                                    if (currentTopicId != loadedChapter) return;
+                                    initialProgress = progress; initialProgressApplied = false;
+                                    positionReader(loadedChapter, false);
+                                }).setNegativeButton("从头阅读", null).show();
+                    }
+                }
+                @Override public void onFailure(Call<com.app.fimtale.model.ReadProgress> call, Throwable t) {}
+            });
+        }
     }
 
     private void positionReader(int topicId, boolean scrollToEnd) {
@@ -787,124 +828,36 @@ public class ReaderActivity extends AppCompatActivity {
         }
     }
 
-    private void fetchFromNetwork(int topicId, boolean scrollToEnd) {
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
-        String format = "md";
-
-        RetrofitClient.getInstance().getTopicDetail(topicId, apiKey, apiPass, format).enqueue(new Callback<TopicDetailResponse>() {
-            @Override
-            public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
-                isLoadingChapter = false;
-                if (response.isSuccessful() && response.body() != null && response.body().getStatus() == 1) {
-                    TopicDetailResponse data = response.body();
-
-                    if (data.getParentInfo() != null) {
-                        rootTopicId = data.getParentInfo().getId();
-                    } else if (rootTopicId == -1) {
-                        rootTopicId = topicId;
-                    }
-
-                    TopicInfo topic = data.getTopicInfo();
-
-                    if (topic != null) {
-                        if (data.getParentInfo() != null && topic.getId() == data.getParentInfo().getId()) {
-                            Intent intent = new Intent(ReaderActivity.this, TopicDetailActivity.class);
-                            intent.putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, topic.getId());
-                            startActivity(intent);
-                            finish();
-                            return;
-                        }
-
-                        chapterTitle = topic.getTitle();
-                        currentPostId = topic.getPostId();
-                        topToolbar.setTitle(chapterTitle);
-                        tvChapterTitle.setText(chapterTitle);
-
-                        String content = topic.getContent();
-                        if (content != null) {
-                             fullChapterContent = Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT).toString();
-                             parseContent(content);
-                        } else {
-                             fullChapterContent = "无内容";
-                             parsedSegments.clear();
-                             parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, "无内容"));
-                        }
-
-                        // Cache the chapter
-                        CacheManager.getInstance(ReaderActivity.this).cacheChapter(
-                                topicId, rootTopicId, topic.getPostId(),
-                                topic.getTitle(), topic.getContent(), null);
-                    }
-
-                    if (data.getMenu() != null) {
-                        chapterList = data.getMenu();
-                        filteredChapterList.clear();
-                        for (int i = 1; i < chapterList.size(); i++) {
-                            filteredChapterList.add(chapterList.get(i));
-                        }
-                        if (chapterListAdapter != null) {
-                            chapterListAdapter.updateData(filteredChapterList);
-                        }
-                        // Cache the menu
-                        CacheManager.getInstance(ReaderActivity.this)
-                                .cacheChapterMenu(rootTopicId, data.getMenu());
-                    }
-
-                    currentTopicId = topicId;
-
-                    prepareVerticalContent();
-                    calculatePages();
-                    positionReader(topicId, scrollToEnd);
-
-                    preloadNextChapter();
-                } else {
-                    Toast.makeText(ReaderActivity.this, "加载失败: " + response.message(), Toast.LENGTH_SHORT).show();
-                }
+    private void fetchFromNetwork(int chapterId, boolean scrollToEnd) {
+        RetrofitClient.getInstance().getChapter(chapterId).enqueue(new Callback<com.app.fimtale.model.ChapterResponse>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.ChapterResponse> call, Response<com.app.fimtale.model.ChapterResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                com.app.fimtale.model.ChapterResponse data = response.body();
+                if (response.isSuccessful() && data != null && data.chapter != null && data.chapter.workId == rootTopicId) {
+                    displayChapter(data.chapter.id, data.chapter.title, data.chapter.content, scrollToEnd);
+                } else showReadError("章节加载失败，请从目录重试");
             }
-
-            @Override
-            public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
-                isLoadingChapter = false;
-                Toast.makeText(ReaderActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            @Override public void onFailure(Call<com.app.fimtale.model.ChapterResponse> call, Throwable t) {
+                if (!isFinishing() && !isDestroyed()) showReadError("网络错误，请从目录重试");
             }
         });
     }
-
     private void preloadNextChapter() {
         int nextId = getNextChapterId();
-        if (nextId == -1) return;
-
+        if (nextId <= 0) return;
+        final int workId = rootTopicId;
         CacheManager cache = CacheManager.getInstance(this);
         cache.getChapter(nextId, cached -> {
-            if (cached != null) return; // already cached
-
-            String apiKey = UserPreferences.getApiKey(this);
-            String apiPass = UserPreferences.getApiPass(this);
-
-            RetrofitClient.getInstance().getTopicDetail(nextId, apiKey, apiPass, "md")
-                    .enqueue(new Callback<TopicDetailResponse>() {
-                        @Override
-                        public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
-                            if (response.isSuccessful() && response.body() != null
-                                    && response.body().getStatus() == 1) {
-                                TopicDetailResponse data = response.body();
-                                TopicInfo topic = data.getTopicInfo();
-                                if (topic != null && topic.getContent() != null) {
-                                    int preloadRootId = (data.getParentInfo() != null)
-                                            ? data.getParentInfo().getId() : rootTopicId;
-                                    cache.cacheChapter(nextId, preloadRootId,
-                                            topic.getPostId(), topic.getTitle(),
-                                            topic.getContent(), null);
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
-                            // Silent failure — preloading is best-effort
-                        }
-                    });
+            if (cached != null || isFinishing() || isDestroyed()) return;
+            RetrofitClient.getInstance().getChapter(nextId).enqueue(new Callback<com.app.fimtale.model.ChapterResponse>() {
+                @Override public void onResponse(Call<com.app.fimtale.model.ChapterResponse> call, Response<com.app.fimtale.model.ChapterResponse> response) {
+                    com.app.fimtale.model.ChapterResponse data = response.body();
+                    if (response.isSuccessful() && data != null && data.chapter != null && data.chapter.workId == workId) {
+                        cache.cacheChapter(data.chapter.id, workId, data.chapter.id, data.chapter.title, data.chapter.content, null);
+                    }
+                }
+                @Override public void onFailure(Call<com.app.fimtale.model.ChapterResponse> call, Throwable t) {}
+            });
         });
     }
 
@@ -948,6 +901,13 @@ public class ReaderActivity extends AppCompatActivity {
     }
     
     private void jumpToChapter(int chapterId, boolean scrollToEnd) {
+        if (isLoadingChapter) return;
+        saveReadingProgress();
+        if (chapterId == 0 && currentTopicId != 0) {
+            Intent intent = new Intent(this, TopicDetailActivity.class);
+            intent.putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, rootTopicId);
+            startActivity(intent); finish(); return;
+        }
         fetchChapterContent(chapterId, scrollToEnd);
         hideMenu();
     }
@@ -1012,24 +972,11 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void saveReadingProgress() {
-        if (currentPostId == -1) return;
-
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
-        if (apiKey.isEmpty() || apiPass.isEmpty()) return;
-
-        String progressStr = String.format("%.3f", currentProgress);
-
-        RetrofitClient.getInstance().saveReadingProgress(currentPostId, progressStr, apiKey, apiPass).enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                // 不做处理
-            }
-
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                // 不做处理
-            }
+        if (!contentReady || currentPostId < 0 || rootTopicId <= 0 || isLoadingChapter || !UserPreferences.isLoggedIn(this)) return;
+        RetrofitClient.getInstance().saveReadingProgress(new com.app.fimtale.model.ReadProgress(rootTopicId, currentPostId, currentProgress))
+                .enqueue(new Callback<com.app.fimtale.model.ReadProgress>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.ReadProgress> call, Response<com.app.fimtale.model.ReadProgress> response) {}
+            @Override public void onFailure(Call<com.app.fimtale.model.ReadProgress> call, Throwable t) {}
         });
     }
 
@@ -1815,7 +1762,10 @@ public class ReaderActivity extends AppCompatActivity {
                 tvContinueRead.setVisibility(View.VISIBLE);
                 tvContinueRead.setTextColor(textColor);
                 
-                if (nextChapterId != -1) {
+                if (nextChoices().size() > 1) {
+                    tvContinueRead.setText("选择剧情分支");
+                    tvContinueRead.setOnClickListener(v -> showBranchChoices());
+                } else if (nextChapterId != -1) {
                     if (isVerticalMode) {
                         tvContinueRead.setVisibility(View.GONE);
                     } else {
@@ -1895,30 +1845,25 @@ public class ReaderActivity extends AppCompatActivity {
         return startOffset + realIndex;
     }
     
-    private int getNextChapterId() {
-        if (filteredChapterList == null || filteredChapterList.isEmpty()) return -1;
-        for (int i = 0; i < filteredChapterList.size(); i++) {
-            if (filteredChapterList.get(i).getId() == currentTopicId) {
-                if (i + 1 < filteredChapterList.size()) {
-                    return filteredChapterList.get(i + 1).getId();
-                }
-                break;
-            }
-        }
-        return -1;
+    private List<TopicDetailResponse.ChapterEdge> nextChoices() {
+        return com.app.fimtale.model.ChapterNavigation.choices(workData, currentTopicId);
     }
-    
+    private int getNextChapterId() {
+        List<TopicDetailResponse.ChapterEdge> choices = nextChoices();
+        return choices.size() == 1 ? (choices.get(0).to == null ? 0 : choices.get(0).to) : -1;
+    }
     private int getPrevChapterId() {
-        if (filteredChapterList == null || filteredChapterList.isEmpty()) return -1;
-        for (int i = 0; i < filteredChapterList.size(); i++) {
-            if (filteredChapterList.get(i).getId() == currentTopicId) {
-                if (i - 1 >= 0) {
-                    return filteredChapterList.get(i - 1).getId();
-                }
-                break;
-            }
+        return com.app.fimtale.model.ChapterNavigation.previous(workData, currentTopicId);
+    }
+    private void showBranchChoices() {
+        List<TopicDetailResponse.ChapterEdge> choices = nextChoices();
+        String[] labels = new String[choices.size()];
+        for (int i = 0; i < choices.size(); i++) {
+            TopicDetailResponse.ChapterEdge edge = choices.get(i);
+            labels[i] = edge.label == null || edge.label.isEmpty() ? "继续阅读" : edge.label;
         }
-        return -1;
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle("选择剧情分支")
+                .setItems(labels, (dialog, which) -> jumpToChapter(choices.get(which).to == null ? 0 : choices.get(which).to)).show();
     }
 
     private long[] cachedWeights;

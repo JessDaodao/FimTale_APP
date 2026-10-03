@@ -48,27 +48,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         }
     };
 
-    private final Preference.OnPreferenceChangeListener safeModeChangeListener = new Preference.OnPreferenceChangeListener() {
-        @Override
-        public boolean onPreferenceChange(@NonNull Preference preference, Object newValue) {
-            boolean enabled = (boolean) newValue;
-            if (!enabled) {
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("警告")
-                        .setMessage("请确认您的年龄大于14岁再关闭安全模式")
-                        .setPositiveButton("确定", (dialog, which) -> {
-                            preference.setOnPreferenceChangeListener(null);
-                            ((SwitchPreferenceCompat) preference).setChecked(false);
-                            preference.setOnPreferenceChangeListener(this);
-                        })
-                        .setNegativeButton("取消", null)
-                        .show();
-                return false;
-            }
-            return true;
-        }
-    };
-
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -95,45 +74,39 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
-        Preference apiCredsPref = findPreference("api_credentials");
-        if (apiCredsPref != null) {
-            apiCredsPref.setOnPreferenceClickListener(preference -> {
-                DialogHelper.showApiCredentialsDialog(requireContext(), () -> {
-                    if (apiCredsPref != null) {
-                        updateApiSummary(apiCredsPref);
-                    }
-                });
-                return true;
-            });
-            updateApiSummary(apiCredsPref);
-        }
+        Preference account = findPreference("account");
+        if (account != null) account.setOnPreferenceClickListener(preference -> {
+            if (UserPreferences.isLoggedIn(requireContext())) DialogHelper.openSite(requireContext(), "/user/settings/session");
+            else DialogHelper.openLogin(requireContext());
+            return true;
+        });
+        Preference filters = findPreference("content_filters");
+        if (filters != null) filters.setOnPreferenceClickListener(preference -> {
+            DialogHelper.openSite(requireContext(), "/user/settings/filters"); return true;
+        });
 
         SwitchPreferenceCompat gravityPref = findPreference("gravity_mode");
         if (gravityPref != null) {
             gravityPref.setOnPreferenceChangeListener(gravityChangeListener);
         }
         
-        SwitchPreferenceCompat safeModePref = findPreference("safe_mode");
-        if (safeModePref != null) {
-            safeModePref.setVisible(!UserPreferences.getUserId(requireContext()).isEmpty());
-            safeModePref.setOnPreferenceChangeListener(safeModeChangeListener);
-        }
-
         Preference logoutPref = findPreference("logout");
         if (logoutPref != null) {
-            if (!UserPreferences.getUserId(requireContext()).isEmpty()) {
+            if (UserPreferences.isLoggedIn(requireContext())) {
                 logoutPref.setVisible(true);
                 logoutPref.setOnPreferenceClickListener(preference -> {
                     new MaterialAlertDialogBuilder(requireContext())
                             .setTitle("退出登录")
                             .setMessage("确定要退出登录吗？")
                             .setPositiveButton("确定", (dialog, which) -> {
-                                UserPreferences.clear(requireContext());
-                                UserPreferences.setSafeMode(requireContext(), true);
-                                PreferenceManager.getDefaultSharedPreferences(requireContext())
-                                        .edit()
-                                        .putBoolean("safe_mode", true)
-                                        .apply();
+                                com.app.fimtale.network.RetrofitClient.getInstance().logout(UserPreferences.getToken(requireContext())).enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+                                    @Override public void onResponse(retrofit2.Call<okhttp3.ResponseBody> call, retrofit2.Response<okhttp3.ResponseBody> response) {
+                                        if (response.body() != null) response.body().close();
+                                    }
+                                    @Override public void onFailure(retrofit2.Call<okhttp3.ResponseBody> call, Throwable t) {}
+                                });
+                                UserPreferences.clearSession(requireContext());
+                                CacheManager.getInstance(requireContext()).clearAllCache(null);
                                 Toast.makeText(requireContext(), "已退出登录", Toast.LENGTH_SHORT).show();
                                 getActivity().finish();
                             })
@@ -195,11 +168,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         }
     }
     
-    private void updateApiSummary(Preference preference) {
-        boolean isConfigured = UserPreferences.isUserConfigured(requireContext());
-        preference.setSummary(isConfigured ? "已配置" : "未配置");
-    }
-
     private String formatBytes(long bytes) {
         if (bytes < 1024) return bytes + " B";
         if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
@@ -235,9 +203,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
                 }
             }
-        } else if ("safe_mode".equals(key)) {
-            boolean safeMode = sharedPreferences.getBoolean(key, true);
-            UserPreferences.setSafeMode(requireContext(), safeMode);
         } else if ("auto_update".equals(key)) {
             boolean autoUpdate = sharedPreferences.getBoolean(key, true);
             UserPreferences.setAutoUpdate(requireContext(), autoUpdate);

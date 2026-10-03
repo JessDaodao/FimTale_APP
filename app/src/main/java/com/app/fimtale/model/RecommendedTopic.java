@@ -1,48 +1,13 @@
 package com.app.fimtale.model;
-
-import com.google.gson.annotations.SerializedName;
-
-// 这个类对应 EditorRecommendTopicArray 里的每一个元素
 public class RecommendedTopic {
-
-    @SerializedName("ID")
-    private int id;
-
-    @SerializedName("Title")
-    private String title;
-
-    @SerializedName("AuthorName")
-    private String authorName;
-
-    @SerializedName("Background")
-    private String background;
-
-    @SerializedName("RecommendWord")
-    private String recommendWord;
-
-    @SerializedName("RecommenderName")
-    private String recommenderName;
-
-    public int getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getAuthorName() {
-        return authorName;
-    }
-
-    public String getBackground() {
-        return background;
-    }
-    public String getRecommendWord() {
-        return recommendWord;
-    }
-
-    public String getRecommenderName() {
-        return recommenderName;
-    }
+    private Topic work;
+    private AuthorInfo user;
+    private String reason;
+    public Topic getWork() { return work; }
+    public int getId() { return work.getId(); }
+    public String getTitle() { return work.getTitle(); }
+    public String getAuthorName() { return work.getAuthorName(); }
+    public String getBackground() { return work.getBackground(); }
+    public String getRecommendWord() { return reason; }
+    public String getRecommenderName() { return user == null ? "" : user.getUserName(); }
 }

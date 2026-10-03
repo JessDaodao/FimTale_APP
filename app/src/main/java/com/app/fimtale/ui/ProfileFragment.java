@@ -26,7 +26,6 @@ import com.app.fimtale.LoginActivity;
 import com.app.fimtale.UserDetailActivity;
 import com.app.fimtale.R;
 import com.app.fimtale.SettingsActivity;
-import com.app.fimtale.model.MainPageResponse;
 import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.utils.DialogHelper;
 import com.app.fimtale.utils.UserPreferences;
@@ -47,7 +46,7 @@ public class ProfileFragment extends Fragment {
 
     private View contentLayout;
     private View emptyStateLayout;
-    private View btnConfigureApi;
+    private View btnLogin;
     private TextView tvWhyHow;
 
     @Nullable
@@ -62,7 +61,7 @@ public class ProfileFragment extends Fragment {
 
         contentLayout = view.findViewById(R.id.contentLayout);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
-        btnConfigureApi = view.findViewById(R.id.btnConfigureApi);
+        btnLogin = view.findViewById(R.id.btnLogin);
         tvWhyHow = view.findViewById(R.id.tvWhyHow);
 
         layoutUserHeader = view.findViewById(R.id.layoutUserHeader);
@@ -98,11 +97,9 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setupEmptyState() {
-        if (btnConfigureApi != null) {
-            btnConfigureApi.setOnClickListener(v -> {
-                DialogHelper.showApiCredentialsDialog(getContext(), () -> {
-                    checkCredentialsAndLoad();
-                });
+        if (btnLogin != null) {
+            btnLogin.setOnClickListener(v -> {
+                DialogHelper.openLogin(requireContext());
             });
         }
         if (tvWhyHow != null) {
@@ -113,13 +110,14 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-    private void checkCredentialsAndLoad() {
-        if (UserPreferences.isUserConfigured(requireContext())) {
+    private void loadContent() {
+        if (UserPreferences.isLoggedIn(requireContext())) {
             emptyStateLayout.setVisibility(View.GONE);
             contentLayout.setVisibility(View.VISIBLE);
             loadCachedUserInfo();
             checkLoginStatus();
         } else {
+            isLoggedIn = false;
             emptyStateLayout.setVisibility(View.VISIBLE);
             contentLayout.setVisibility(View.GONE);
         }
@@ -150,7 +148,7 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        checkCredentialsAndLoad();
+        loadContent();
     }
 
     private void loadCachedUserInfo() {
@@ -169,40 +167,22 @@ public class ProfileFragment extends Fragment {
     }
 
     private void checkLoginStatus() {
-        String apiKey = UserPreferences.getApiKey(requireContext());
-        String apiPass = UserPreferences.getApiPass(requireContext());
-        
-        RetrofitClient.getInstance().getHomePage(apiKey, apiPass).enqueue(new Callback<MainPageResponse>() {
-            @Override
-            public void onResponse(Call<MainPageResponse> call, Response<MainPageResponse> response) {
+        RetrofitClient.getInstance().getCurrentUser(null).enqueue(new Callback<com.app.fimtale.model.CurrentUser>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.CurrentUser> call, Response<com.app.fimtale.model.CurrentUser> response) {
                 if (!isAdded()) return;
-                if (response.isSuccessful() && response.body() != null) {
-                    MainPageResponse.CurrentUser currentUser = response.body().getCurrentUser();
-                    if (currentUser != null && currentUser.getId() != 0) {
-                        isLoggedIn = true;
-                        UserPreferences.saveUserId(requireContext(), String.valueOf(currentUser.getId()));
-                        UserPreferences.saveUserName(requireContext(), currentUser.getUserName());
-                        updateUserInfo(currentUser.getId(), currentUser.getUserName());
-                    } else {
-                        isLoggedIn = false;
-                        UserPreferences.saveUserId(requireContext(), "");
-                        UserPreferences.saveUserName(requireContext(), "");
-                        updateUserInfo(0, null);
-                    }
-                } else {
-                    if (!isLoggedIn) {
-                        updateUserInfo(0, null);
-                    }
+                com.app.fimtale.model.CurrentUser user = response.body();
+                if (response.isSuccessful() && user != null && user.id > 0) {
+                    isLoggedIn = true;
+                    UserPreferences.saveUserId(requireContext(), String.valueOf(user.id));
+                    UserPreferences.saveUserName(requireContext(), user.username);
+                    UserPreferences.saveAvatar(requireContext(), user.getAvatar());
+                    updateUserInfo(user.id, user.username);
+                } else if (response.code() == 401) {
+                    isLoggedIn = false;
+                    loadContent();
                 }
             }
-
-            @Override
-            public void onFailure(Call<MainPageResponse> call, Throwable t) {
-                if (!isAdded()) return;
-                if (!isLoggedIn) {
-                    updateUserInfo(0, null);
-                }
-            }
+            @Override public void onFailure(Call<com.app.fimtale.model.CurrentUser> call, Throwable t) {}
         });
     }
 
@@ -219,7 +199,7 @@ public class ProfileFragment extends Fragment {
 
             ivAvatar.setImageTintList(null);
 
-            String avatarUrl = "https://fimtale.com/upload/avatar/large/" + userId + ".png";
+            String avatarUrl = UserPreferences.getAvatar(requireContext());
 
             Glide.with(this)
                     .load(avatarUrl)

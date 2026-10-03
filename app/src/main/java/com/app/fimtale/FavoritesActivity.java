@@ -103,10 +103,8 @@ public class FavoritesActivity extends AppCompatActivity {
         if (isLoading) return;
         isLoading = true;
         swipeRefresh.setRefreshing(true);
-        String apiKey = UserPreferences.getApiKey(this);
-        String apiPass = UserPreferences.getApiPass(this);
 
-        RetrofitClient.getInstance().getFavorites(apiKey, apiPass, page).enqueue(new Callback<FavoritesResponse>() {
+        RetrofitClient.getInstance().getFavorites(page).enqueue(new Callback<FavoritesResponse>() {
             @Override
             public void onResponse(Call<FavoritesResponse> call, Response<FavoritesResponse> response) {
                 isLoading = false;
@@ -114,38 +112,34 @@ public class FavoritesActivity extends AppCompatActivity {
                 hideLoadingOverlay();
                 if (response.isSuccessful() && response.body() != null) {
                     FavoritesResponse data = response.body();
-                    if (data.getStatus() == 1) {
-                        if (page == 1) {
-                            topics.clear();
+                    if (page == 1) {
+                        topics.clear();
+                    }
+
+                    currentPage = page;
+                    totalPages = data.getTotalPage();
+
+                    int startInsertPos = topics.size();
+                    List<TopicViewItem> newItems = new ArrayList<>();
+                    if (data.getTopicArray() != null) {
+                        for (Topic topic : data.getTopicArray()) {
+                            newItems.add(new TopicViewItem(topic));
                         }
-                        
-                        currentPage = data.getPage();
-                        totalPages = data.getTotalPage();
-                        
-                        int startInsertPos = topics.size();
-                        List<TopicViewItem> newItems = new ArrayList<>();
-                        if (data.getTopicArray() != null) {
-                            for (Topic topic : data.getTopicArray()) {
-                                newItems.add(new TopicViewItem(topic));
-                            }
-                        }
-                        topics.addAll(newItems);
-                        
-                        if (page == 1) {
-                            adapter.notifyDataSetChanged();
-                        } else {
-                            adapter.notifyItemRangeInserted(startInsertPos, newItems.size());
-                        }
-                        
-                        if (page == 1) {
-                            RecyclerView recyclerView = findViewById(R.id.recyclerView);
-                            recyclerView.scrollToPosition(0);
-                        }
+                    }
+                    topics.addAll(newItems);
+
+                    if (page == 1) {
+                        adapter.notifyDataSetChanged();
                     } else {
-                        Toast.makeText(FavoritesActivity.this, "加载失败: 状态错误", Toast.LENGTH_SHORT).show();
+                        adapter.notifyItemRangeInserted(startInsertPos, newItems.size());
+                    }
+
+                    if (page == 1) {
+                        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+                        recyclerView.scrollToPosition(0);
                     }
                 } else {
-                    Toast.makeText(FavoritesActivity.this, "加载失败: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(FavoritesActivity.this, com.app.fimtale.network.ApiErrors.message(response), Toast.LENGTH_SHORT).show();
                 }
             }
 

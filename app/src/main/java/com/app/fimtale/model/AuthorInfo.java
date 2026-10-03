@@ -1,20 +1,11 @@
 package com.app.fimtale.model;
-
 import com.google.gson.annotations.SerializedName;
-
+import com.app.fimtale.network.SiteUrls;
 public class AuthorInfo {
-    @SerializedName("ID")
-    private int id;
-    @SerializedName("UserName")
-    private String userName;
-    @SerializedName("Background")
-    private String background;
-
+    @SerializedName("user_id") private int id;
+    private String username;
+    private String avatar;
     public int getId() { return id; }
-    public String getUserName() { return userName; }
-    public String getBackground() { return background; }
-    
-    public void setId(int id) { this.id = id; }
-    public void setUserName(String userName) { this.userName = userName; }
-    public void setBackground(String background) { this.background = background; }
+    public String getUserName() { return username; }
+    public String getAvatar() { return SiteUrls.media(avatar); }
 }

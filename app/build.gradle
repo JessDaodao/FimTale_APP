@@ -2,7 +2,18 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+def siteUrl = providers.gradleProperty('fimtaleSiteUrl').getOrElse('https://fimtale.dev')
+def apiUrl = providers.gradleProperty('fimtaleApiUrl').getOrElse('https://api.fimtale.dev/api/')
+[siteUrl, apiUrl].each { value ->
+    def uri = new URI(value)
+    if (uri.scheme != 'https' || !uri.host || uri.userInfo || uri.query || uri.fragment) {
+        throw new GradleException('FimTale URLs must be absolute HTTPS URLs without credentials, queries or fragments')
+    }
+}
+
 android {
+    buildFeatures { buildConfig true }
+
     namespace 'com.app.fimtale'
     compileSdk 34
 
@@ -10,8 +21,11 @@ android {
         applicationId "com.app.fimtale"
         minSdk 31
         targetSdk 34
-        versionCode 6
-        versionName "0.5.0314B"
+        versionCode 7
+        versionName "0.6.0"
+
+        buildConfigField 'String', 'SITE_URL', groovy.json.JsonOutput.toJson(siteUrl.replaceAll('/+$', ''))
+        buildConfigField 'String', 'API_URL', groovy.json.JsonOutput.toJson(apiUrl.replaceAll('/+$', '') + '/')
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

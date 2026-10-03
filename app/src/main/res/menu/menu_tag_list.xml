@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_filter"
-        android:icon="@drawable/ic_filter_list"
-        android:title="过滤器"
+        android:icon="@drawable/ic_search"
+        android:title="搜索标签"
         app:showAsAction="ifRoom" />
 </menu>

@@ -2,7 +2,6 @@ package com.app.fimtale.model;
 
 import com.app.fimtale.model.RecommendedTopic;
 import com.app.fimtale.model.Topic;
-import java.util.Random;
 
 public class TopicViewItem {
     private int id;
@@ -21,12 +20,8 @@ public class TopicViewItem {
     private String favoriteCount;
 
     public TopicViewItem(RecommendedTopic topic) {
-        this.id = topic.getId();
-        this.title = topic.getTitle();
-        this.authorName = topic.getAuthorName();
-        this.background = topic.getBackground();
+        this(topic.getWork());
         this.intro = topic.getRecommendWord();
-        generateRandomStats();
     }
 
     public TopicViewItem(Topic topic) {
@@ -43,26 +38,6 @@ public class TopicViewItem {
         this.favoriteCount = String.valueOf(topic.getFollowers());
     }
     
-    private void generateRandomStats() {
-        Random random = new Random();
-        
-        // 字数: 100 - 8000
-        int words = 100 + random.nextInt(7900);
-        this.wordCount = String.valueOf(words);
-        
-        // 阅读量: 100 - 8000
-        int views = 100 + random.nextInt(7900);
-        this.viewCount = String.valueOf(views);
-        
-        // 评论量: 0 - 8000
-        int comments = random.nextInt(8000);
-        this.commentCount = String.valueOf(comments);
-        
-        // 收藏量: 0 - 8000
-        int favorites = random.nextInt(8000);
-        this.favoriteCount = String.valueOf(favorites);
-    }
-
     public int getId() { return id; }
     public String getTitle() { return title; }
     public String getAuthorName() { return authorName; }
