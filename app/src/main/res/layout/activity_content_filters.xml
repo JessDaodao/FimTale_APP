@@ -7,8 +7,15 @@
         android:clipToPadding="false" android:fillViewport="true">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:padding="20dp">
-            <ProgressBar android:id="@+id/filterProgress" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal" android:visibility="gone" />
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/filterProgress"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:indicatorSize="48dp"
+                app:trackThickness="4dp" />
             <TextView android:id="@+id/filterCurrent" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceTitleMedium" android:textColor="?attr/colorOnSurface" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"

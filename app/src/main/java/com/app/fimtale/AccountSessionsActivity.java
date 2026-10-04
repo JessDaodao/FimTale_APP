@@ -10,7 +10,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -22,6 +21,7 @@ import com.app.fimtale.model.UserSession;
 import com.app.fimtale.network.ApiErrors;
 import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.utils.UserPreferences;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 
@@ -39,7 +39,7 @@ import retrofit2.Response;
 public class AccountSessionsActivity extends AppCompatActivity {
     private TextView summary, empty;
     private LinearLayout sessions;
-    private ProgressBar progress;
+    private CircularProgressIndicator progress;
     private TextInputState tokenView;
     private Call<List<UserSession>> sessionsCall;
     private Call<String> createTokenCall;

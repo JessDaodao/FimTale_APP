@@ -66,6 +66,7 @@ import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.ui.ReaderCommentsPanel;
 import com.app.fimtale.utils.UserPreferences;
 import android.widget.ProgressBar;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import io.noties.markwon.Markwon;
 import io.noties.markwon.ext.tables.TablePlugin;
@@ -1802,7 +1803,7 @@ public class ReaderActivity extends AppCompatActivity {
                 }
                 loadingHolder.tvLoading.setTextColor(textColor);
                 if (loadingHolder.pbLoading != null) {
-                    loadingHolder.pbLoading.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(textColor));
+                    loadingHolder.pbLoading.setIndicatorColor(textColor);
                 }
                 
                 if (page.type == ReaderPage.TYPE_LOADING) {
@@ -1901,7 +1902,7 @@ public class ReaderActivity extends AppCompatActivity {
 
         class LoadingViewHolder extends RecyclerView.ViewHolder {
             TextView tvLoading;
-            ProgressBar pbLoading;
+            CircularProgressIndicator pbLoading;
             LoadingViewHolder(View itemView) {
                 super(itemView);
                 tvLoading = itemView.findViewById(R.id.tvLoading);
