@@ -2,6 +2,8 @@ package com.app.fimtale.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,15 +117,7 @@ public class UserPreferences {
             history = history.subList(0, MAX_SEARCH_HISTORY);
         }
         
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < history.size(); i++) {
-            sb.append(history.get(i));
-            if (i < history.size() - 1) {
-                sb.append(",");
-            }
-        }
-        
-        getPrefs(context).edit().putString(KEY_SEARCH_HISTORY, sb.toString()).apply();
+        saveSearchHistoryList(context, history);
     }
 
     public static List<String> getSearchHistory(Context context) {
@@ -131,7 +125,20 @@ public class UserPreferences {
         if (historyStr.isEmpty()) {
             return new ArrayList<>();
         }
-        return new ArrayList<>(Arrays.asList(historyStr.split(",")));
+        if (historyStr.startsWith("[")) {
+            try {
+                JSONArray values = new JSONArray(historyStr);
+                List<String> history = new ArrayList<>();
+                for (int i = 0; i < values.length(); i++) {
+                    String value = values.optString(i, "").trim();
+                    if (!value.isEmpty()) history.add(value);
+                }
+                return history;
+            } catch (JSONException ignored) {
+                // Fall through to the legacy comma-delimited format.
+            }
+        }
+        return new ArrayList<>(Arrays.asList(historyStr.split(",", -1)));
     }
 
     public static void clearSearchHistory(Context context) {
@@ -141,15 +148,13 @@ public class UserPreferences {
     public static void removeSearchHistoryItem(Context context, String query) {
         List<String> history = getSearchHistory(context);
         history.remove(query);
-        
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < history.size(); i++) {
-            sb.append(history.get(i));
-            if (i < history.size() - 1) {
-                sb.append(",");
-            }
-        }
-        getPrefs(context).edit().putString(KEY_SEARCH_HISTORY, sb.toString()).apply();
+        saveSearchHistoryList(context, history);
+    }
+
+    private static void saveSearchHistoryList(Context context, List<String> history) {
+        JSONArray values = new JSONArray();
+        for (String value : history) values.put(value);
+        getPrefs(context).edit().putString(KEY_SEARCH_HISTORY, values.toString()).apply();
     }
 
     public static long getMaxCacheSize(Context context) {

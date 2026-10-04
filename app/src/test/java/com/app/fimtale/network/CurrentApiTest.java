@@ -146,6 +146,7 @@ public class CurrentApiTest {
         assertFalse(SiteUrls.isSite("https://fimtale.dev.evil.example/"));
         assertFalse(SiteUrls.isApi(SiteUrls.SITE + "/api/user/get_user"));
         assertNull(SiteUrls.media("javascript:alert(1)"));
+        assertNull(SiteUrls.media("http://img.example/avatar.png"));
         assertEquals("type:2", new JsonParser().parse(SearchQuery.type(2)).getAsJsonObject().get("filter").getAsString());
     }
     @Test public void workViewerReadsVotesAndAllFavoriteFolders() throws Exception {

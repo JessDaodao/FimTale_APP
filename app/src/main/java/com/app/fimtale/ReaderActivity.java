@@ -123,6 +123,7 @@ public class ReaderActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            if (level < 0 || scale <= 0) return;
             int batteryPct = (int) (level * 100 / (float) scale);
             if (tvBatteryLevel != null) {
                 tvBatteryLevel.setText(batteryPct + "%");
@@ -139,6 +140,7 @@ public class ReaderActivity extends AppCompatActivity {
             }
         }
     };
+    private boolean batteryReceiverRegistered;
 
     private LinearLayout settingsPanel;
     private LinearLayout chapterListPanel;
@@ -580,6 +582,7 @@ public class ReaderActivity extends AppCompatActivity {
         
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(batteryReceiver, ifilter);
+        batteryReceiverRegistered = true;
         
         progressSaveHandler.postDelayed(progressSaveRunnable, PROGRESS_SAVE_INTERVAL);
 
@@ -1006,9 +1009,12 @@ public class ReaderActivity extends AppCompatActivity {
         if (readerCommentsSheetPanel != null) readerCommentsSheetPanel.close();
         if (readerCommentsSheet != null) readerCommentsSheet.dismiss();
         editorAccess.close();
-        super.onDestroy();
         progressSaveHandler.removeCallbacks(progressSaveRunnable);
-        unregisterReceiver(batteryReceiver);
+        if (batteryReceiverRegistered) {
+            unregisterReceiver(batteryReceiver);
+            batteryReceiverRegistered = false;
+        }
+        super.onDestroy();
     }
 
     private void checkAndShowGuide() {

@@ -112,7 +112,9 @@ public class CacheManager {
         executor.execute(() -> {
             dao.deleteWorkMenu(workId);
             dao.deleteWorkChapters(workId);
-            mainHandler.post(onComplete);
+            if (onComplete != null) {
+                mainHandler.post(onComplete);
+            }
         });
     }
 

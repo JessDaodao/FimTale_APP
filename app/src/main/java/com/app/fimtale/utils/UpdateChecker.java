@@ -26,15 +26,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -43,6 +38,8 @@ import retrofit2.Response;
 public class UpdateChecker {
 
     private static final String UPDATE_URL = "https://ftapp.eqad.fun/update/";
+    private static final String UPDATE_HOST = "ftapp.eqad.fun";
+    private static final ExecutorService DOWNLOAD_EXECUTOR = Executors.newSingleThreadExecutor();
 
     public static void checkUpdate(Context context, boolean manual) {
         RetrofitClient.getUpdateService().checkUpdate(UPDATE_URL).enqueue(new Callback<UpdateResponse>() {
@@ -103,7 +100,12 @@ public class UpdateChecker {
     }
 
     private static void downloadAndInstallApk(Context context, String downloadUrl) {
-        ((Activity) context).runOnUiThread(() -> {
+        if (!(context instanceof Activity) || !isTrustedDownloadUrl(downloadUrl)) {
+            Toast.makeText(context, "更新地址无效", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Activity activity = (Activity) context;
+        activity.runOnUiThread(() -> {
             View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_update_progress, null);
             LinearProgressIndicator progressIndicator = dialogView.findViewById(R.id.progress_indicator);
             TextView tvPercent = dialogView.findViewById(R.id.tv_progress_percent);
@@ -115,60 +117,70 @@ public class UpdateChecker {
                     .create();
             progressDialog.show();
 
-            Executors.newSingleThreadExecutor().execute(() -> {
+            DOWNLOAD_EXECUTOR.execute(() -> {
+                HttpURLConnection connection = null;
                 try {
-                    TrustManager[] trustAllCerts = new TrustManager[]{
-                            new X509TrustManager() {
-                                public X509Certificate[] getAcceptedIssuers() { return null; }
-                                public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                                public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-                            }
-                    };
-
-                    SSLContext sc = SSLContext.getInstance("SSL");
-                    sc.init(null, trustAllCerts, new SecureRandom());
-                    HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-                    HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-
                     URL url = new URL(downloadUrl);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setConnectTimeout(15_000);
+                    connection.setReadTimeout(30_000);
+                    connection.setInstanceFollowRedirects(false);
                     connection.connect();
+                    if (connection.getResponseCode() < 200 || connection.getResponseCode() >= 300) {
+                        throw new java.io.IOException("服务器返回 HTTP " + connection.getResponseCode());
+                    }
 
                     int fileLength = connection.getContentLength();
-                    File apkFile = new File(context.getExternalFilesDir(null), "update.apk");
-                    InputStream inputStream = connection.getInputStream();
-                    FileOutputStream outputStream = new FileOutputStream(apkFile);
+                    File externalFilesDir = context.getExternalFilesDir(null);
+                    if (externalFilesDir == null) throw new java.io.IOException("无法访问应用存储");
+                    File apkFile = new File(externalFilesDir, "update.apk");
 
                     byte[] buffer = new byte[4096];
                     int len;
                     long total = 0;
-                    while ((len = inputStream.read(buffer)) != -1) {
-                        total += len;
-                        if (fileLength > 0) {
-                            int progress = (int) (total * 100 / fileLength);
-                            ((Activity) context).runOnUiThread(() -> {
-                                progressIndicator.setProgress(progress);
-                                tvPercent.setText(progress + "%");
-                            });
+                    try (InputStream inputStream = connection.getInputStream();
+                         FileOutputStream outputStream = new FileOutputStream(apkFile)) {
+                        while ((len = inputStream.read(buffer)) != -1) {
+                            total += len;
+                            if (fileLength > 0) {
+                                int progress = (int) (total * 100 / fileLength);
+                                activity.runOnUiThread(() -> {
+                                    progressIndicator.setProgress(progress);
+                                    tvPercent.setText(progress + "%");
+                                });
+                            }
+                            outputStream.write(buffer, 0, len);
                         }
-                        outputStream.write(buffer, 0, len);
                     }
-                    outputStream.close();
-                    inputStream.close();
 
-                    ((Activity) context).runOnUiThread(() -> {
+                    activity.runOnUiThread(() -> {
                         progressDialog.dismiss();
                         installApk(context, apkFile);
                     });
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    ((Activity) context).runOnUiThread(() -> {
+                    activity.runOnUiThread(() -> {
                         progressDialog.dismiss();
                         Toast.makeText(context, "下载失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     });
+                } finally {
+                    if (connection != null) connection.disconnect();
                 }
             });
         });
+    }
+
+    private static boolean isTrustedDownloadUrl(String downloadUrl) {
+        if (downloadUrl == null || downloadUrl.isEmpty()) return false;
+        try {
+            URI uri = URI.create(downloadUrl);
+            return "https".equalsIgnoreCase(uri.getScheme())
+                    && UPDATE_HOST.equalsIgnoreCase(uri.getHost())
+                    && uri.getUserInfo() == null
+                    && uri.getQuery() == null
+                    && uri.getFragment() == null;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private static void installApk(Context context, File apkFile) {

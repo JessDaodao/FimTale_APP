@@ -1,6 +1,5 @@
 package com.app.fimtale;
 
-import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -47,7 +46,6 @@ public class SearchActivity extends AppCompatActivity {
     public static final String EXTRA_QUERY = "query";
 
     private MaterialToolbar toolbar;
-    private View toolbarContainer;
     private TextInputEditText searchInput;
     private MaterialButton searchButton;
     private SkeletonRefreshLayout swipeRefreshLayout;
@@ -67,7 +65,6 @@ public class SearchActivity extends AppCompatActivity {
     private int totalPages = 1;
     private boolean isLoading;
     private String currentSortBy = "";
-    private ObjectAnimator elevationAnimator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,11 +88,10 @@ public class SearchActivity extends AppCompatActivity {
 
     private void setupViews() {
         toolbar = findViewById(R.id.toolbar);
-        toolbarContainer = findViewById(R.id.toolbarContainer);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("搜索");
+            getSupportActionBar().setTitle("");
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -166,17 +162,8 @@ public class SearchActivity extends AppCompatActivity {
             else showHistory();
         });
 
-        float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4,
-                getResources().getDisplayMetrics());
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override public void onScrolled(@NonNull RecyclerView view, int dx, int dy) {
-                boolean elevated = view.computeVerticalScrollOffset() > 0;
-                if (elevated != (toolbarContainer.getElevation() > 0)) {
-                    if (elevationAnimator != null) elevationAnimator.cancel();
-                    elevationAnimator = ObjectAnimator.ofFloat(toolbarContainer, "cardElevation",
-                            toolbarContainer.getElevation(), elevated ? targetElevation : 0f);
-                    elevationAnimator.setDuration(200).start();
-                }
                 if (dy <= 0 || isLoading || currentPage >= totalPages) return;
                 LinearLayoutManager manager = (LinearLayoutManager) view.getLayoutManager();
                 if (manager != null && manager.findLastVisibleItemPosition() >= manager.getItemCount() - 3) {
@@ -308,7 +295,6 @@ public class SearchActivity extends AppCompatActivity {
 
     @Override protected void onDestroy() {
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
-        if (elevationAnimator != null) elevationAnimator.cancel();
         super.onDestroy();
     }
 }

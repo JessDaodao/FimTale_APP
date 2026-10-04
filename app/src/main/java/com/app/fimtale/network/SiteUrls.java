@@ -23,7 +23,8 @@ public final class SiteUrls {
         if (path == null || path.isEmpty()) return null;
         try {
             URI uri = URI.create(SITE + "/").resolve(path);
-            return "https".equals(uri.getScheme()) || "http".equals(uri.getScheme()) ? uri.toString() : null;
+            return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null
+                    && uri.getUserInfo() == null ? uri.toString() : null;
         } catch (IllegalArgumentException e) { return null; }
     }
 }
