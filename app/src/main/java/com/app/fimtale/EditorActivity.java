@@ -29,6 +29,8 @@ import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 /** Native authoring. WebView is used only for login and the captcha challenge. */
 public class EditorActivity extends AppCompatActivity {
@@ -43,6 +45,8 @@ public class EditorActivity extends AppCompatActivity {
     private boolean metadataVisible;
     private int boundVersion = -1;
     private TagPickerDialog tagPicker;
+    private BottomSheetDialog metadataSheet;
+    private View metadataSheetView;
     private final ActivityResultLauncher<Intent> login = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (UserPreferences.isLoggedIn(this)) {
@@ -81,7 +85,7 @@ public class EditorActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> leave());
         toolbar.setOnMenuItemClickListener(item -> {
             if (model.busy) { toast("请等待当前操作完成"); return true; }
-            if (item.getItemId() == R.id.action_editor_metadata) { showMetadata(!metadataVisible); }
+            if (item.getItemId() == R.id.action_editor_metadata) { showMetadata(true); }
             else if (item.getItemId() == R.id.action_editor_submit) submit();
             else if (item.getItemId() == R.id.action_save_draft) { collect(); model.saveDraft(() -> toast(model.message)); }
             else if (item.getItemId() == R.id.action_draft_conflict) {
@@ -252,15 +256,121 @@ public class EditorActivity extends AppCompatActivity {
         toolbar.getMenu().findItem(R.id.action_editor_submit).setTitle((model.isChapter() ? model.chapterId > 0 : model.workId > 0) ? "保存" : "发表");
     }
     private void showMetadata(boolean visible) {
-        if (!model.ready || model.busy) return;
+        if (!visible) {
+            if (metadataSheet != null) metadataSheet.dismiss();
+            else metadataVisible = false;
+            return;
+        }
+        if (!model.ready || model.busy || (metadataSheet != null && metadataSheet.isShowing())) return;
         collect();
         View focused = getCurrentFocus();
         if (focused != null) {
             ((android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focused.getWindowToken(), 0);
             focused.clearFocus();
         }
-        metadataVisible = visible; render();
-        model.saveDraft(null);
+        metadataSheetView = getLayoutInflater().inflate(R.layout.dialog_editor_metadata, null);
+        bindMetadataSheet(metadataSheetView);
+        metadataSheet = new BottomSheetDialog(this);
+        metadataSheet.setContentView(metadataSheetView);
+        metadataSheet.setOnShowListener(dialog -> {
+            metadataSheet.getBehavior().setSkipCollapsed(true);
+            metadataSheet.getBehavior().setState(BottomSheetBehavior.STATE_EXPANDED);
+        });
+        metadataSheet.setOnDismissListener(dialog -> {
+            copyMetadataFromSheet();
+            metadataSheet = null;
+            metadataSheetView = null;
+            metadataVisible = false;
+            model.saveDraft(null);
+        });
+        metadataSheet.show();
+    }
+
+    private void bindMetadataSheet(View sheet) {
+        EditText sheetTitle = sheet.findViewById(R.id.editorTitle);
+        EditText sheetIntro = sheet.findViewById(R.id.editorIntro);
+        EditText sheetCover = sheet.findViewById(R.id.editorCover);
+        EditText sheetOriginLink = sheet.findViewById(R.id.editorOriginLink);
+        EditText sheetPrequel = sheet.findViewById(R.id.editorPrequel);
+        Spinner sheetType = sheet.findViewById(R.id.editorType);
+        Spinner sheetLength = sheet.findViewById(R.id.editorLength);
+        Spinner sheetRating = sheet.findViewById(R.id.editorRating);
+        Spinner sheetOrigin = sheet.findViewById(R.id.editorOrigin);
+        Spinner sheetPublish = sheet.findViewById(R.id.editorPublish);
+        boolean announcement = model.allowAnnouncement || (model.document != null && model.document.work.type == 4);
+        options(sheetType, announcement ? new String[]{"文章", "图集", "帖子", "公告"} : new String[]{"文章", "图集", "帖子"});
+        options(sheetLength, "未选择", "长篇", "中篇", "短篇");
+        options(sheetRating, "未选择", "Everyone", "Teen", "Restricted");
+        options(sheetOrigin, "未选择", "原创", "翻译", "转载");
+        options(sheetPublish, "未选择", "连载中", "已完结", "已暂停", "已弃坑");
+        binding = true;
+        sheetTitle.setText(title.getText()); sheetIntro.setText(intro.getText()); sheetCover.setText(cover.getText());
+        sheetOriginLink.setText(originLink.getText()); sheetPrequel.setText(prequel.getText());
+        sheetType.setSelection(type.getSelectedItemPosition()); sheetLength.setSelection(length.getSelectedItemPosition());
+        sheetRating.setSelection(rating.getSelectedItemPosition()); sheetOrigin.setSelection(origin.getSelectedItemPosition());
+        sheetPublish.setSelection(publish.getSelectedItemPosition());
+        sheet.findViewById(R.id.editorWorkFields).setVisibility(model.isChapter() ? View.GONE : View.VISIBLE);
+        ((TextView) sheet.findViewById(R.id.editorHint)).setText(model.isChapter()
+                ? "编辑当前章节的正文，提交后将更新到作品目录。"
+                : "这里编辑作品序言（长简介）。章节正文可在发表作品后，通过作品详情页的编辑菜单添加。");
+        ((TextView) sheet.findViewById(R.id.editorSubmit)).setText(model.isChapter()
+                ? (model.chapterId > 0 ? "保存章节修改" : "发表章节")
+                : (model.workId > 0 ? "保存作品修改" : "发表作品"));
+        ((MaterialCheckBox) sheet.findViewById(R.id.editorHandbook)).setChecked(((MaterialCheckBox) findViewById(R.id.editorHandbook)).isChecked());
+        binding = false;
+        TextWatcher watcher = new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) { copyMetadataFromSheet(); }
+            public void afterTextChanged(Editable s) {}
+        };
+        for (EditText field : new EditText[]{sheetTitle, sheetIntro, sheetCover, sheetOriginLink, sheetPrequel}) field.addTextChangedListener(watcher);
+        android.widget.AdapterView.OnItemSelectedListener selected = new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> p, View v, int pos, long id) { if (!binding) copyMetadataFromSheet(); }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> p) {}
+        };
+        for (Spinner spinner : new Spinner[]{sheetType, sheetLength, sheetRating, sheetOrigin, sheetPublish}) spinner.setOnItemSelectedListener(selected);
+        ((MaterialCheckBox) sheet.findViewById(R.id.editorHandbook)).setOnCheckedChangeListener((button, checked) -> { if (!binding) copyMetadataFromSheet(); });
+        sheet.findViewById(R.id.editorAddTags).setOnClickListener(v -> {
+            tagPicker = new TagPickerDialog(this, model.document.tags, model.document.tagGroups, () -> { model.changed(); renderTagsIn(sheet); });
+            tagPicker.show();
+        });
+        sheet.findViewById(R.id.editorOpenHandbook).setOnClickListener(v -> DialogHelper.openSite(this, "/work/4"));
+        sheet.findViewById(R.id.editorUploadCover).setOnClickListener(v -> coverPicker.launch("image/*"));
+        sheet.findViewById(R.id.editorMetadataDone).setOnClickListener(v -> showMetadata(false));
+        renderTagsIn(sheet);
+    }
+
+    private void copyMetadataFromSheet() {
+        if (binding || metadataSheetView == null || model.document == null) return;
+        View sheet = metadataSheetView;
+        EditText sheetTitle = sheet.findViewById(R.id.editorTitle);
+        EditText sheetIntro = sheet.findViewById(R.id.editorIntro);
+        EditText sheetCover = sheet.findViewById(R.id.editorCover);
+        EditText sheetOriginLink = sheet.findViewById(R.id.editorOriginLink);
+        EditText sheetPrequel = sheet.findViewById(R.id.editorPrequel);
+        Spinner sheetType = sheet.findViewById(R.id.editorType);
+        Spinner sheetLength = sheet.findViewById(R.id.editorLength);
+        Spinner sheetRating = sheet.findViewById(R.id.editorRating);
+        Spinner sheetOrigin = sheet.findViewById(R.id.editorOrigin);
+        Spinner sheetPublish = sheet.findViewById(R.id.editorPublish);
+        binding = true;
+        title.setText(sheetTitle.getText()); intro.setText(sheetIntro.getText()); cover.setText(sheetCover.getText());
+        originLink.setText(sheetOriginLink.getText()); prequel.setText(sheetPrequel.getText());
+        type.setSelection(sheetType.getSelectedItemPosition()); length.setSelection(sheetLength.getSelectedItemPosition());
+        rating.setSelection(sheetRating.getSelectedItemPosition()); origin.setSelection(sheetOrigin.getSelectedItemPosition());
+        publish.setSelection(sheetPublish.getSelectedItemPosition());
+        ((MaterialCheckBox) findViewById(R.id.editorHandbook)).setChecked(((MaterialCheckBox) sheet.findViewById(R.id.editorHandbook)).isChecked());
+        binding = false;
+        collect();
+    }
+
+    private void renderTagsIn(View root) {
+        ChipGroup group = root.findViewById(R.id.editorTags); group.removeAllViews();
+        model.document.tags.forEach((id, name) -> {
+            Chip chip = new Chip(this); chip.setText(name); chip.setCloseIconVisible(true);
+            chip.setOnCloseIconClickListener(v -> { if (!model.busy) { model.document.tags.remove(id); model.document.tagGroups.remove(id); model.changed(); renderTagsIn(root); } });
+            group.addView(chip);
+        });
     }
     private void renderTags() {
         ChipGroup group = findViewById(R.id.editorTags); group.removeAllViews();
@@ -278,16 +388,16 @@ public class EditorActivity extends AppCompatActivity {
         if (!model.ready || model.busy) return;
         title.setError(null); intro.setError(null); prequel.setError(null);
         if ((model.isChapter() || model.document.work.type != 3) && WorkInput.blank(text(title))) {
-            showMetadata(true); title.setError("请填写标题"); title.requestFocus(); return;
+            showMetadataError(R.id.editorTitle, "请填写标题"); return;
         }
         if (!model.isChapter()) {
             if (model.document.work.type != 3 && WorkInput.blank(text(intro))) {
-                showMetadata(true); intro.setError("请填写简介"); intro.requestFocus(); return;
+                showMetadataError(R.id.editorIntro, "请填写简介"); return;
             }
             try {
                 String value = model.document.prequelText.trim();
                 model.document.work.prequelId = value.isEmpty() ? 0 : Integer.valueOf(value);
-            } catch (NumberFormatException e) { showMetadata(true); prequel.setError("请输入有效的作品 ID"); prequel.requestFocus(); return; }
+            } catch (NumberFormatException e) { showMetadataError(R.id.editorPrequel, "请输入有效的作品 ID"); return; }
             if (!model.document.handbookAccepted) { showMetadata(true); toast("请先阅读并同意用户手册"); return; }
         }
         if (model.document.submissionUncertain) {
@@ -296,6 +406,13 @@ public class EditorActivity extends AppCompatActivity {
                     .setNegativeButton("取消", null).setNeutralButton("查看已发表", (d, w) -> checkPublished())
                     .setPositiveButton("已核对，重新提交", (d, w) -> model.prepareSubmit()).show();
         } else model.prepareSubmit();
+    }
+    private void showMetadataError(int fieldId, String message) {
+        showMetadata(true);
+        if (metadataSheetView != null) {
+            EditText field = metadataSheetView.findViewById(fieldId);
+            if (field != null) { field.setError(message); field.requestFocus(); }
+        }
     }
     private void checkPublished() {
         if (model.workId > 0) DialogHelper.openSite(this, "/work/" + model.workId);
@@ -315,6 +432,7 @@ public class EditorActivity extends AppCompatActivity {
     }
     private void leave() {
         if (model.busy) { toast("请等待当前操作完成，避免丢失提交结果"); return; }
+        if (metadataSheet != null && metadataSheet.isShowing()) { metadataSheet.dismiss(); return; }
         if (metadataVisible) { showMetadata(false); return; }
         collect(); model.saveDraft(this::finish);
     }
@@ -323,5 +441,9 @@ public class EditorActivity extends AppCompatActivity {
     @Override protected void onSaveInstanceState(Bundle out) {
         out.putBoolean("metadata_visible", metadataVisible); out.putBoolean("source_visible", body.isSourceVisible()); super.onSaveInstanceState(out);
     }
-    @Override protected void onDestroy() { if (tagPicker != null) tagPicker.dismiss(); super.onDestroy(); }
+    @Override protected void onDestroy() {
+        if (tagPicker != null) tagPicker.dismiss();
+        if (metadataSheet != null) metadataSheet.dismiss();
+        super.onDestroy();
+    }
 }

@@ -1,7 +1,6 @@
 package com.app.fimtale;
 
 import android.animation.ObjectAnimator;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -20,17 +19,16 @@ import com.app.fimtale.model.TagInfo;
 import com.app.fimtale.model.Topic;
 import com.app.fimtale.model.TopicViewItem;
 import com.app.fimtale.network.RetrofitClient;
-import com.app.fimtale.utils.UserPreferences;
-import com.google.android.material.progressindicator.CircularProgressIndicator;
-import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
+import android.widget.TextView;
+import androidx.recyclerview.widget.ConcatAdapter;
+import com.app.fimtale.adapter.LoadingCardAdapter;
+import com.app.fimtale.ui.ShimmerSkeletonView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -42,12 +40,14 @@ public class TagArticlesActivity extends AppCompatActivity {
 
     public static final String EXTRA_TAG_NAME = "tag_name";
 
-    private AppBarLayout appBarLayout;
-    private CollapsingToolbarLayout collapsingToolbarLayout;
     private MaterialToolbar toolbar;
     private MaterialCardView toolbarContainer;
     private RecyclerView recyclerView;
-    private CircularProgressIndicator progressBar;
+    private ShimmerSkeletonView loadingSkeleton;
+    private LoadingCardAdapter loadingFooter;
+    private TextView loadingStatus;
+    private Call<TopicListResponse> topicsCall;
+    private Call<TagInfo> tagInfoCall;
     private TopicAdapter topicAdapter;
     private List<TopicViewItem> topicViewItemList = new ArrayList<>();
     
@@ -80,7 +80,7 @@ public class TagArticlesActivity extends AppCompatActivity {
         }
 
         setupViews();
-        fetchTagTopics();
+        fetchTagTopics(1);
     }
 
     private void setupViews() {
@@ -88,21 +88,25 @@ public class TagArticlesActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(true);
+            // Keep the ActionBar's title in sync so window updates cannot replace it.
+            getSupportActionBar().setTitle("# " + tagName);
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        appBarLayout = findViewById(R.id.app_bar);
-        collapsingToolbarLayout = findViewById(R.id.toolbar_layout);
         toolbarContainer = findViewById(R.id.toolbarContainer);
-        
-        toolbar.setTitle("# " + tagName);
 
         recyclerView = findViewById(R.id.recyclerView);
-        progressBar = findViewById(R.id.progressBar);
+        loadingSkeleton = findViewById(R.id.loadingSkeleton);
+        loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.ARTICLES);
+        loadingFooter = new LoadingCardAdapter();
+        loadingStatus = findViewById(R.id.loadingStatus);
+        loadingStatus.setOnClickListener(v -> fetchTagTopics(1));
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         topicAdapter = new TopicAdapter(topicViewItemList);
-        recyclerView.setAdapter(topicAdapter);
+        recyclerView.setAdapter(new ConcatAdapter(topicAdapter, loadingFooter));
+        recyclerView.setItemAnimator(null);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -131,8 +135,9 @@ public class TagArticlesActivity extends AppCompatActivity {
                         if (!isLoading && (visibleItemCount + firstVisibleItemPosition) >= totalItemCount
                                 && firstVisibleItemPosition >= 0
                                 && currentPage < totalPages) {
-                            currentPage++;
-                            fetchTagTopics();
+                            recyclerView.post(() -> {
+                                if (!isFinishing() && !isDestroyed() && !isLoading && currentPage < totalPages) fetchTagTopics(currentPage + 1);
+                            });
                         }
                     }
                 }
@@ -184,7 +189,10 @@ public class TagArticlesActivity extends AppCompatActivity {
                     currentSortBy = values[which];
                     dialog.dismiss();
                     currentPage = 1;
-                    fetchTagTopics();
+                    totalPages = 1;
+                    topicViewItemList.clear();
+                    topicAdapter.notifyDataSetChanged();
+                    fetchTagTopics(1);
                 })
                 .show();
     }
@@ -202,83 +210,76 @@ public class TagArticlesActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void fetchTagTopics() {
-        if (currentPage == 1 && workType == 0 && tagInfo == null) {
-            RetrofitClient.getInstance().getTag(tagName).enqueue(new Callback<TagInfo>() {
+    private void fetchTagTopics(int page) {
+        if (isLoading && page != 1) return;
+        if (topicsCall != null) topicsCall.cancel();
+        isLoading = true;
+        if (page == 1 && workType == 0 && tagInfo == null) {
+            if (tagInfoCall != null) tagInfoCall.cancel();
+            tagInfoCall = RetrofitClient.getInstance().getTag(tagName);
+            tagInfoCall.enqueue(new Callback<TagInfo>() {
                 @Override public void onResponse(Call<TagInfo> call, Response<TagInfo> response) {
-                    if (isFinishing() || isDestroyed()) return;
+                    if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagInfoCall) return;
                     if (response.isSuccessful()) { tagInfo = response.body(); updateTagInfoMenuItemVisibility(); }
                 }
                 @Override public void onFailure(Call<TagInfo> call, Throwable t) {}
             });
         }
-        if (isLoading) return;
-        isLoading = true;
-
-        if (currentPage == 1) {
-            progressBar.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.INVISIBLE);
-            appBarLayout.setVisibility(View.INVISIBLE);
-        }
-
-        (workType == 0
-                ? RetrofitClient.getInstance().getTagTopics(tagName, currentPage, com.app.fimtale.network.SearchQuery.rank(currentSortBy))
-                : RetrofitClient.getInstance().getTopicList(currentPage, com.app.fimtale.network.SearchQuery.type(workType), com.app.fimtale.network.SearchQuery.rank(currentSortBy))).enqueue(new Callback<TopicListResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<TopicListResponse> call, @NonNull Response<TopicListResponse> response) {
-                isLoading = false;
-                progressBar.setVisibility(View.GONE);
+        loadingStatus.setVisibility(View.GONE);
+        loadingSkeleton.setVisibility(page == 1 ? View.VISIBLE : View.GONE);
+        loadingFooter.setLoading(page > 1);
+        recyclerView.setVisibility(page == 1 ? View.INVISIBLE : View.VISIBLE);
+        topicsCall = workType == 0
+                ? RetrofitClient.getInstance().getTagTopics(tagName, page, com.app.fimtale.network.SearchQuery.rank(currentSortBy))
+                : RetrofitClient.getInstance().getTopicList(page, com.app.fimtale.network.SearchQuery.type(workType), com.app.fimtale.network.SearchQuery.rank(currentSortBy));
+        topicsCall.enqueue(new Callback<TopicListResponse>() {
+            @Override public void onResponse(@NonNull Call<TopicListResponse> call, @NonNull Response<TopicListResponse> response) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != topicsCall) return;
                 if (response.isSuccessful() && response.body() != null) {
                     TopicListResponse data = response.body();
-                    
+                    currentPage = page;
                     totalPages = data.getTotalPage();
-                    
-                    List<Topic> topicList = data.getTopicArray();
-                    
-                    if (currentPage == 1) {
-                        topicViewItemList.clear();
+                    if (page == 1) topicViewItemList.clear();
+                    int start = topicViewItemList.size();
+                    if (data.getTopicArray() != null) {
+                        for (Topic topic : data.getTopicArray()) topicViewItemList.add(new TopicViewItem(topic));
                     }
-                    
-                    int startInsertPos = topicViewItemList.size();
-                    if (topicList != null) {
-                        List<TopicViewItem> newItems = topicList.stream().map(TopicViewItem::new).collect(Collectors.toList());
-                        topicViewItemList.addAll(newItems);
-                        
-                        if (currentPage == 1) {
-                            topicAdapter.notifyDataSetChanged();
-                        } else {
-                            topicAdapter.notifyItemRangeInserted(startInsertPos, newItems.size());
-                        }
+                    if (page == 1) topicAdapter.notifyDataSetChanged();
+                    else topicAdapter.notifyItemRangeInserted(start, topicViewItemList.size() - start);
+                    finishLoading();
+                    if (page == 1) recyclerView.scrollToPosition(0);
+                    if (topicViewItemList.isEmpty()) {
+                        loadingStatus.setText("暂无文章，点击刷新");
+                        loadingStatus.setVisibility(View.VISIBLE);
                     }
-                    
-                    if (currentPage == 1) {
-                        recyclerView.setVisibility(View.VISIBLE);
-                        appBarLayout.setVisibility(View.VISIBLE);
-                        
-                        recyclerView.setAlpha(0f);
-                        appBarLayout.setAlpha(0f);
-                        
-                        recyclerView.animate().alpha(1f).setDuration(300).start();
-                        appBarLayout.animate().alpha(1f).setDuration(300).start();
-                    }
-                    
-
-                } else {
-                    if (currentPage > 1) currentPage--;
-                    Toast.makeText(TagArticlesActivity.this, "加载失败", Toast.LENGTH_SHORT).show();
-                    recyclerView.setVisibility(View.VISIBLE);
-                }
+                } else showLoadError();
             }
-
-            @Override
-            public void onFailure(@NonNull Call<TopicListResponse> call, @NonNull Throwable t) {
-                isLoading = false;
-                if (currentPage > 1) currentPage--;
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(TagArticlesActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                recyclerView.setVisibility(View.VISIBLE);
-                appBarLayout.setVisibility(View.VISIBLE);
+            @Override public void onFailure(@NonNull Call<TopicListResponse> call, @NonNull Throwable t) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != topicsCall) return;
+                showLoadError();
             }
         });
+    }
+
+    private void finishLoading() {
+        isLoading = false;
+        loadingSkeleton.setVisibility(View.GONE);
+        loadingFooter.setLoading(false);
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+
+    private void showLoadError() {
+        finishLoading();
+        if (topicViewItemList.isEmpty()) {
+            loadingStatus.setText("加载失败，点击重试");
+            loadingStatus.setVisibility(View.VISIBLE);
+        } else Toast.makeText(this, "加载失败，请重试", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override protected void onDestroy() {
+        if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
+        if (tagInfoCall != null) { tagInfoCall.cancel(); tagInfoCall = null; }
+        if (elevationAnimator != null) elevationAnimator.cancel();
+        super.onDestroy();
     }
 }

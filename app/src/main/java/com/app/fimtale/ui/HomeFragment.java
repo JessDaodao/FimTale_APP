@@ -1,7 +1,5 @@
 package com.app.fimtale.ui;
 
-import android.animation.ValueAnimator;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,17 +10,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.ViewFlipper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.widget.NestedScrollView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.viewpager2.widget.CompositePageTransformer;
 import androidx.viewpager2.widget.MarginPageTransformer;
 import androidx.viewpager2.widget.ViewPager2;
@@ -32,7 +27,6 @@ import com.app.fimtale.R;
 import com.app.fimtale.adapter.BannerAdapter;
 import com.app.fimtale.adapter.TopicAdapter;
 import com.app.fimtale.model.RecommendedTopic;
-import com.app.fimtale.model.Tags;
 import com.app.fimtale.model.Topic;
 import com.app.fimtale.model.TopicViewItem;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -40,13 +34,10 @@ import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Collectors;
 
 import com.app.fimtale.network.RetrofitClient;
-import com.app.fimtale.utils.UserPreferences;
 import com.app.fimtale.utils.DialogHelper;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -55,8 +46,7 @@ import retrofit2.Response;
 public class HomeFragment extends Fragment {
 
     private SwipeRefreshLayout swipeRefreshLayout;
-    private NestedScrollView scrollView;
-    private LinearLayout contentLayout;
+    private RecyclerView homeList;
     private LinearLayout emptyStateLayout;
     private LinearLayout quickAccessLayout;
     private LinearLayout btnGallery;
@@ -66,14 +56,18 @@ public class HomeFragment extends Fragment {
     private TextView tvWhyHow;
     private TabLayout tabLayout;
     private ViewPager2 bannerViewPager;
-    private RecyclerView recyclerViewHot, recyclerViewNew;
-    private ViewFlipper viewFlipper;
-    private ProgressBar progressBar;
+    private ShimmerSkeletonView loadingSkeleton;
+    private final List<Call<?>> homeCalls = new ArrayList<>();
+    private int pendingHomeRequests;
+    private String homeError;
     private TextView errorTextView;
     private Button viewMoreButton;
     private BannerAdapter bannerAdapter;
-    private TopicAdapter adapterHot, adapterNew;
+    private TopicAdapter topicAdapter;
+    private final List<TopicViewItem> visibleTopics = new ArrayList<>();
+    private int selectedTab;
     private List<RecommendedTopic> bannerList = new ArrayList<>();
+    private List<RecommendedTopic> pendingBanners;
     private List<TopicViewItem> topicListHot = new ArrayList<>();
     private List<TopicViewItem> topicListNew = new ArrayList<>();
     private Timer bannerTimer;
@@ -109,31 +103,27 @@ public class HomeFragment extends Fragment {
             }
         }, getViewLifecycleOwner(), androidx.lifecycle.Lifecycle.State.RESUMED);
 
-        if (scrollView != null) {
-            return;
-        }
-
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
-        scrollView = view.findViewById(R.id.scrollView);
-        contentLayout = view.findViewById(R.id.contentLayout);
-        bannerViewPager = view.findViewById(R.id.bannerViewPager);
-        quickAccessLayout = view.findViewById(R.id.quickAccessLayout);
-        btnGallery = view.findViewById(R.id.btnGallery);
-        btnPosts = view.findViewById(R.id.btnPosts);
-        btnTags = view.findViewById(R.id.btnTags);
-        recyclerViewHot = view.findViewById(R.id.recyclerViewHot);
-        recyclerViewNew = view.findViewById(R.id.recyclerViewNew);
-        viewFlipper = view.findViewById(R.id.viewFlipper);
-        progressBar = view.findViewById(R.id.progressBar);
+        homeList = view.findViewById(R.id.homeList);
+        // The XML installs its LayoutManager before these inflations generate row LayoutParams.
+        View header = getLayoutInflater().inflate(R.layout.item_home_header, homeList, false);
+        View footer = getLayoutInflater().inflate(R.layout.item_home_footer, homeList, false);
+        bannerViewPager = header.findViewById(R.id.bannerViewPager);
+        quickAccessLayout = header.findViewById(R.id.quickAccessLayout);
+        btnGallery = header.findViewById(R.id.btnGallery);
+        btnPosts = header.findViewById(R.id.btnPosts);
+        btnTags = header.findViewById(R.id.btnTags);
+        loadingSkeleton = view.findViewById(R.id.loadingSkeleton);
+        loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.HOME);
         errorTextView = view.findViewById(R.id.errorTextView);
-        tabLayout = view.findViewById(R.id.tabLayout);
-        viewMoreButton = view.findViewById(R.id.viewMoreButton);
+        tabLayout = header.findViewById(R.id.tabLayout);
+        viewMoreButton = footer.findViewById(R.id.viewMoreButton);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
         btnLogin = view.findViewById(R.id.btnLogin);
         tvWhyHow = view.findViewById(R.id.tvWhyHow);
 
         setupBannerViewPager();
-        setupRecyclerView();
+        setupRecyclerView(header, footer);
         setupTabLayout();
         setupSwipeRefresh();
         setupEmptyState();
@@ -178,27 +168,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupSwipeRefresh() {
-        swipeRefreshLayout.setColorSchemeResources(R.color.md_theme_light_primary);
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                ValueAnimator blurAnimator = ValueAnimator.ofFloat(0f, 50f);
-                blurAnimator.setDuration(300);
-                blurAnimator.addUpdateListener(animation -> {
-                    float val = (float) animation.getAnimatedValue();
-                    if (val > 0) {
-                        scrollView.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(val, val, android.graphics.Shader.TileMode.CLAMP));
-                    }
-                });
-                blurAnimator.start();
-            }
-            
-            scrollView.animate()
-                    .scaleX(0.9f)
-                    .scaleY(0.9f)
-                    .setDuration(300)
-                    .start();
-
-            fetchHomePageData(true);
+            swipeRefreshLayout.setRefreshing(false);
+            fetchHomePageData();
         });
     }
 
@@ -211,7 +183,7 @@ public class HomeFragment extends Fragment {
         bannerViewPager.setAdapter(bannerAdapter);
         bannerViewPager.setClipToPadding(false);
         bannerViewPager.setClipChildren(false);
-        bannerViewPager.setOffscreenPageLimit(3);
+        bannerViewPager.setOffscreenPageLimit(1);
         CompositePageTransformer compositeTransformer = new CompositePageTransformer();
         compositeTransformer.addTransformer(new MarginPageTransformer(getResources().getDimensionPixelOffset(R.dimen.page_margin)));
         compositeTransformer.addTransformer((page, position) -> {
@@ -227,23 +199,14 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupTabLayout() {
+        TabLayout.Tab selected = tabLayout.getTabAt(selectedTab);
+        if (selected != null) selected.select();
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                int newPosition = tab.getPosition();
-                int currentPosition = viewFlipper.getDisplayedChild();
-
-                if (newPosition == currentPosition) return;
-
-                if (newPosition > currentPosition) {
-                    viewFlipper.setInAnimation(getContext(), R.anim.slide_in_right);
-                    viewFlipper.setOutAnimation(getContext(), R.anim.slide_out_left);
-                } else {
-                    viewFlipper.setInAnimation(getContext(), R.anim.slide_in_left);
-                    viewFlipper.setOutAnimation(getContext(), R.anim.slide_out_right);
-                }
-
-                viewFlipper.setDisplayedChild(newPosition);
+                if (selectedTab == tab.getPosition()) return;
+                selectedTab = tab.getPosition();
+                displaySelectedTopics();
             }
 
             @Override
@@ -254,14 +217,21 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void setupRecyclerView() {
-        recyclerViewHot.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapterHot = new TopicAdapter(topicListHot);
-        recyclerViewHot.setAdapter(adapterHot);
-
-        recyclerViewNew.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapterNew = new TopicAdapter(topicListNew);
-        recyclerViewNew.setAdapter(adapterNew);
+    private void setupRecyclerView(View header, View footer) {
+        homeList.setHasFixedSize(true);
+        topicAdapter = new TopicAdapter(visibleTopics);
+        // One viewport-bound list: header and footer scroll with the cards without
+        // measuring both entire feeds inside an unbounded NestedScrollView.
+        homeList.setAdapter(new ConcatAdapter(new StaticRowAdapter(header), topicAdapter, new StaticRowAdapter(footer)));
+        homeList.setItemAnimator(null);
+        int cardInset = Math.round(8 * getResources().getDisplayMetrics().density);
+        homeList.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override public void getItemOffsets(@NonNull android.graphics.Rect outRect, @NonNull View view,
+                                                @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                if (parent.getChildViewHolder(view).getBindingAdapter() == topicAdapter)
+                    outRect.set(cardInset, 0, cardInset, 0);
+            }
+        });
 
         viewMoreButton.setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity) {
@@ -272,70 +242,108 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void fetchHomePageData() {
-        fetchHomePageData(true);
+    private void displaySelectedTopics() {
+        visibleTopics.clear();
+        visibleTopics.addAll(selectedTab == 0 ? topicListHot : topicListNew);
+        topicAdapter.notifyDataSetChanged();
+    }
+
+    private static final class StaticRowAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+        private final View row;
+        StaticRowAdapter(View row) { this.row = row; }
+        @NonNull @Override public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int type) {
+            return new RecyclerView.ViewHolder(row) {};
+        }
+        @Override public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {}
+        @Override public int getItemCount() { return 1; }
     }
 
     private int homeRequest;
-    private void fetchHomePageData(boolean animate) {
+    private void fetchHomePageData() {
         final int request = ++homeRequest;
-        progressBar.setVisibility(View.VISIBLE);
+        for (Call<?> call : homeCalls) call.cancel();
+        homeCalls.clear(); pendingHomeRequests = 3; homeError = null; pendingBanners = null;
+        stopBannerAutoScroll();
+        swipeRefreshLayout.setRefreshing(false);
+        loadingSkeleton.setVisibility(View.VISIBLE);
         errorTextView.setVisibility(View.GONE);
-        contentLayout.setVisibility(View.VISIBLE);
-        scrollView.setVisibility(View.VISIBLE);
-        scrollView.setAlpha(1f);
+        homeList.setVisibility(View.INVISIBLE);
+        homeList.scrollToPosition(0);
         quickAccessLayout.setVisibility(View.VISIBLE);
-        viewFlipper.setVisibility(View.VISIBLE);
         viewMoreButton.setVisibility(View.VISIBLE);
-        RetrofitClient.getInstance().getFeed(1).enqueue(new Callback<com.app.fimtale.model.TopicListResponse>() {
+        Call<com.app.fimtale.model.TopicListResponse> feed = RetrofitClient.getInstance().getFeed(1);
+        homeCalls.add(feed);
+        feed.enqueue(new Callback<com.app.fimtale.model.TopicListResponse>() {
             @Override public void onResponse(Call<com.app.fimtale.model.TopicListResponse> call, Response<com.app.fimtale.model.TopicListResponse> response) {
-                if (!isAdded() || request != homeRequest) return;
-                progressBar.setVisibility(View.GONE);
-                swipeRefreshLayout.setRefreshing(false);
+                if (!acceptHomeResult(request)) return;
                 if (response.isSuccessful() && response.body() != null) {
                     topicListHot.clear();
-                    for (com.app.fimtale.model.Topic topic : response.body().getTopicArray()) topicListHot.add(new TopicViewItem(topic));
-                    adapterHot.notifyDataSetChanged();
-                } else { errorTextView.setText("推荐作品加载失败，下拉重试"); errorTextView.setVisibility(View.VISIBLE); }
+                    List<Topic> topics = response.body().getTopicArray();
+                    if (topics != null) for (Topic topic : topics) topicListHot.add(new TopicViewItem(topic));
+                } else homeError = "推荐作品加载失败，点击重试";
+                finishHomeRequest();
             }
             @Override public void onFailure(Call<com.app.fimtale.model.TopicListResponse> call, Throwable t) {
-                if (!isAdded() || request != homeRequest) return;
-                progressBar.setVisibility(View.GONE);
-                swipeRefreshLayout.setRefreshing(false);
-                errorTextView.setText("加载失败，下拉重试"); errorTextView.setVisibility(View.VISIBLE);
+                if (!acceptHomeResult(request)) return;
+                homeError = "推荐作品加载失败，点击重试"; finishHomeRequest();
             }
         });
-        RetrofitClient.getInstance().getTopicList(1, null, com.app.fimtale.network.SearchQuery.rank("last_chapter_at"))
-                .enqueue(new Callback<com.app.fimtale.model.TopicListResponse>() {
+        Call<com.app.fimtale.model.TopicListResponse> latest = RetrofitClient.getInstance()
+                .getTopicList(1, null, com.app.fimtale.network.SearchQuery.rank("last_chapter_at"));
+        homeCalls.add(latest);
+        latest.enqueue(new Callback<com.app.fimtale.model.TopicListResponse>() {
             @Override public void onResponse(Call<com.app.fimtale.model.TopicListResponse> call, Response<com.app.fimtale.model.TopicListResponse> response) {
-                if (!isAdded() || request != homeRequest) return;
+                if (!acceptHomeResult(request)) return;
                 if (response.isSuccessful() && response.body() != null) {
                     topicListNew.clear();
-                    for (com.app.fimtale.model.Topic topic : response.body().getTopicArray()) topicListNew.add(new TopicViewItem(topic));
-                    adapterNew.notifyDataSetChanged();
-                }
+                    List<Topic> topics = response.body().getTopicArray();
+                    if (topics != null) for (Topic topic : topics) topicListNew.add(new TopicViewItem(topic));
+                } else homeError = "最近更新加载失败，点击重试";
+                finishHomeRequest();
             }
-            @Override public void onFailure(Call<com.app.fimtale.model.TopicListResponse> call, Throwable t) {}
+            @Override public void onFailure(Call<com.app.fimtale.model.TopicListResponse> call, Throwable t) {
+                if (!acceptHomeResult(request)) return;
+                homeError = "最近更新加载失败，点击重试"; finishHomeRequest();
+            }
         });
-        RetrofitClient.getInstance().getCuratedWorks(1).enqueue(new Callback<com.app.fimtale.model.CuratedResponse>() {
+        Call<com.app.fimtale.model.CuratedResponse> curated = RetrofitClient.getInstance().getCuratedWorks(1);
+        homeCalls.add(curated);
+        curated.enqueue(new Callback<com.app.fimtale.model.CuratedResponse>() {
             @Override public void onResponse(Call<com.app.fimtale.model.CuratedResponse> call, Response<com.app.fimtale.model.CuratedResponse> response) {
-                if (!isAdded() || request != homeRequest) return;
-                stopBannerAutoScroll(); bannerList.clear();
-                if (response.isSuccessful() && response.body() != null && response.body().items != null) bannerList.addAll(response.body().items);
-                bannerAdapter.notifyDataSetChanged();
-                bannerViewPager.setVisibility(bannerList.isEmpty() ? View.GONE : View.VISIBLE);
-                if (!bannerList.isEmpty()) { bannerViewPager.setCurrentItem(0, false); startBannerAutoScroll(); }
+                if (!acceptHomeResult(request)) return;
+                if (response.isSuccessful() && response.body() != null) {
+                    // Keep the attached adapter's data unchanged until the batch is ready.
+                    pendingBanners = response.body().items == null ? new ArrayList<>() : new ArrayList<>(response.body().items);
+                } else homeError = "精选作品加载失败，点击重试";
+                finishHomeRequest();
             }
-            @Override public void onFailure(Call<com.app.fimtale.model.CuratedResponse> call, Throwable t) {}
+            @Override public void onFailure(Call<com.app.fimtale.model.CuratedResponse> call, Throwable t) {
+                if (!acceptHomeResult(request)) return;
+                homeError = "精选作品加载失败，点击重试"; finishHomeRequest();
+            }
         });
     }
-
-    private void showError() {
-        progressBar.setVisibility(View.GONE);
-        scrollView.setVisibility(View.INVISIBLE);
-        errorTextView.setVisibility(View.VISIBLE);
-        errorTextView.setText("加载失败，请尝试下拉刷新");
-        errorTextView.setOnClickListener(v -> fetchHomePageData(true));
+    private boolean acceptHomeResult(int request) {
+        return isAdded() && getView() != null && request == homeRequest;
+    }
+    private void finishHomeRequest() {
+        if (--pendingHomeRequests != 0) return;
+        homeCalls.clear();
+        displaySelectedTopics();
+        if (pendingBanners != null) {
+            bannerList.clear(); bannerList.addAll(pendingBanners); pendingBanners = null;
+            bannerAdapter.notifyDataSetChanged();
+        }
+        loadingSkeleton.setVisibility(View.GONE); homeList.setVisibility(View.VISIBLE);
+        bannerViewPager.setVisibility(bannerList.isEmpty() ? View.GONE : View.VISIBLE);
+        if (!bannerList.isEmpty()) {
+            bannerViewPager.setCurrentItem(0, false);
+            if (isResumed()) startBannerAutoScroll();
+        }
+        if (homeError != null) {
+            errorTextView.setText(homeError); errorTextView.setVisibility(View.VISIBLE);
+            errorTextView.setOnClickListener(v -> fetchHomePageData());
+        }
     }
 
     private void startBannerAutoScroll() {
@@ -403,8 +411,19 @@ public class HomeFragment extends Fragment {
         if (emptyStateLayout != null && emptyStateLayout.getVisibility() == View.VISIBLE ) {
             loadContent();
         }
-        if (bannerAdapter != null && bannerAdapter.getItemCount() > 0) {
+        if (pendingHomeRequests == 0 && bannerAdapter != null && bannerAdapter.getItemCount() > 0) {
             startBannerAutoScroll();
         }
     }
+    @Override public void onDestroyView() {
+        homeRequest++;
+        for (Call<?> call : homeCalls) call.cancel();
+        homeCalls.clear(); pendingHomeRequests = 0; pendingBanners = null;
+        stopBannerAutoScroll(); bannerHandler.removeCallbacksAndMessages(null);
+        if (homeList != null) homeList.setAdapter(null);
+        if (bannerViewPager != null) bannerViewPager.setAdapter(null);
+        rootView = null; homeList = null;
+        super.onDestroyView();
+    }
+
 }

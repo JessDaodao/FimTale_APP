@@ -19,6 +19,14 @@ public interface FimTaleApiService {
     @GET("search/work_feed") Call<TopicListResponse> getFeed(@Query("page") int page);
     @GET("work/get_curated_works") Call<CuratedResponse> getCuratedWorks(@Query("page") int page);
     @GET("work/get_work") Call<TopicDetailResponse> getWork(@Query("work_id") int workId);
+    @GET("work/get_work") Call<TopicDetailResponse> getWorkViewer(@Header("Token") String token, @Query("work_id") int workId);
+    @POST("work/do_work_vote") Call<Void> voteWork(@Header("Token") String token, @Body WorkInteractions.Vote vote);
+    @GET("user/get_favorite_folders") Call<List<WorkInteractions.Folder>> getFavoriteFolders(@Header("Token") String token);
+    @POST("work/add_favorite_work") Call<Void> addFavoriteWork(@Header("Token") String token, @Body WorkInteractions.FavoriteRequest favorite);
+    @POST("work/remove_favorite_work") Call<Void> removeFavoriteWork(@Header("Token") String token, @Body WorkInteractions.FavoriteRequest favorite);
+    @GET("work/get_comments") Call<WorkCommentsResponse> getWorkComments(@Query("work_id") int workId,
+            @Query("page") int page, @Query("per_page") int perPage,
+            @Query("order_by") String orderBy, @Query("order_option") String orderOption);
     @GET("work/get_chapter") Call<ChapterResponse> getChapter(@Query("chapter_id") int chapterId);
     @GET("user/get_user_auth") Call<UserAuth> getUserAuth(@Header("Token") String token);
     @GET("work/get_work") Call<WorkEditResponse> getWorkForEdit(@Query("work_id") int workId, @Query("for_edit") boolean forEdit);

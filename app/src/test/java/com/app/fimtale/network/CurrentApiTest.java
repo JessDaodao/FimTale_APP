@@ -148,4 +148,76 @@ public class CurrentApiTest {
         assertNull(SiteUrls.media("javascript:alert(1)"));
         assertEquals("type:2", new JsonParser().parse(SearchQuery.type(2)).getAsJsonObject().get("filter").getAsString());
     }
+    @Test public void workViewerReadsVotesAndAllFavoriteFolders() throws Exception {
+        TopicDetailResponse result = api("{\"work\":{\"id\":42,\"count_like\":12},\"viewer\":{"
+                + "\"operations\":[{\"operation\":3},{\"operation\":1}],"
+                + "\"favs\":[{\"folder_id\":null},{\"folder_id\":7},{\"folder_id\":7}]}}")
+                .getWorkViewer("session-token", 42).execute().body();
+        assertTrue(result.viewer.isLiked());
+        assertEquals(new java.util.LinkedHashSet<>(java.util.Arrays.asList(0, 7)), result.viewer.folderIds());
+        assertEquals(12, result.getTopicInfo().getLikeCount());
+        assertEquals("session-token", request.get().header("Token"));
+        TopicDetailResponse anonymous = api("{\"work\":{\"id\":42},\"viewer\":{\"operations\":null,\"favs\":null}}")
+                .getWorkViewer("", 42).execute().body();
+        assertFalse(anonymous.viewer.isLiked());
+        assertTrue(anonymous.viewer.folderIds().isEmpty());
+    }
+
+    @Test public void voteAndFavoriteRequestsUseCurrentRoutesAndDefaultFolderOmission() throws Exception {
+        api("null").voteWork("session-token", new WorkInteractions.Vote(42)).execute();
+        assertEquals("/api/work/do_work_vote", request.get().url().encodedPath());
+        assertEquals("POST", request.get().method());
+        assertEquals("session-token", request.get().header("Token"));
+        Buffer vote = new Buffer(); request.get().body().writeTo(vote);
+        JsonObject voteBody = new JsonParser().parse(vote.readUtf8()).getAsJsonObject();
+        assertEquals(42, voteBody.get("work_id").getAsInt());
+        assertEquals(1, voteBody.get("operation").getAsInt());
+        api("{\"id\":9,\"folder_id\":null}").addFavoriteWork("session-token", new WorkInteractions.FavoriteRequest(42, 0)).execute();
+        assertEquals("/api/work/add_favorite_work", request.get().url().encodedPath());
+        Buffer favorite = new Buffer(); request.get().body().writeTo(favorite);
+        JsonObject favoriteBody = new JsonParser().parse(favorite.readUtf8()).getAsJsonObject();
+        assertEquals(42, favoriteBody.get("work_id").getAsInt());
+        assertFalse(favoriteBody.has("folder_id"));
+        api("null").removeFavoriteWork("session-token", new WorkInteractions.FavoriteRequest(42, 7)).execute();
+        assertEquals("/api/work/remove_favorite_work", request.get().url().encodedPath());
+        Buffer removed = new Buffer(); request.get().body().writeTo(removed);
+        assertEquals(7, new JsonParser().parse(removed.readUtf8()).getAsJsonObject().get("folder_id").getAsInt());
+        List<WorkInteractions.Folder> folders = api("[{\"id\":7,\"name\":\"追更\"}]").getFavoriteFolders("session-token").execute().body();
+        assertEquals("/api/user/get_favorite_folders", request.get().url().encodedPath());
+        assertEquals("追更", folders.get(0).name);
+    }
+
+    @Test public void changingFavoritesPreservesUnchangedWebsiteMemberships() {
+        java.util.Set<Integer> initial = new java.util.LinkedHashSet<>(java.util.Arrays.asList(0, 7));
+        java.util.Set<Integer> selected = new java.util.LinkedHashSet<>(java.util.Arrays.asList(7, 9));
+        List<WorkInteractions.Change> changes = WorkInteractions.changes(initial, selected);
+        assertEquals(2, changes.size());
+        assertEquals(9, changes.get(0).folderId); assertTrue(changes.get(0).add);
+        assertEquals(0, changes.get(1).folderId); assertFalse(changes.get(1).add);
+        assertTrue(WorkInteractions.changes(initial, initial).isEmpty());
+        assertEquals(2, WorkInteractions.changes(initial, java.util.Collections.emptySet()).size());
+    }
+
+    @Test public void commentsReadCurrentItemsAuthorReplyAndChapterWithoutFilteringWorkComments() throws Exception {
+        WorkCommentsResponse result = api("{\"items\":[{\"id\":91,\"chapter_id\":101,\"title\":\"第一章\","
+                + "\"reply_comment_id\":89,\"content\":\"[b]评论[/b]\",\"created_at\":\"2026-10-04T12:00:00+08:00\","
+                + "\"user\":{\"user_id\":3,\"username\":\"读者\"}}],\"total\":17}")
+                .getWorkComments(42, 2, 16, "created_at", "asc").execute().body();
+        assertEquals("/api/work/get_comments", request.get().url().encodedPath());
+        assertEquals("42", request.get().url().queryParameter("work_id"));
+        assertEquals("2", request.get().url().queryParameter("page"));
+        assertEquals("16", request.get().url().queryParameter("per_page"));
+        assertEquals("asc", request.get().url().queryParameter("order_option"));
+        assertNull(request.get().url().queryParameter("chapter_id"));
+        assertEquals(2, result.totalPages(16));
+        Comment comment = result.getItems().get(0);
+        assertEquals("读者", comment.getUserName()); assertEquals(89, comment.replyCommentId);
+        assertEquals("第一章", comment.getChapterTitle());
+        assertEquals("<b>评论</b>", BbCode.toMarkdown(comment.getContent()));
+        comment.statusDel = 1;
+        assertEquals("该评论已删除", comment.getContent());
+        WorkCommentsResponse empty = api("{\"items\":null,\"total\":0}").getWorkComments(42, 1, 16, "created_at", "desc").execute().body();
+        assertTrue(empty.getItems().isEmpty()); assertEquals(1, empty.totalPages(16));
+    }
+
 }

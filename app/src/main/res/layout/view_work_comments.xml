@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/workCommentsSection" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:id="@+id/commentsTitle" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="评论" android:textAppearance="?attr/textAppearanceTitleLarge"
+            android:accessibilityHeading="true" android:textColor="?attr/colorOnSurface"/>
+        <com.google.android.material.button.MaterialButton android:id="@+id/commentsSort" style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="从早到晚"/>
+    </LinearLayout>
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/commentsList" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:nestedScrollingEnabled="false"/>
+    <com.app.fimtale.ui.ShimmerSkeletonView android:id="@+id/commentsSkeleton"
+        android:layout_width="match_parent" android:layout_height="420dp"/>
+    <TextView android:id="@+id/commentsStatus" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:padding="24dp" android:visibility="gone" android:textColor="?attr/colorOnSurfaceVariant"/>
+    <LinearLayout android:id="@+id/commentsPager" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical" android:orientation="horizontal" android:visibility="gone">
+        <com.google.android.material.button.MaterialButton android:id="@+id/commentsPrevious" style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="上一页"/>
+        <TextView android:id="@+id/commentsPage" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <com.google.android.material.button.MaterialButton android:id="@+id/commentsNext" style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="下一页"/>
+    </LinearLayout>
+</LinearLayout>

@@ -1,6 +1,5 @@
 package com.app.fimtale.ui;
 
-import android.animation.ValueAnimator;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -8,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.widget.Button;
@@ -25,6 +23,8 @@ import androidx.lifecycle.Lifecycle;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.ConcatAdapter;
+import com.app.fimtale.adapter.LoadingCardAdapter;
 
 import com.app.fimtale.R;
 import com.app.fimtale.adapter.SearchHistoryAdapter;
@@ -51,7 +51,8 @@ public class ArticleFragment extends Fragment {
     private TabLayout tabLayout;
     private SwipeRefreshLayout swipeRefreshLayout;
     private FrameLayout contentContainer;
-    private ProgressBar progressBar;
+    private ShimmerSkeletonView loadingSkeleton;
+    private LoadingCardAdapter loadingFooter;
     private LinearLayout emptyStateLayout;
     private Button btnLogin;
     private TextView tvWhyHow;
@@ -82,7 +83,7 @@ public class ArticleFragment extends Fragment {
         tabLayout = view.findViewById(R.id.tabs);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
         contentContainer = view.findViewById(R.id.content_container);
-        progressBar = view.findViewById(R.id.progressBar);
+        loadingSkeleton = view.findViewById(R.id.loadingSkeleton);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
         btnLogin = view.findViewById(R.id.btnLogin);
         tvWhyHow = view.findViewById(R.id.tvWhyHow);
@@ -119,26 +120,7 @@ public class ArticleFragment extends Fragment {
                         
                         UserPreferences.saveSearchHistory(getContext(), query);
                         
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                            ValueAnimator blurAnimator = ValueAnimator.ofFloat(0f, 50f);
-                            blurAnimator.setDuration(300);
-                            blurAnimator.addUpdateListener(animation -> {
-                                float val = (float) animation.getAnimatedValue();
-                                if (val > 0) {
-                                    recyclerView.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(val, val, android.graphics.Shader.TileMode.CLAMP));
-                                }
-                            });
-                            blurAnimator.start();
-                        }
-                        
-                        recyclerView.animate()
-                                .scaleX(0.9f)
-                                .scaleY(0.9f)
-                                .alpha(0.5f)
-                                .setDuration(300)
-                                .start();
-
-                        loadTopics(false);
+                        loadTopics();
                         searchView.clearFocus();
                         return true;
                     }
@@ -172,26 +154,7 @@ public class ArticleFragment extends Fragment {
                             currentQuery = null;
                             currentPage = 1;
                             
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                                ValueAnimator blurAnimator = ValueAnimator.ofFloat(0f, 50f);
-                                blurAnimator.setDuration(300);
-                                blurAnimator.addUpdateListener(animation -> {
-                                    float val = (float) animation.getAnimatedValue();
-                                    if (val > 0) {
-                                        recyclerView.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(val, val, android.graphics.Shader.TileMode.CLAMP));
-                                    }
-                                });
-                                blurAnimator.start();
-                            }
-                            
-                            recyclerView.animate()
-                                    .scaleX(0.9f)
-                                    .scaleY(0.9f)
-                                    .alpha(0.5f)
-                                    .setDuration(300)
-                                    .start();
-
-                            loadTopics(false);
+                            loadTopics();
                         }
                         return true;
                     }
@@ -281,7 +244,8 @@ public class ArticleFragment extends Fragment {
         emptyStateLayout.setVisibility(View.GONE);
         swipeRefreshLayout.setVisibility(View.VISIBLE);
         swipeRefreshLayout.setEnabled(true);
-        loadTopics(false);
+        currentPage = 1;
+        loadTopics();
     }
 
     private void setupRecyclerView() {
@@ -296,7 +260,9 @@ public class ArticleFragment extends Fragment {
         recyclerView.setVisibility(View.GONE);
         
         adapter = new TopicAdapter(dataList);
-        recyclerView.setAdapter(adapter);
+        loadingFooter = new LoadingCardAdapter();
+        recyclerView.setAdapter(new ConcatAdapter(adapter, loadingFooter));
+        recyclerView.setItemAnimator(null);
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -311,39 +277,25 @@ public class ArticleFragment extends Fragment {
                         if (!isLoading && (visibleItemCount + firstVisibleItemPosition) >= totalItemCount
                                 && firstVisibleItemPosition >= 0
                                 && currentPage < totalPages) {
-                            currentPage++;
-                            loadTopics(false);
+                            recyclerView.post(() -> {
+                                if (getView() != null && !isLoading && currentPage < totalPages) {
+                                    currentPage++; loadTopics();
+                                }
+                            });
                         }
                     }
                 }
             }
         });
-        contentContainer.addView(recyclerView);
+        contentContainer.addView(recyclerView, 0);
     }
 
     private void setupSwipeRefresh() {
-        swipeRefreshLayout.setColorSchemeResources(R.color.md_theme_light_primary);
+        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> recyclerView.canScrollVertically(-1));
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                ValueAnimator blurAnimator = ValueAnimator.ofFloat(0f, 50f);
-                blurAnimator.setDuration(300);
-                blurAnimator.addUpdateListener(animation -> {
-                    float val = (float) animation.getAnimatedValue();
-                    if (val > 0) {
-                        recyclerView.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(val, val, android.graphics.Shader.TileMode.CLAMP));
-                    }
-                });
-                blurAnimator.start();
-            }
-            
-            recyclerView.animate()
-                    .scaleX(0.9f)
-                    .scaleY(0.9f)
-                    .setDuration(300)
-                    .start();
-
+            swipeRefreshLayout.setRefreshing(false);
             currentPage = 1;
-            loadTopics(true);
+            loadTopics();
         });
     }
 
@@ -373,154 +325,68 @@ public class ArticleFragment extends Fragment {
                     currentSortBy = values[which];
                     dialog.dismiss();
                     currentPage = 1;
-                    loadTopics(false);
+                    loadTopics();
                 })
                 .show();
     }
 
-    private void loadTopics(boolean isRefresh) {
+    private void loadTopics() {
         if (isLoading) {
             if (currentPage != 1) return;
             if (topicsCall != null) topicsCall.cancel();
         }
         isLoading = true;
         final int requestedPage = currentPage;
-        
-        if (tvNoResults != null) {
-            tvNoResults.setVisibility(View.GONE);
-        }
+        tvNoResults.setVisibility(View.GONE);
+        swipeRefreshLayout.setRefreshing(false);
+        loadingSkeleton.setVisibility(requestedPage == 1 ? View.VISIBLE : View.GONE);
+        loadingFooter.setLoading(requestedPage > 1);
+        recyclerView.setVisibility(requestedPage == 1 ? View.INVISIBLE : View.VISIBLE);
 
-        if (!isRefresh && !swipeRefreshLayout.isRefreshing()) {
-            if (currentPage == 1) {
-                progressBar.setVisibility(View.VISIBLE);
-                if (dataList.isEmpty()) {
-                    recyclerView.setVisibility(View.INVISIBLE);
-                }
-            } else {
-                progressBar.setVisibility(View.GONE);
-            }
-        }
-
-        topicsCall = RetrofitClient.getInstance().getTopicList(requestedPage, com.app.fimtale.network.SearchQuery.keywords(currentQuery), com.app.fimtale.network.SearchQuery.rank(currentSortBy));
+        topicsCall = RetrofitClient.getInstance().getTopicList(requestedPage,
+                com.app.fimtale.network.SearchQuery.keywords(currentQuery), com.app.fimtale.network.SearchQuery.rank(currentSortBy));
         topicsCall.enqueue(new Callback<TopicListResponse>() {
-            @Override
-            public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
-                if (!isAdded() || call.isCanceled() || call != topicsCall) return;
-                isLoading = false;
-                
+            @Override public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
+                if (!isAdded() || getView() == null || call.isCanceled() || call != topicsCall) return;
                 if (response.isSuccessful() && response.body() != null) {
                     TopicListResponse data = response.body();
                     totalPages = data.getTotalPage();
-                    
-                    if (isRefresh || currentPage == 1) {
-                         dataList.clear();
-                    }
-                    
+                    if (requestedPage == 1) dataList.clear();
+                    int start = dataList.size();
                     List<Topic> topics = data.getTopicArray();
-                    List<TopicViewItem> newItems = new ArrayList<>();
-                    if (topics != null) {
-                        newItems.addAll(topics.stream().map(TopicViewItem::new).collect(Collectors.toList()));
-                    }
-
-                    if (currentPage == 1 && (topics == null || topics.isEmpty())) {
-                        if (tvNoResults != null) {
-                            tvNoResults.setVisibility(View.VISIBLE);
-                            tvNoResults.setAlpha(0f);
-                            tvNoResults.animate().alpha(1f).setDuration(500).start();
-                        }
-                    } else if (tvNoResults != null) {
-                        tvNoResults.setVisibility(View.GONE);
-                    }
-
-                    Runnable updateDataRunnable = () -> {
-                        int startInsertPos = dataList.size();
-                        dataList.addAll(newItems);
-                        
-                        if (isRefresh || currentPage == 1) {
-                            adapter.notifyDataSetChanged();
-                            if (isRefresh || currentPage == 1) {
-                                recyclerView.scrollToPosition(0);
-                            }
-                        } else {
-                            adapter.notifyItemRangeInserted(startInsertPos, newItems.size());
-                        }
-                    };
-
-                    Runnable animationRunnable = () -> {
-                        progressBar.setVisibility(View.GONE);
-                        progressBar.setAlpha(1f);
-
-                        recyclerView.setAlpha(0f);
-                        recyclerView.setScaleX(0.9f);
-                        recyclerView.setScaleY(0.9f);
-                        recyclerView.setVisibility(View.VISIBLE);
-
-                        updateDataRunnable.run();
-
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                            ValueAnimator blurAnimator = ValueAnimator.ofFloat(50f, 0f);
-                            blurAnimator.setDuration(500);
-                            blurAnimator.addUpdateListener(animation -> {
-                                float val = (float) animation.getAnimatedValue();
-                                if (val > 0.1f) {
-                                    recyclerView.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(val, val, android.graphics.Shader.TileMode.CLAMP));
-                                } else {
-                                    recyclerView.setRenderEffect(null);
-                                }
-                            });
-                            blurAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(android.animation.Animator animation) {
-                                    recyclerView.setRenderEffect(null);
-                                    recyclerView.invalidate();
-                                }
-                            });
-                            blurAnimator.start();
-                        }
-
-                        android.view.animation.PathInterpolator interpolator = new android.view.animation.PathInterpolator(1.00f, 0.00f, 0.28f, 1.00f);
-
-                        recyclerView.animate()
-                                .alpha(1f)
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setInterpolator(interpolator)
-                                .setDuration(500)
-                                .start();
-                    };
-
-                    if (isRefresh || currentPage == 1) { 
-                         if (progressBar.getVisibility() == View.VISIBLE) {
-                            progressBar.animate()
-                                    .alpha(0f)
-                                    .setDuration(300)
-                                    .withEndAction(animationRunnable)
-                                    .start();
-                         } else {
-                            animationRunnable.run();
-                         }
-                    } else {
-                         updateDataRunnable.run();
-                    }
-                    
-                } else {
-                    currentPage = Math.max(1, requestedPage - 1);
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(getContext(), com.app.fimtale.network.ApiErrors.message(response), Toast.LENGTH_SHORT).show();
-                }
-                
-                swipeRefreshLayout.setRefreshing(false);
+                    if (topics != null) for (Topic topic : topics) dataList.add(new TopicViewItem(topic));
+                    if (requestedPage == 1) {
+                        adapter.notifyDataSetChanged(); recyclerView.scrollToPosition(0);
+                    } else adapter.notifyItemRangeInserted(start, dataList.size() - start);
+                    finishLoading();
+                    tvNoResults.setText("未找到搜索结果");
+                    tvNoResults.setVisibility(dataList.isEmpty() ? View.VISIBLE : View.GONE);
+                } else loadFailed(requestedPage, com.app.fimtale.network.ApiErrors.message(response));
             }
-
-            @Override
-            public void onFailure(Call<TopicListResponse> call, Throwable t) {
-                if (!isAdded() || call.isCanceled() || call != topicsCall) return;
-                isLoading = false;
-                currentPage = Math.max(1, requestedPage - 1);
-                progressBar.setVisibility(View.GONE);
-                swipeRefreshLayout.setRefreshing(false);
-                Toast.makeText(getContext(), "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            @Override public void onFailure(Call<TopicListResponse> call, Throwable t) {
+                if (!isAdded() || getView() == null || call.isCanceled() || call != topicsCall) return;
+                loadFailed(requestedPage, "加载失败，请重试");
             }
         });
+    }
+    private void finishLoading() {
+        isLoading = false;
+        loadingSkeleton.setVisibility(View.GONE); loadingFooter.setLoading(false);
+        recyclerView.setVisibility(View.VISIBLE); swipeRefreshLayout.setRefreshing(false);
+    }
+    private void loadFailed(int requestedPage, String message) {
+        currentPage = Math.max(1, requestedPage - 1);
+        finishLoading();
+        if (dataList.isEmpty()) {
+            tvNoResults.setText("加载失败，点击重试"); tvNoResults.setVisibility(View.VISIBLE);
+            tvNoResults.setOnClickListener(v -> { currentPage = 1; loadTopics(); });
+        }
+        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+    }
+    @Override public void onDestroyView() {
+        if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
+        if (historyPopupWindow != null) { historyPopupWindow.dismiss(); historyPopupWindow = null; }
+        isLoading = false;
+        super.onDestroyView();
     }
 }

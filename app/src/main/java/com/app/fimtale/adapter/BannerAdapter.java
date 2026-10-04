@@ -58,9 +58,6 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
             holder.authorTextView.setText("作者: " + (topic.getAuthorName() != null ? topic.getAuthorName() : "未知"));
         }
 
-        RenderEffect blurEffect = RenderEffect.createBlurEffect(15f, 15f, Shader.TileMode.CLAMP);
-        holder.imageView.setRenderEffect(blurEffect);
-
         Glide.with(holder.itemView.getContext())
                 .load(topic.getBackground())
                 .placeholder(R.drawable.ic_default_article_cover)
@@ -74,6 +71,11 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
         return bannerItems.size();
     }
 
+    @Override public void onViewRecycled(@NonNull BannerViewHolder holder) {
+        Glide.with(holder.itemView.getContext().getApplicationContext()).clear(holder.imageView);
+        super.onViewRecycled(holder);
+    }
+
     public static class BannerViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
         TextView titleTextView;
@@ -84,6 +86,7 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
         public BannerViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.bannerImageView);
+            imageView.setRenderEffect(RenderEffect.createBlurEffect(15f, 15f, Shader.TileMode.CLAMP));
             titleTextView = itemView.findViewById(R.id.bannerTitleTextView);
             introTextView = itemView.findViewById(R.id.bannerIntroTextView);
             authorTextView = itemView.findViewById(R.id.bannerAuthorTextView);

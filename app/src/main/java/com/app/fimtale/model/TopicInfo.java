@@ -1,5 +1,7 @@
 package com.app.fimtale.model;
 public class TopicInfo extends Topic {
+    @com.google.gson.annotations.SerializedName("count_like") private int likeCount;
+    public int getLikeCount() { return likeCount; }
     private String preface;
     public String getContent() { return preface; }
     public int getViewCount() { return getViews(); }

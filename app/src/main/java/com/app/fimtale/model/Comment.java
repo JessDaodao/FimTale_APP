@@ -1,23 +1,26 @@
 package com.app.fimtale.model;
 
+import com.google.gson.annotations.SerializedName;
+
+/** A comment from work/get_comments, including its author and chapter context. */
 public class Comment {
-    private String avatarUrl;
-    private String userName;
-    private String content;
-    private String chapterTitle;
-    private String time;
-
-    public Comment(String avatarUrl, String userName, String content, String chapterTitle, String time) {
-        this.avatarUrl = avatarUrl;
-        this.userName = userName;
-        this.content = content;
-        this.chapterTitle = chapterTitle;
-        this.time = time;
+    public int id;
+    public AuthorInfo user;
+    public String content;
+    public String title;
+    @SerializedName("chapter_id") public int chapterId;
+    @SerializedName("reply_comment_id") public int replyCommentId;
+    @SerializedName("created_at") public String createdAt;
+    @SerializedName("status_del") public int statusDel;
+    @SerializedName("status_top") public boolean pinned;
+    public String getAvatarUrl() { return user == null ? null : user.getAvatar(); }
+    public String getUserName() { return user == null ? "未知用户" : user.getUserName(); }
+    public String getContent() { return statusDel != 0 ? "该评论已删除" : content; }
+    public String getChapterTitle() { return chapterId == 0 ? "文章" : title == null || title.isEmpty() ? "章节 " + chapterId : title; }
+    public String getTime() {
+        try {
+            return java.time.OffsetDateTime.parse(createdAt).atZoneSameInstant(java.time.ZoneId.systemDefault())
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        } catch (RuntimeException ignored) { return ""; }
     }
-
-    public String getAvatarUrl() { return avatarUrl; }
-    public String getUserName() { return userName; }
-    public String getContent() { return content; }
-    public String getChapterTitle() { return chapterTitle; }
-    public String getTime() { return time; }
 }

@@ -17,7 +17,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
+import com.app.fimtale.ui.ShimmerSkeletonView;
+import com.app.fimtale.ui.WorkActions;
+import com.app.fimtale.ui.WorkCommentsSection;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.animation.ObjectAnimator;
@@ -105,12 +107,15 @@ public class TopicDetailActivity extends AppCompatActivity {
     private ShapeableImageView authorAvatarImageView;
     private LinearLayout authorLayout;
     private ChipGroup tagChipGroup;
-    private ProgressBar progressBar;
+    private ShimmerSkeletonView loadingSkeleton;
+    private TextView loadError;
+    private Call<TopicDetailResponse> detailCall;
     private NestedScrollView scrollView;
     private Button startReadingButton;
-    private RecyclerView rvChapters;
-    private LinearLayout chapterListContainer;
-    private ChapterAdapter chapterAdapter;
+    private View readingActionsBar;
+    private WorkActions workActions;
+    private WorkCommentsSection commentsSection;
+    private BottomSheetDialog chaptersSheet;
 
     private Markwon markwon;
     private int currentTopicId;
@@ -171,6 +176,10 @@ public class TopicDetailActivity extends AppCompatActivity {
                 .build();
 
         currentTopicId = getIntent().getIntExtra(EXTRA_TOPIC_ID, -1);
+        commentsSection = new WorkCommentsSection(this, currentTopicId, this::updateCommentCount);
+        workActions = new WorkActions(this, currentTopicId,
+                () -> startActivity(new Intent(this, LoginActivity.class)),
+                data -> updateInteractionCounts(data.getTopicInfo()));
         editorVersion = com.app.fimtale.editor.EditorChanges.version(currentTopicId);
         if (currentTopicId != -1) {
             fetchTopicDetail(currentTopicId);
@@ -213,17 +222,17 @@ public class TopicDetailActivity extends AppCompatActivity {
 
         tagChipGroup = findViewById(R.id.tagChipGroup);
 
-        progressBar = findViewById(R.id.detailProgressBar);
+        loadingSkeleton = findViewById(R.id.detailLoadingSkeleton);
+        loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.TOPIC_DETAIL);
+        loadError = findViewById(R.id.detailLoadError);
+        loadError.setOnClickListener(v -> fetchTopicDetail(currentTopicId));
         scrollView = findViewById(R.id.scrollView);
         startReadingButton = findViewById(R.id.startReadingButton);
-        
-        chapterListContainer = findViewById(R.id.chapterListContainer);
-        rvChapters = findViewById(R.id.rvChapters);
-        rvChapters.setLayoutManager(new LinearLayoutManager(this));
-        rvChapters.setNestedScrollingEnabled(false);
+        readingActionsBar = findViewById(R.id.readingActionsBar);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (commentsSection != null && editableWork != null) commentsSection.loadIfVisible();
             boolean shouldElevate = scrollY > 0;
             
             if (shouldElevate != isToolbarElevated) {
@@ -256,12 +265,18 @@ public class TopicDetailActivity extends AppCompatActivity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (workActions != null) workActions.onResume();
         editorAccess.refresh(this::invalidateOptionsMenu);
         long version = com.app.fimtale.editor.EditorChanges.version(currentTopicId);
         if (version != editorVersion) { editorVersion = version; fetchTopicDetail(currentTopicId); }
     }
 
     @Override protected void onDestroy() {
+        if (workActions != null) workActions.close();
+        if (commentsSection != null) commentsSection.close();
+        if (chaptersSheet != null) chaptersSheet.dismiss();
+        if (detailCall != null) { detailCall.cancel(); detailCall = null; }
+        if (elevationAnimator != null) elevationAnimator.cancel();
         editorAccess.close();
         super.onDestroy();
     }
@@ -516,40 +531,48 @@ public class TopicDetailActivity extends AppCompatActivity {
     }
 
     private void fetchTopicDetail(int topicId) {
-        progressBar.setVisibility(View.VISIBLE);
+        if (detailCall != null) detailCall.cancel();
+        loadingSkeleton.setVisibility(View.VISIBLE);
+        loadError.setVisibility(View.GONE);
         scrollView.setVisibility(View.INVISIBLE);
-        appBarLayout.setVisibility(View.INVISIBLE);
-        startReadingButton.setVisibility(View.INVISIBLE);
+        if (editableWork == null && getSupportActionBar() != null) getSupportActionBar().setTitle("文章详情");
+        readingActionsBar.setVisibility(View.INVISIBLE);
 
-        RetrofitClient.getInstance().getWork(topicId).enqueue(new Callback<TopicDetailResponse>() {
+        String token = UserPreferences.getToken(this);
+        detailCall = RetrofitClient.getInstance().getWorkViewer(token, topicId);
+        detailCall.enqueue(new Callback<TopicDetailResponse>() {
             @Override
             public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != detailCall) return;
+                if (!token.equals(UserPreferences.getToken(TopicDetailActivity.this))) { fetchTopicDetail(topicId); return; }
+                if (response.isSuccessful() && response.body() != null && response.body().getTopicInfo() != null) {
                     TopicDetailResponse data = response.body();
-                    
-                    progressBar.setVisibility(View.GONE);
-                    scrollView.setVisibility(View.VISIBLE);
-                    appBarLayout.setVisibility(View.VISIBLE);
-                    
-                    scrollView.setAlpha(0f);
-                    appBarLayout.setAlpha(0f);
-                    
-                    scrollView.animate().alpha(1f).setDuration(300).start();
-                    appBarLayout.animate().alpha(1f).setDuration(300).start();
-                    
                     updateUI(data);
+                    workActions.bind(data, token);
+                    loadingSkeleton.setVisibility(View.GONE);
+                    scrollView.setVisibility(View.VISIBLE);
+                    scrollView.post(() -> { if (!isFinishing() && !isDestroyed()) commentsSection.loadIfVisible(); });
                 } else {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(TopicDetailActivity.this, com.app.fimtale.network.ApiErrors.message(response), Toast.LENGTH_SHORT).show();
+                    showDetailLoadError(com.app.fimtale.network.ApiErrors.message(response));
                 }
             }
 
             @Override
             public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(TopicDetailActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != detailCall) return;
+                showDetailLoadError("加载失败，请重试");
             }
         });
+    }
+
+    private void showDetailLoadError(String message) {
+        loadingSkeleton.setVisibility(View.GONE);
+        if (editableWork == null) loadError.setVisibility(View.VISIBLE);
+        else {
+            scrollView.setVisibility(View.VISIBLE);
+            readingActionsBar.setVisibility(View.VISIBLE);
+        }
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     private void updateUI(TopicDetailResponse data) {
@@ -558,14 +581,14 @@ public class TopicDetailActivity extends AppCompatActivity {
         AuthorInfo author = data.getAuthorInfo();
         this.currentAuthor = author;
         invalidateOptionsMenu();
-        List<ChapterMenuItem> chapters = data.getMenu();
 
         currentTopicTitle = topic.getTitle();
         currentWordCount = topic.getWordCount();
         currentViewCount = topic.getViewCount();
         currentCommentCount = topic.getCommentCount();
         currentFavoriteCount = topic.getFavoriteCount();
-        toolbar.setTitle(topic.getTitle());
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle(topic.getTitle());
+        updateInteractionCounts(topic);
 
         Pair<String, String> processedContent = preprocessHtmlContent(topic.getContent());
         String cleanedHtml = processedContent.first;
@@ -655,16 +678,58 @@ public class TopicDetailActivity extends AppCompatActivity {
         // Preface belongs to the work; every directory entry is a real chapter.
         java.util.List<TopicDetailResponse.ChapterEdge> roots = com.app.fimtale.model.ChapterNavigation.choices(data, 0);
         firstChapterId = roots.size() == 1 && roots.get(0).to != null ? roots.get(0).to : 0;
-        startReadingButton.setVisibility(View.VISIBLE);
-        startReadingButton.setAlpha(1f);
-        chapterListContainer.setVisibility(chapters.isEmpty() ? View.GONE : View.VISIBLE);
-        chapterAdapter = new ChapterAdapter(chapters, item -> {
-            Intent intent = new Intent(this, ReaderActivity.class);
-            intent.putExtra(ReaderActivity.EXTRA_WORK_ID, currentTopicId);
-            intent.putExtra(ReaderActivity.EXTRA_CHAPTER_ID, item.getId());
-            startActivity(intent);
+        readingActionsBar.setVisibility(View.VISIBLE);
+    }
+
+    private void updateInteractionCounts(TopicInfo topic) {
+        currentFavoriteCount = topic.getFavoriteCount();
+        favoriteCountTextView.setText(String.valueOf(currentFavoriteCount));
+        updateCommentCount(topic.getCommentCount());
+    }
+
+    private void updateCommentCount(int count) {
+        currentCommentCount = count;
+        commentCountTextView.setText(String.valueOf(count));
+        TextView commentsButton = findViewById(R.id.showCommentsButton);
+        commentsButton.setText(String.valueOf(count));
+        commentsButton.setContentDescription("查看评论，" + count + " 条");
+        if (commentsSection != null) commentsSection.setCount(count);
+    }
+
+    private void showComments() {
+        if (editableWork == null) return;
+        commentsSection.open();
+    }
+
+    private void showChapters() {
+        if (editableWork == null) return;
+        if (chaptersSheet != null && chaptersSheet.isShowing()) return;
+        chaptersSheet = new BottomSheetDialog(this);
+        BottomSheetDialog sheet = chaptersSheet;
+        View content = getLayoutInflater().inflate(R.layout.dialog_work_list, null);
+        sheet.setContentView(content);
+        content.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                (int) (getResources().getDisplayMetrics().heightPixels * .82f)));
+        List<ChapterMenuItem> chapters = editableWork.getMenu();
+        ((TextView) content.findViewById(R.id.workListTitle)).setText("章节目录（" + chapters.size() + "）");
+        content.findViewById(R.id.workListSort).setVisibility(View.GONE);
+        content.findViewById(R.id.workListPager).setVisibility(View.GONE);
+        content.findViewById(R.id.workListSkeleton).setVisibility(View.GONE);
+        TextView empty = content.findViewById(R.id.workListStatus);
+        empty.setText("暂无章节"); empty.setVisibility(chapters.isEmpty() ? View.VISIBLE : View.GONE);
+        RecyclerView list = content.findViewById(R.id.workList);
+        list.setLayoutManager(new LinearLayoutManager(this)); list.setItemAnimator(null);
+        list.setAdapter(new ChapterAdapter(chapters, item -> {
+            sheet.dismiss();
+            startActivity(new Intent(this, ReaderActivity.class)
+                    .putExtra(ReaderActivity.EXTRA_WORK_ID, currentTopicId)
+                    .putExtra(ReaderActivity.EXTRA_CHAPTER_ID, item.getId()));
+        }));
+        sheet.setOnShowListener(dialog -> {
+            sheet.getBehavior().setSkipCollapsed(true);
+            sheet.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
         });
-        rvChapters.setAdapter(chapterAdapter);
+        sheet.show();
     }
 
     private void updateCoverTags(TopicTags tags) {
@@ -815,6 +880,9 @@ public class TopicDetailActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
+        findViewById(R.id.showChaptersButton).setOnClickListener(v -> showChapters());
+        findViewById(R.id.showCommentsButton).setOnClickListener(v -> showComments());
+        commentCountTextView.setOnClickListener(v -> showComments());
         startReadingButton.setOnClickListener(v -> {
             if (firstChapterId != -1) {
                 Intent intent = new Intent(this, ReaderActivity.class);

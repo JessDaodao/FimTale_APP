@@ -14,9 +14,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.app.fimtale.adapter.TagAdapter;
 import com.app.fimtale.model.TagInfo;
 import com.app.fimtale.model.TagGroup;
-import com.app.fimtale.network.FimTaleApiService;
+import android.widget.TextView;
+import androidx.recyclerview.widget.ConcatAdapter;
+import com.app.fimtale.adapter.LoadingCardAdapter;
+import com.app.fimtale.ui.ShimmerSkeletonView;
 import com.app.fimtale.network.RetrofitClient;
-import com.app.fimtale.utils.UserPreferences;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -37,7 +39,10 @@ public class TagListActivity extends AppCompatActivity {
     private MaterialCardView toolbarContainer;
     private boolean isToolbarElevated = false;
     private ObjectAnimator elevationAnimator;
-    private View loadingOverlay;
+    private ShimmerSkeletonView loadingSkeleton;
+    private LoadingCardAdapter loadingFooter;
+    private TextView loadingStatus;
+    private Call<List<TagGroup>> tagsCall;
     private String keyword = "";
 
     @Override
@@ -45,8 +50,11 @@ public class TagListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tag_list);
 
-        loadingOverlay = findViewById(R.id.loadingOverlay);
-        loadingOverlay.setVisibility(View.VISIBLE);
+        loadingSkeleton = findViewById(R.id.loadingSkeleton);
+        loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.TAGS);
+        loadingFooter = new LoadingCardAdapter(ShimmerSkeletonView.Layout.TAG_ROW);
+        loadingStatus = findViewById(R.id.loadingStatus);
+        loadingStatus.setOnClickListener(v -> loadTags(1));
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -58,7 +66,8 @@ public class TagListActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new TagAdapter(tagList, this);
-        recyclerView.setAdapter(adapter);
+        recyclerView.setAdapter(new ConcatAdapter(adapter, loadingFooter));
+        recyclerView.setItemAnimator(null);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -84,50 +93,77 @@ public class TagListActivity extends AppCompatActivity {
                 }
 
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                if (!isLoading && layoutManager != null && layoutManager.findLastVisibleItemPosition() >= tagList.size() - 3) {
+                if (dy > 0 && !isLoading && layoutManager != null && layoutManager.findLastVisibleItemPosition() >= tagList.size() - 3) {
                     if (currentPage < totalPages) {
-                        currentPage++;
-                        loadTags();
+                        recyclerView.post(() -> {
+                            if (!isFinishing() && !isDestroyed() && !isLoading && currentPage < totalPages) loadTags(currentPage + 1);
+                        });
                     }
                 }
             }
         });
 
-        loadTags();
+        loadTags(1);
     }
 
-    private void loadTags() {
+    private void loadTags(int page) {
+        if (isLoading && page != 1) return;
+        if (tagsCall != null) tagsCall.cancel();
         isLoading = true;
-        FimTaleApiService apiService = RetrofitClient.getInstance();
-
-        Call<List<TagGroup>> call = apiService.getTags(currentPage, keyword);
-        call.enqueue(new Callback<List<TagGroup>>() {
-            @Override
-            public void onResponse(Call<List<TagGroup>> call, Response<List<TagGroup>> response) {
-                isLoading = false;
+        loadingStatus.setVisibility(View.GONE);
+        loadingSkeleton.setVisibility(page == 1 ? View.VISIBLE : View.GONE);
+        loadingFooter.setLoading(page > 1);
+        recyclerView.setVisibility(page == 1 ? View.INVISIBLE : View.VISIBLE);
+        tagsCall = RetrofitClient.getInstance().getTags(page, keyword);
+        tagsCall.enqueue(new Callback<List<TagGroup>>() {
+            @Override public void onResponse(Call<List<TagGroup>> call, Response<List<TagGroup>> response) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagsCall) return;
                 if (response.isSuccessful()) {
                     List<TagGroup> data = response.body() == null ? java.util.Collections.emptyList() : response.body();
-                    int count = 0;
+                    if (page == 1) tagList.clear();
+                    int start = tagList.size();
                     for (TagGroup group : data) {
-                        if (group.tags != null) { tagList.addAll(group.tags); count += group.tags.size(); }
+                        if (group != null && group.tags != null) tagList.addAll(group.tags);
                     }
-                    totalPages = count >= 20 ? currentPage + 1 : currentPage;
-                    adapter.notifyDataSetChanged();
-                } else {
-                    if (currentPage > 1) currentPage--;
-                    Toast.makeText(TagListActivity.this, "加载标签失败", Toast.LENGTH_SHORT).show();
-                }
-                hideLoadingOverlay();
+                    currentPage = page;
+                    int count = tagList.size() - start;
+                    totalPages = count >= 20 ? page + 1 : page;
+                    if (page == 1) adapter.notifyDataSetChanged();
+                    else adapter.notifyItemRangeInserted(start, count);
+                    finishLoading();
+                    if (page == 1) recyclerView.scrollToPosition(0);
+                    if (tagList.isEmpty()) {
+                        loadingStatus.setText("暂无标签，点击刷新");
+                        loadingStatus.setVisibility(View.VISIBLE);
+                    }
+                } else showLoadError();
             }
-
-            @Override
-            public void onFailure(Call<List<TagGroup>> call, Throwable t) {
-                isLoading = false;
-                if (currentPage > 1) currentPage--;
-                Toast.makeText(TagListActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                hideLoadingOverlay();
+            @Override public void onFailure(Call<List<TagGroup>> call, Throwable t) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagsCall) return;
+                showLoadError();
             }
         });
+    }
+
+    private void finishLoading() {
+        isLoading = false;
+        loadingSkeleton.setVisibility(View.GONE);
+        loadingFooter.setLoading(false);
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+
+    private void showLoadError() {
+        finishLoading();
+        if (tagList.isEmpty()) {
+            loadingStatus.setText("加载失败，点击重试");
+            loadingStatus.setVisibility(View.VISIBLE);
+        } else Toast.makeText(this, "加载标签失败，请重试", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override protected void onDestroy() {
+        if (tagsCall != null) { tagsCall.cancel(); tagsCall = null; }
+        if (elevationAnimator != null) elevationAnimator.cancel();
+        super.onDestroy();
     }
 
     @Override
@@ -141,20 +177,9 @@ public class TagListActivity extends AppCompatActivity {
         input.setSingleLine(true); input.setText(keyword); input.setHint("标签名称");
         new MaterialAlertDialogBuilder(this).setTitle("搜索标签").setView(input)
                 .setPositiveButton("搜索", (dialog, which) -> {
-                    if (isLoading) return;
-                    keyword = input.getText().toString().trim(); currentPage = 1;
-                    tagList.clear(); adapter.notifyDataSetChanged(); loadTags();
+                    keyword = input.getText().toString().trim(); currentPage = 1; totalPages = 1;
+                    tagList.clear(); adapter.notifyDataSetChanged(); loadTags(1);
                 }).setNegativeButton("取消", null).show();
-    }
-
-    private void hideLoadingOverlay() {
-        if (loadingOverlay.getVisibility() == View.VISIBLE) {
-            loadingOverlay.animate()
-                    .alpha(0f)
-                    .setDuration(300)
-                    .withEndAction(() -> loadingOverlay.setVisibility(View.GONE))
-                    .start();
-        }
     }
 
     @Override

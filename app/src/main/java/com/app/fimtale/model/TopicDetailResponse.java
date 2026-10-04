@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 public class TopicDetailResponse {
     private TopicInfo work;
+    public WorkInteractions.Viewer viewer;
     private List<ChapterMenuItem> chapters;
     @SerializedName("chapter_edges") public List<ChapterEdge> chapterEdges;
     public TopicInfo getTopicInfo() { return work; }

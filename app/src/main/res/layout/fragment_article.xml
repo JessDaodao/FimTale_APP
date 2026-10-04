@@ -22,7 +22,7 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    <com.app.fimtale.ui.SkeletonRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -33,12 +33,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
             
-            <com.google.android.material.progressindicator.CircularProgressIndicator
-                android:id="@+id/progressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:indeterminate="true"
+            <com.app.fimtale.ui.ShimmerSkeletonView
+                android:id="@+id/loadingSkeleton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:visibility="gone"/>
 
             <LinearLayout
@@ -88,6 +86,6 @@
                 
         </FrameLayout>
 
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </com.app.fimtale.ui.SkeletonRefreshLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

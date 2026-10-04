@@ -27,6 +27,7 @@ import com.app.fimtale.editor.DraftSync;
 import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.network.SiteUrls;
 import com.app.fimtale.utils.UserPreferences;
+import com.app.fimtale.ui.ShimmerSkeletonView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.io.File;
@@ -59,6 +60,8 @@ public class DraftsActivity extends AppCompatActivity {
     private boolean headerRaised;
     private int generation;
     private String listedUser = "";
+    private ShimmerSkeletonView loadingSkeleton;
+    private boolean loading;
     private final ActivityResultLauncher<Intent> login = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (UserPreferences.isLoggedIn(this)) refresh(); else finish();
@@ -74,13 +77,18 @@ public class DraftsActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvToolbarTitle)).setText(R.string.drafts_title);
         toolbar.setNavigationOnClickListener(v -> finish());
         RecyclerView list = findViewById(R.id.draftsList);
+        loadingSkeleton = findViewById(R.id.draftsSkeleton);
+        loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.DRAFTS);
         summaryText = getString(R.string.drafts_local_hint);
         list.setLayoutManager(new LinearLayoutManager(this)); list.setAdapter(new ConcatAdapter(summaryAdapter, adapter));
+        list.setItemAnimator(null);
         View titleCard = findViewById(R.id.toolbarContainer);
         // The list scrolls behind the fixed card, including its summary row.
         titleCard.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
             int top = b + Math.round(16 * getResources().getDisplayMetrics().density);
             if (list.getPaddingTop() != top) list.setPadding(0, top, 0, list.getPaddingBottom());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) loadingSkeleton.getLayoutParams();
+            if (params.topMargin != top) { params.topMargin = top; loadingSkeleton.setLayoutParams(params); }
         });
         list.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override public void onScrolled(@NonNull RecyclerView view, int dx, int dy) {
@@ -93,6 +101,13 @@ public class DraftsActivity extends AppCompatActivity {
         });
         findViewById(R.id.draftsEmpty).setOnClickListener(v -> refresh());
         if (state == null && !UserPreferences.isLoggedIn(this)) login.launch(new Intent(this, LoginActivity.class));
+    }
+    private void setDraftsLoading(boolean loading) {
+        this.loading = loading;
+        loadingSkeleton.setVisibility(loading ? View.VISIBLE : View.GONE);
+        findViewById(R.id.draftsList).setVisibility(loading ? View.INVISIBLE : View.VISIBLE);
+        findViewById(R.id.draftsEmpty).setVisibility(!loading && items.isEmpty() ? View.VISIBLE : View.GONE);
+        findViewById(R.id.draftsCreate).setEnabled(!loading);
     }
     private void animateHeader(boolean raised) {
         if (headerRaised == raised) return;
@@ -112,8 +127,8 @@ public class DraftsActivity extends AppCompatActivity {
         String userId = UserPreferences.getUserId(this);
         if (!UserPreferences.isLoggedIn(this) || !listedUser.equals(userId)) { items.clear(); adapter.notifyDataSetChanged(); }
         listedUser = userId;
-        if (!UserPreferences.isLoggedIn(this) || userId.isEmpty()) return;
-        findViewById(R.id.draftsProgress).setVisibility(View.VISIBLE); findViewById(R.id.draftsEmpty).setVisibility(View.GONE);
+        if (!UserPreferences.isLoggedIn(this) || userId.isEmpty()) { setDraftsLoading(false); return; }
+        setDraftsLoading(true);
         File directory = new File(getNoBackupFilesDir(), "editor_drafts");
         String token = UserPreferences.getToken(this);
         io.execute(() -> {
@@ -153,19 +168,22 @@ public class DraftsActivity extends AppCompatActivity {
                 List<Row> drafts = new ArrayList<>(rows.values()); drafts.sort(java.util.Comparator.comparingLong((Row row) -> row.savedAt).reversed());
                 String notice = warning;
                 main.post(() -> {
-                    if (isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
+                    if (isFinishing() || isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
                     items.clear(); items.addAll(drafts); adapter.notifyDataSetChanged();
-                    findViewById(R.id.draftsProgress).setVisibility(View.GONE);
+                    setDraftsLoading(false);
                     TextView empty = findViewById(R.id.draftsEmpty); empty.setText(R.string.drafts_empty);
+                    if (notice != null && items.isEmpty()) empty.setText("无法读取在线草稿，点击重试");
                     empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-                    summaryText = notice == null ? items.size() + " 篇草稿 · 与网站同步" : notice;
+                    summaryText = notice == null ? items.size() + " 篇草稿" : notice;
                     summaryAdapter.notifyItemChanged(0);
                 });
             } catch (Exception e) {
                 main.post(() -> {
-                    if (isDestroyed() || current != generation) return;
-                    findViewById(R.id.draftsProgress).setVisibility(View.GONE);
-                    TextView empty = findViewById(R.id.draftsEmpty); empty.setText("无法读取草稿，点击重试"); empty.setVisibility(View.VISIBLE);
+                    if (isFinishing() || isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
+                    setDraftsLoading(false);
+                    TextView empty = findViewById(R.id.draftsEmpty); empty.setText("无法读取草稿，点击重试");
+                    summaryText = "无法读取草稿，点击重试";
+                    summaryAdapter.notifyItemChanged(0);
                 });
             }
         });
@@ -180,9 +198,11 @@ public class DraftsActivity extends AppCompatActivity {
                 .putExtra(EditorActivity.EXTRA_DRAFT_ID, slot == null ? "" : slot));
     }
     private void open(Row row) {
+        if (loading) return;
         if (!accountMatches()) return;
         if (row.local != null) { launch(row.local.workId, row.local.chapterId, row.local.draftId); return; }
-        findViewById(R.id.draftsProgress).setVisibility(View.VISIBLE);
+        int current = ++generation;
+        setDraftsLoading(true);
         String token = UserPreferences.getToken(this);
         io.execute(() -> {
             try {
@@ -190,11 +210,12 @@ public class DraftsActivity extends AppCompatActivity {
                 if (draft == null) throw new java.io.IOException("在线草稿已删除，请刷新列表");
                 DraftCodec.Target target = DraftCodec.target(draft.key, draft.payload);
                 main.post(() -> {
-                    if (isDestroyed() || !token.equals(UserPreferences.getToken(this))) return;
-                    findViewById(R.id.draftsProgress).setVisibility(View.GONE); launch(target.workId, target.chapterId, target.slot);
+                    if (isFinishing() || isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
+                    setDraftsLoading(false); launch(target.workId, target.chapterId, target.slot);
                 });
             } catch (Exception e) { main.post(() -> {
-                if (!isDestroyed()) { findViewById(R.id.draftsProgress).setVisibility(View.GONE); Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show(); }
+                if (isFinishing() || isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
+                setDraftsLoading(false); Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             }); }
         });
     }

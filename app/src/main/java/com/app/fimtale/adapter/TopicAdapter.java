@@ -157,6 +157,15 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         return topics.size();
     }
 
+    @Override public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        if (holder instanceof TopicViewHolder) {
+            ImageView cover = ((TopicViewHolder) holder).coverImageView;
+            Glide.with(holder.itemView.getContext().getApplicationContext()).clear(cover);
+            if (cover instanceof ParallaxImageView) ((ParallaxImageView) cover).setParallaxEnabled(false);
+        }
+        super.onViewRecycled(holder);
+    }
+
     private void addTagChip(ChipGroup group, String text, boolean isStatus) {
         Chip chip = new Chip(group.getContext());
         chip.setText(text);

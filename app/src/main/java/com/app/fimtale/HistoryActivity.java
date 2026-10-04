@@ -9,13 +9,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import android.view.View;
+import android.widget.TextView;
+import androidx.recyclerview.widget.ConcatAdapter;
+import com.app.fimtale.adapter.LoadingCardAdapter;
+import com.app.fimtale.ui.ShimmerSkeletonView;
 import com.app.fimtale.adapter.HistoryAdapter;
 import com.app.fimtale.model.HistoryResponse;
-import com.app.fimtale.model.TopicDetailResponse;
-import com.app.fimtale.model.TopicInfo;
 import com.app.fimtale.network.RetrofitClient;
-import com.app.fimtale.utils.UserPreferences;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.card.MaterialCardView;
 import retrofit2.Call;
@@ -25,9 +26,12 @@ import retrofit2.Response;
 public class HistoryActivity extends AppCompatActivity {
 
     private HistoryAdapter adapter;
-    private SwipeRefreshLayout swipeRefresh;
+    private RecyclerView recyclerView;
+    private ShimmerSkeletonView loadingSkeleton;
+    private LoadingCardAdapter loadingFooter;
+    private TextView loadingStatus;
+    private Call<HistoryResponse> activeCall;
     private MaterialCardView toolbarContainer;
-    private android.view.View loadingOverlay;
     private boolean isToolbarElevated = false;
     private ObjectAnimator elevationAnimator;
     private int currentPage = 1;
@@ -44,10 +48,13 @@ public class HistoryActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> finish());
 
         toolbarContainer = findViewById(R.id.toolbarContainer);
-        loadingOverlay = findViewById(R.id.loadingOverlay);
+        loadingSkeleton = findViewById(R.id.loadingSkeleton);
+        loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.HISTORY);
+        loadingFooter = new LoadingCardAdapter(ShimmerSkeletonView.Layout.HISTORY_ROW);
+        loadingStatus = findViewById(R.id.loadingStatus);
+        loadingStatus.setOnClickListener(v -> loadHistory(1));
 
-        swipeRefresh = findViewById(R.id.swipeRefresh);
-        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+        recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
@@ -82,7 +89,9 @@ public class HistoryActivity extends AppCompatActivity {
                         if (!isLoading && (visibleItemCount + firstVisibleItemPosition) >= totalItemCount
                                 && firstVisibleItemPosition >= 0
                                 && currentPage < totalPages) {
-                            loadHistory(currentPage + 1);
+                            recyclerView.post(() -> {
+                                if (!isFinishing() && !isDestroyed() && !isLoading && currentPage < totalPages) loadHistory(currentPage + 1);
+                            });
                         }
                     }
                 }
@@ -97,9 +106,8 @@ public class HistoryActivity extends AppCompatActivity {
             intent.putExtra(ReaderActivity.EXTRA_INITIAL_PROGRESS, topic.getProgress());
             startActivity(intent);
         });
-        recyclerView.setAdapter(adapter);
-
-        swipeRefresh.setEnabled(false);
+        recyclerView.setAdapter(new ConcatAdapter(adapter, loadingFooter));
+        recyclerView.setItemAnimator(null);
 
         loadHistory(1);
     }
@@ -107,47 +115,54 @@ public class HistoryActivity extends AppCompatActivity {
     private void loadHistory(int page) {
         if (isLoading) return;
         isLoading = true;
-        swipeRefresh.setRefreshing(true);
-
-        RetrofitClient.getInstance().getHistory(page).enqueue(new Callback<HistoryResponse>() {
-            @Override
-            public void onResponse(Call<HistoryResponse> call, Response<HistoryResponse> response) {
-                isLoading = false;
-                swipeRefresh.setRefreshing(false);
-                hideLoadingOverlay();
+        loadingStatus.setVisibility(View.GONE);
+        loadingSkeleton.setVisibility(page == 1 ? View.VISIBLE : View.GONE);
+        loadingFooter.setLoading(page > 1);
+        recyclerView.setVisibility(page == 1 ? View.INVISIBLE : View.VISIBLE);
+        activeCall = RetrofitClient.getInstance().getHistory(page);
+        activeCall.enqueue(new Callback<HistoryResponse>() {
+            @Override public void onResponse(Call<HistoryResponse> call, Response<HistoryResponse> response) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != activeCall) return;
                 if (response.isSuccessful() && response.body() != null) {
                     currentPage = page;
                     totalPages = response.body().getTotalPage();
-
-                    if (page == 1) {
-                        adapter.setHistoryTopics(response.body().getHistoryTopics());
-                        RecyclerView recyclerView = findViewById(R.id.recyclerView);
-                        recyclerView.scrollToPosition(0);
-                    } else {
-                        adapter.addHistoryTopics(response.body().getHistoryTopics());
+                    java.util.List<HistoryResponse.HistoryTopic> history = response.body().getHistoryTopics();
+                    if (history == null) history = new java.util.ArrayList<>();
+                    if (page == 1) adapter.setHistoryTopics(new java.util.ArrayList<>(history));
+                    else adapter.addHistoryTopics(history);
+                    finishLoading();
+                    if (page == 1) recyclerView.scrollToPosition(0);
+                    if (adapter.getItemCount() == 0) {
+                        loadingStatus.setText("暂无历史记录，点击刷新");
+                        loadingStatus.setVisibility(View.VISIBLE);
                     }
-                } else {
-                    Toast.makeText(HistoryActivity.this, com.app.fimtale.network.ApiErrors.message(response), Toast.LENGTH_SHORT).show();
-                }
+                } else showLoadError(com.app.fimtale.network.ApiErrors.message(response));
             }
-
-            @Override
-            public void onFailure(Call<HistoryResponse> call, Throwable t) {
-                isLoading = false;
-                swipeRefresh.setRefreshing(false);
-                hideLoadingOverlay();
-                Toast.makeText(HistoryActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            @Override public void onFailure(Call<HistoryResponse> call, Throwable t) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != activeCall) return;
+                showLoadError("加载失败，请重试");
             }
         });
     }
 
-    private void hideLoadingOverlay() {
-        if (loadingOverlay != null && loadingOverlay.getVisibility() == android.view.View.VISIBLE) {
-            loadingOverlay.animate()
-                    .alpha(0f)
-                    .setDuration(300)
-                    .withEndAction(() -> loadingOverlay.setVisibility(android.view.View.GONE))
-                    .start();
-        }
+    private void finishLoading() {
+        isLoading = false;
+        loadingSkeleton.setVisibility(View.GONE);
+        loadingFooter.setLoading(false);
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+
+    private void showLoadError(String message) {
+        finishLoading();
+        if (adapter.getItemCount() == 0) {
+            loadingStatus.setText("加载失败，点击重试");
+            loadingStatus.setVisibility(View.VISIBLE);
+        } else Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override protected void onDestroy() {
+        if (activeCall != null) { activeCall.cancel(); activeCall = null; }
+        if (elevationAnimator != null) elevationAnimator.cancel();
+        super.onDestroy();
     }
 }

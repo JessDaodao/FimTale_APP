@@ -1,12 +1,9 @@
 package com.app.fimtale.ui;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,6 +11,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.ConcatAdapter;
+import com.app.fimtale.adapter.LoadingCardAdapter;
 
 import com.app.fimtale.R;
 import com.app.fimtale.adapter.TopicAdapter;
@@ -21,7 +20,6 @@ import com.app.fimtale.model.Topic;
 import com.app.fimtale.model.TopicListResponse;
 import com.app.fimtale.model.TopicViewItem;
 import com.app.fimtale.network.RetrofitClient;
-import com.app.fimtale.utils.UserPreferences;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +39,9 @@ public class ArticleListFragment extends Fragment {
     private int totalPages = 1;
     private boolean isLoading = false;
     private RecyclerView recyclerView;
-    private ProgressBar progressBar;
+    private ShimmerSkeletonView loadingSkeleton;
+    private LoadingCardAdapter loadingFooter;
+    private Call<TopicListResponse> topicsCall;
     private TextView errorTextView;
 
     public static ArticleListFragment newInstance(String category) {
@@ -75,11 +75,15 @@ public class ArticleListFragment extends Fragment {
         } else {
             recyclerView = view.findViewById(R.id.recycler_view);
         }
-        progressBar = view.findViewById(R.id.progressBar);
+        loadingSkeleton = view.findViewById(R.id.loadingSkeleton);
+        errorTextView = view.findViewById(R.id.errorTextView);
+        errorTextView.setOnClickListener(v -> { currentPage = 1; loadTopics(); });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         topicAdapter = new TopicAdapter(topicViewItemList);
-        recyclerView.setAdapter(topicAdapter);
+        loadingFooter = new LoadingCardAdapter();
+        recyclerView.setAdapter(new ConcatAdapter(topicAdapter, loadingFooter));
+        recyclerView.setItemAnimator(null);
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -95,100 +99,67 @@ public class ArticleListFragment extends Fragment {
                         if (!isLoading && (visibleItemCount + firstVisibleItemPosition) >= totalItemCount
                                 && firstVisibleItemPosition >= 0
                                 && currentPage < totalPages) {
-                            currentPage++;
-                            loadTopics();
+                            recyclerView.post(() -> {
+                                if (getView() != null && !isLoading && currentPage < totalPages) {
+                                    currentPage++; loadTopics();
+                                }
+                            });
                         }
                     }
                 }
             }
         });
 
+        currentPage = 1;
         loadTopics();
     }
 
     private void loadTopics() {
         if (isLoading) return;
         isLoading = true;
-
-        if (currentPage == 1) {
-            progressBar.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.INVISIBLE);
-        }
-
-        RetrofitClient.getInstance().getTopicList(currentPage, null, null).enqueue(new Callback<TopicListResponse>() {
-            @Override
-            public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
-                isLoading = false;
-                if (!isAdded()) return;
-
+        final int requestedPage = currentPage;
+        errorTextView.setVisibility(View.GONE);
+        loadingSkeleton.setVisibility(requestedPage == 1 ? View.VISIBLE : View.GONE);
+        loadingFooter.setLoading(requestedPage > 1);
+        recyclerView.setVisibility(requestedPage == 1 ? View.INVISIBLE : View.VISIBLE);
+        topicsCall = RetrofitClient.getInstance().getTopicList(requestedPage, null, null);
+        topicsCall.enqueue(new Callback<TopicListResponse>() {
+            @Override public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
+                if (!isAdded() || getView() == null || call.isCanceled() || call != topicsCall) return;
                 if (response.isSuccessful() && response.body() != null) {
                     TopicListResponse data = response.body();
-                    
                     totalPages = data.getTotalPage();
-                    
-                    List<Topic> topicList = data.getTopicArray();
-                    
-                    if (currentPage == 1) {
-                        topicViewItemList.clear();
+                    if (requestedPage == 1) topicViewItemList.clear();
+                    int start = topicViewItemList.size();
+                    if (data.getTopicArray() != null) for (Topic topic : data.getTopicArray()) topicViewItemList.add(new TopicViewItem(topic));
+                    if (requestedPage == 1) topicAdapter.notifyDataSetChanged();
+                    else topicAdapter.notifyItemRangeInserted(start, topicViewItemList.size() - start);
+                    finishLoading();
+                    if (topicViewItemList.isEmpty()) {
+                        errorTextView.setText("暂无文章，点击刷新"); errorTextView.setVisibility(View.VISIBLE);
                     }
-
-                    int startInsertPos = topicViewItemList.size();
-                    if (topicList != null) {
-                        List<TopicViewItem> newItems = topicList.stream().map(TopicViewItem::new).collect(Collectors.toList());
-                        topicViewItemList.addAll(newItems);
-                        if (currentPage == 1) {
-                            topicAdapter.notifyDataSetChanged();
-                        } else {
-                            topicAdapter.notifyItemRangeInserted(startInsertPos, newItems.size());
-                        }
-                    }
-
-                    if (currentPage == 1) {
-                        progressBar.animate()
-                                .alpha(0f)
-                                .setDuration(300)
-                                .withEndAction(() -> {
-                                    progressBar.setVisibility(View.GONE);
-                                    progressBar.setAlpha(1f);
-
-                                    recyclerView.setAlpha(0f);
-                                    recyclerView.setScaleX(0.9f);
-                                    recyclerView.setScaleY(0.9f);
-                                    recyclerView.setVisibility(View.VISIBLE);
-
-                                    android.view.animation.PathInterpolator interpolator = new android.view.animation.PathInterpolator(1.00f, 0.00f, 0.28f, 1.00f);
-
-                                    recyclerView.animate()
-                                            .alpha(1f)
-                                            .scaleX(1f)
-                                            .scaleY(1f)
-                                            .setInterpolator(interpolator)
-                                            .setDuration(500)
-                                            .start();
-                                })
-                                .start();
-                    }
-
-                } else {
-                    if (currentPage > 1) currentPage--;
-                    showError();
-                }
+                } else showError(requestedPage);
             }
-
-            @Override
-            public void onFailure(Call<TopicListResponse> call, Throwable t) {
-                isLoading = false;
-                if (!isAdded()) return;
-                if (currentPage > 1) currentPage--;
-                showError();
+            @Override public void onFailure(Call<TopicListResponse> call, Throwable t) {
+                if (!isAdded() || getView() == null || call.isCanceled() || call != topicsCall) return;
+                showError(requestedPage);
             }
         });
     }
-
-    private void showError() {
-        if (currentPage == 1) {
-            progressBar.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
-        }
+    private void finishLoading() {
+        isLoading = false;
+        loadingSkeleton.setVisibility(View.GONE); loadingFooter.setLoading(false);
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+    private void showError(int requestedPage) {
+        currentPage = Math.max(1, requestedPage - 1); finishLoading();
+        if (topicViewItemList.isEmpty()) {
+            errorTextView.setText("加载失败，点击重试"); errorTextView.setVisibility(View.VISIBLE);
+        } else android.widget.Toast.makeText(getContext(), "加载失败，请重试", android.widget.Toast.LENGTH_SHORT).show();
+    }
+    @Override public void onDestroyView() {
+        if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
+        isLoading = false;
+        super.onDestroyView();
     }
 }

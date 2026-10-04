@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+    android:paddingBottom="16dp">
+    <TextView android:id="@+id/workListTitle" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp" android:paddingVertical="20dp"
+        android:textAppearance="?attr/textAppearanceTitleLarge" android:textColor="?attr/colorOnSurface"/>
+    <com.google.android.material.button.MaterialButton android:id="@+id/workListSort" style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="时间：从早到晚"/>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/workList" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:clipToPadding="false" android:paddingBottom="8dp"/>
+        <com.app.fimtale.ui.ShimmerSkeletonView android:id="@+id/workListSkeleton"
+            android:layout_width="match_parent" android:layout_height="match_parent"/>
+        <TextView android:id="@+id/workListStatus" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="center" android:gravity="center" android:padding="24dp" android:visibility="gone"
+            android:textColor="?attr/colorOnSurfaceVariant"/>
+    </FrameLayout>
+    <LinearLayout android:id="@+id/workListPager" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical" android:paddingHorizontal="16dp" android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton android:id="@+id/workListPrevious" style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="上一页"/>
+        <TextView android:id="@+id/workListPage" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="center" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <com.google.android.material.button.MaterialButton android:id="@+id/workListNext" style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="下一页"/>
+    </LinearLayout>
+</LinearLayout>

@@ -207,25 +207,30 @@
                 android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/grid_item_topic" />
 
+            <com.app.fimtale.ui.ShimmerSkeletonView
+                android:id="@+id/userTopicsSkeleton"
+                android:layout_width="match_parent" android:layout_height="392dp"
+                android:visibility="gone"/>
+
+            <TextView android:id="@+id/userTopicsStatus"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:padding="24dp" android:gravity="center" android:visibility="gone"
+                android:textColor="?attr/colorOnSurfaceVariant"/>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <FrameLayout
-        android:id="@+id/loadingMask"
+    <com.app.fimtale.ui.ShimmerSkeletonView
+        android:id="@+id/profileLoadingSkeleton"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="?attr/colorSurface"
-        android:clickable="true"
-        android:focusable="true"
-        android:visibility="visible">
+        android:background="?android:attr/colorBackground"
+        android:visibility="visible"/>
 
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:indeterminate="true"
-            app:indicatorColor="?attr/colorPrimary" />
-    </FrameLayout>
+    <TextView android:id="@+id/profileLoadError"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center" android:padding="24dp" android:visibility="gone"
+        android:text="加载失败，点击重试" android:textColor="?attr/colorOnSurfaceVariant"/>
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"

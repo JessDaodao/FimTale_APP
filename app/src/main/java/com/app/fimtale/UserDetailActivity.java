@@ -7,7 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
+import com.app.fimtale.ui.ShimmerSkeletonView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,7 +68,10 @@ public class UserDetailActivity extends AppCompatActivity {
     private ChipGroup chipGroupBadges;
     private TextView tvMedalsTitle;
     private ChipGroup chipGroupMedals;
-    private View loadingMask;
+    private ShimmerSkeletonView loadingSkeleton, topicsSkeleton;
+    private TextView loadError, topicsStatus;
+    private Call<UserDetailResponse> profileCall;
+    private Call<com.app.fimtale.model.UserWorksResponse> topicsCall;
     private CollapsingToolbarLayout collapsingToolbar;
     private MaterialCardView toolbarContainer;
     private Toolbar toolbar;
@@ -108,10 +111,9 @@ public class UserDetailActivity extends AppCompatActivity {
         }
         this.currentUsername = username;
 
+        initView();
         loadData(username);
         loadUserTopics(username, 1);
-
-        initView();
     }
 
     private void initView() {
@@ -139,13 +141,20 @@ public class UserDetailActivity extends AppCompatActivity {
         chipGroupBadges = findViewById(R.id.chipGroupBadges);
         tvMedalsTitle = findViewById(R.id.tvMedalsTitle);
         chipGroupMedals = findViewById(R.id.chipGroupMedals);
-        loadingMask = findViewById(R.id.loadingMask);
+        loadingSkeleton = findViewById(R.id.profileLoadingSkeleton);
+        loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.USER_DETAIL);
+        topicsSkeleton = findViewById(R.id.userTopicsSkeleton);
+        topicsSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.CARD);
+        loadError = findViewById(R.id.profileLoadError);
+        loadError.setOnClickListener(v -> loadData(currentUsername));
+        topicsStatus = findViewById(R.id.userTopicsStatus);
         rvUserTopics = findViewById(R.id.rvUserTopics);
         tvUserTopicsTitle = findViewById(R.id.tvUserTopicsTitle);
 
         rvUserTopics.setLayoutManager(new LinearLayoutManager(this));
         topicAdapter = new TopicAdapter(topicList);
         rvUserTopics.setAdapter(topicAdapter);
+        rvUserTopics.setItemAnimator(null);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         float titleThreshold = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 240, getResources().getDisplayMetrics());
@@ -183,7 +192,7 @@ public class UserDetailActivity extends AppCompatActivity {
                     }
                 }
 
-                if (!v.canScrollVertically(1)) {
+                if (scrollY > oldScrollY && !v.canScrollVertically(1)) {
                     if (!isLoading && currentPage < totalPages) {
                         loadUserTopics(currentUsername, currentPage + 1);
                     }
@@ -193,40 +202,40 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     private void loadData(String username) {
-        if (loadingMask != null) loadingMask.setVisibility(View.VISIBLE);
-
-        RetrofitClient.getInstance().getUserDetail(username).enqueue(new Callback<UserDetailResponse>() {
+        if (profileCall != null) profileCall.cancel();
+        loadingSkeleton.setVisibility(View.VISIBLE);
+        loadError.setVisibility(View.GONE);
+        scrollView.setVisibility(View.INVISIBLE);
+        profileCall = RetrofitClient.getInstance().getUserDetail(username);
+        profileCall.enqueue(new Callback<UserDetailResponse>() {
             @Override
             public void onResponse(Call<UserDetailResponse> call, Response<UserDetailResponse> response) {
-                hideLoadingMask();
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != profileCall) return;
                 if (response.isSuccessful() && response.body() != null) {
                     UserDetailResponse data = response.body();
                     if (data.getId() > 0) {
                         bindData(data);
+                        loadingSkeleton.setVisibility(View.GONE);
+                        scrollView.setVisibility(View.VISIBLE);
                     } else {
-                        Toast.makeText(UserDetailActivity.this, "获取用户信息失败", Toast.LENGTH_SHORT).show();
+                        showProfileLoadError();
                     }
                 } else {
-                    Toast.makeText(UserDetailActivity.this, "网络请求失败", Toast.LENGTH_SHORT).show();
+                    showProfileLoadError();
                 }
             }
 
             @Override
             public void onFailure(Call<UserDetailResponse> call, Throwable t) {
-                hideLoadingMask();
-                Toast.makeText(UserDetailActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != profileCall) return;
+                showProfileLoadError();
             }
         });
     }
 
-    private void hideLoadingMask() {
-        if (loadingMask != null && loadingMask.getVisibility() == View.VISIBLE) {
-            loadingMask.animate()
-                    .alpha(0f)
-                    .setDuration(400)
-                    .withEndAction(() -> loadingMask.setVisibility(View.GONE))
-                    .start();
-        }
+    private void showProfileLoadError() {
+        loadingSkeleton.setVisibility(View.GONE);
+        loadError.setVisibility(View.VISIBLE);
     }
 
     private void bindData(UserDetailResponse data) {
@@ -371,55 +380,58 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     private void loadUserTopics(String username, int page) {
-        if (isLoading) return;
+        if (username == null) return;
+        if (isLoading) {
+            if (page != 1) return;
+            if (topicsCall != null) topicsCall.cancel();
+        }
         isLoading = true;
-
-        RetrofitClient.getInstance().getUserTopics(username, "work", page).enqueue(new Callback<com.app.fimtale.model.UserWorksResponse>() {
-            @Override
-            public void onResponse(Call<com.app.fimtale.model.UserWorksResponse> call, Response<com.app.fimtale.model.UserWorksResponse> response) {
-                if (isFinishing() || isDestroyed()) return;
-                isLoading = false;
-                if (response.isSuccessful() && response.body() != null) {
+        topicsStatus.setVisibility(View.GONE);
+        tvUserTopicsTitle.setVisibility(View.VISIBLE);
+        topicsSkeleton.setVisibility(View.VISIBLE);
+        topicsCall = RetrofitClient.getInstance().getUserTopics(username, "work", page);
+        topicsCall.enqueue(new Callback<com.app.fimtale.model.UserWorksResponse>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.UserWorksResponse> call, Response<com.app.fimtale.model.UserWorksResponse> response) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != topicsCall) return;
+                if (response.isSuccessful() && response.body() != null && response.body().content != null) {
                     TopicListResponse data = response.body().content;
-                    if (data != null) {
-                        if (page == 1) {
-                            topicList.clear();
-                        }
-                        
-                        currentPage = page;
-                        totalPages = data.getTotalPage();
-                        
-                        int startInsertPos = topicList.size();
-                        java.util.List<TopicViewItem> newItems = new java.util.ArrayList<>();
-                        for (Topic topic : data.getTopicArray()) {
-                            newItems.add(new TopicViewItem(topic));
-                        }
-                        topicList.addAll(newItems);
-                        
-                        if (page == 1) {
-                            topicAdapter.notifyDataSetChanged();
-                        } else {
-                            topicAdapter.notifyItemRangeInserted(startInsertPos, newItems.size());
-                        }
-                        
-                        if (topicList.isEmpty() && currentPage == 1) {
-                            tvUserTopicsTitle.setVisibility(View.GONE);
-                            rvUserTopics.setVisibility(View.GONE);
-                        } else {
-                            tvUserTopicsTitle.setVisibility(View.VISIBLE);
-                            rvUserTopics.setVisibility(View.VISIBLE);
-                        }
+                    if (page == 1) topicList.clear();
+                    currentPage = page; totalPages = data.getTotalPage();
+                    int start = topicList.size();
+                    if (data.getTopicArray() != null) for (Topic topic : data.getTopicArray()) topicList.add(new TopicViewItem(topic));
+                    if (page == 1) topicAdapter.notifyDataSetChanged();
+                    else topicAdapter.notifyItemRangeInserted(start, topicList.size() - start);
+                    finishTopicsLoading();
+                    rvUserTopics.setVisibility(topicList.isEmpty() ? View.GONE : View.VISIBLE);
+                    if (topicList.isEmpty()) {
+                        topicsStatus.setText("暂无文章"); topicsStatus.setVisibility(View.VISIBLE);
+                        topicsStatus.setOnClickListener(null);
                     }
-                }
+                } else showTopicsLoadError(page);
             }
-
-            @Override
-            public void onFailure(Call<com.app.fimtale.model.UserWorksResponse> call, Throwable t) {
-                if (isFinishing() || isDestroyed()) return;
-                isLoading = false;
-                // 不做处理
+            @Override public void onFailure(Call<com.app.fimtale.model.UserWorksResponse> call, Throwable t) {
+                if (isFinishing() || isDestroyed() || call.isCanceled() || call != topicsCall) return;
+                showTopicsLoadError(page);
             }
         });
+    }
+
+    private void finishTopicsLoading() {
+        isLoading = false;
+        topicsSkeleton.setVisibility(View.GONE);
+    }
+
+    private void showTopicsLoadError(int page) {
+        finishTopicsLoading();
+        topicsStatus.setText("文章加载失败，点击重试"); topicsStatus.setVisibility(View.VISIBLE);
+        topicsStatus.setOnClickListener(v -> loadUserTopics(currentUsername, page));
+    }
+
+    @Override protected void onDestroy() {
+        if (profileCall != null) { profileCall.cancel(); profileCall = null; }
+        if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
+        if (elevationAnimator != null) elevationAnimator.cancel();
+        super.onDestroy();
     }
 
     private int resolveThemeColor(int attrRes) {
