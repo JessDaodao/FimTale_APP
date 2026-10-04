@@ -37,7 +37,6 @@ import com.app.fimtale.model.ChapterMenuItem;
 import com.app.fimtale.model.TopicDetailResponse;
 import com.app.fimtale.model.TopicInfo;
 import com.app.fimtale.model.TopicTags;
-import com.app.fimtale.model.ReadProgress;
 import com.app.fimtale.network.ApiErrors;
 import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.utils.UserPreferences;
@@ -117,10 +116,8 @@ public class TopicDetailActivity extends AppCompatActivity {
     private ShimmerSkeletonView loadingSkeleton;
     private TextView loadError;
     private Call<TopicDetailResponse> detailCall;
-    private Call<ReadProgress> readingProgressCall;
     private NestedScrollView scrollView;
     private Button startReadingButton;
-    private MaterialButton continueReadingButton;
     private View readingActionsBar;
     private View commentComposerBar;
     private TextInputEditText commentComposerInput;
@@ -152,7 +149,6 @@ public class TopicDetailActivity extends AppCompatActivity {
     private boolean isToolbarElevated = false;
     private ObjectAnimator elevationAnimator;
     private int firstChapterId = -1;
-    private ReadProgress latestReadingProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -245,7 +241,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         loadError.setOnClickListener(v -> fetchTopicDetail(currentTopicId));
         scrollView = findViewById(R.id.scrollView);
         startReadingButton = findViewById(R.id.startReadingButton);
-        continueReadingButton = findViewById(R.id.continueReadingButton);
         readingActionsBar = findViewById(R.id.readingActionsBar);
         commentComposerBar = findViewById(R.id.commentComposerBar);
         commentComposerInput = findViewById(R.id.commentComposerInput);
@@ -296,14 +291,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         long version = com.app.fimtale.editor.EditorChanges.version(currentTopicId);
         boolean detailRefreshed = version != editorVersion;
         if (detailRefreshed) { editorVersion = version; fetchTopicDetail(currentTopicId); }
-        if (!detailRefreshed && editableWork != null) {
-            if (UserPreferences.isLoggedIn(this)) {
-                fetchLatestReadingProgress(currentTopicId);
-            } else {
-                latestReadingProgress = null;
-                continueReadingButton.setVisibility(View.GONE);
-            }
-        }
     }
 
     @Override protected void onDestroy() {
@@ -311,7 +298,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         if (commentsSection != null) commentsSection.close();
         if (chaptersSheet != null) chaptersSheet.dismiss();
         if (detailCall != null) { detailCall.cancel(); detailCall = null; }
-        if (readingProgressCall != null) { readingProgressCall.cancel(); readingProgressCall = null; }
         if (commentCall != null) { commentCall.cancel(); commentCall = null; }
         if (elevationAnimator != null) elevationAnimator.cancel();
         editorAccess.close();
@@ -564,9 +550,6 @@ public class TopicDetailActivity extends AppCompatActivity {
 
     private void fetchTopicDetail(int topicId) {
         if (detailCall != null) detailCall.cancel();
-        if (readingProgressCall != null) { readingProgressCall.cancel(); readingProgressCall = null; }
-        latestReadingProgress = null;
-        if (continueReadingButton != null) continueReadingButton.setVisibility(View.GONE);
         loadingSkeleton.setVisibility(View.VISIBLE);
         loadError.setVisibility(View.GONE);
         scrollView.setVisibility(View.INVISIBLE);
@@ -587,7 +570,6 @@ public class TopicDetailActivity extends AppCompatActivity {
                     TopicDetailResponse data = response.body();
                     updateUI(data);
                     workActions.bind(data, token);
-                    fetchLatestReadingProgress(topicId);
                     loadingSkeleton.setVisibility(View.GONE);
                     scrollView.setVisibility(View.VISIBLE);
                     scrollView.post(() -> { if (!isFinishing() && !isDestroyed()) commentsSection.loadIfVisible(); });
@@ -719,30 +701,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         firstChapterId = roots.size() == 1 && roots.get(0).to != null ? roots.get(0).to : 0;
         setCommentMode(false);
         readingActionsBar.setVisibility(View.VISIBLE);
-    }
-
-    private void fetchLatestReadingProgress(int topicId) {
-        if (!UserPreferences.isLoggedIn(this) || TextUtils.isEmpty(UserPreferences.getToken(this))) return;
-        final String token = UserPreferences.getToken(this);
-        readingProgressCall = RetrofitClient.getInstance().saveReadingProgress(
-                new ReadProgress(topicId, 0, 0));
-        readingProgressCall.enqueue(new Callback<ReadProgress>() {
-            @Override public void onResponse(Call<ReadProgress> call, Response<ReadProgress> response) {
-                if (isFinishing() || isDestroyed() || call.isCanceled() || call != readingProgressCall
-                        || topicId != currentTopicId
-                        || !token.equals(UserPreferences.getToken(TopicDetailActivity.this))) return;
-                readingProgressCall = null;
-                ReadProgress progress = response.body();
-                if (response.isSuccessful() && progress != null && progress.progress > 0) {
-                    latestReadingProgress = progress;
-                    continueReadingButton.setVisibility(View.VISIBLE);
-                }
-            }
-
-            @Override public void onFailure(Call<ReadProgress> call, Throwable t) {
-                if (call == readingProgressCall) readingProgressCall = null;
-            }
-        });
     }
 
     private void updateInteractionCounts(TopicInfo topic) {
@@ -944,7 +902,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         findViewById(R.id.showChaptersButton).setOnClickListener(v -> showChapters());
         commentCountTextView.setOnClickListener(v -> showComments());
         startReadingButton.setOnClickListener(v -> openReaderFromDetail());
-        continueReadingButton.setOnClickListener(v -> openReaderFromProgress());
 
         commentComposerSend.setOnClickListener(v -> submitComment());
         findViewById(R.id.commentComposerEmoji).setOnClickListener(v -> FtemojiPicker.show(this,
@@ -971,19 +928,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         Intent intent = new Intent(this, ReaderActivity.class)
                 .putExtra(ReaderActivity.EXTRA_WORK_ID, currentTopicId)
                 .putExtra(ReaderActivity.EXTRA_CHAPTER_ID, firstChapterId);
-        startActivity(intent);
-    }
-
-    private void openReaderFromProgress() {
-        if (latestReadingProgress == null || latestReadingProgress.progress <= 0) return;
-        int chapterId = latestReadingProgress.chapterId != null
-                ? latestReadingProgress.chapterId : firstChapterId;
-        if (chapterId < 0) return;
-        Intent intent = new Intent(this, ReaderActivity.class)
-                .putExtra(ReaderActivity.EXTRA_WORK_ID, currentTopicId)
-                .putExtra(ReaderActivity.EXTRA_CHAPTER_ID, chapterId)
-                .putExtra(ReaderActivity.EXTRA_INITIAL_PROGRESS,
-                        Math.max(0d, Math.min(1d, latestReadingProgress.progress)));
         startActivity(intent);
     }
 
