@@ -50,7 +50,6 @@ import android.widget.ImageView;
 import com.app.fimtale.adapter.CommentAdapter;
 import com.app.fimtale.adapter.TopicAdapter;
 import com.app.fimtale.db.CacheManager;
-import com.app.fimtale.db.CachedChapter;
 import com.app.fimtale.model.ChapterMenuItem;
 import com.app.fimtale.model.Comment;
 import com.app.fimtale.model.Topic;
@@ -72,8 +71,10 @@ import com.google.android.material.slider.Slider;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -185,6 +186,24 @@ public class ReaderActivity extends AppCompatActivity {
     private GestureDetector gestureDetector;
 
     private List<ContentSegment> parsedSegments = new ArrayList<>();
+
+    /** Chapters currently joined into one continuous reader data set. */
+    private final List<LoadedChapter> loadedChapters = new ArrayList<>();
+    private final Set<Integer> loadingChapterIds = new HashSet<>();
+
+    private static class LoadedChapter {
+        final int id;
+        final String title;
+        final String content;
+        final List<ContentSegment> segments;
+
+        LoadedChapter(int id, String title, String content, List<ContentSegment> segments) {
+            this.id = id;
+            this.title = title == null ? "" : title;
+            this.content = content == null ? "" : content;
+            this.segments = segments == null ? new ArrayList<>() : segments;
+        }
+    }
 
     private static class ContentSegment {
         int type;
@@ -376,9 +395,7 @@ public class ReaderActivity extends AppCompatActivity {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
-                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    canTriggerChapterChange = true;
-                }
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) canTriggerChapterChange = true;
             }
 
             @Override
@@ -395,15 +412,14 @@ public class ReaderActivity extends AppCompatActivity {
                 int lastPos = layoutManager.findLastVisibleItemPosition();
                 
                 if (firstPos != RecyclerView.NO_POSITION) {
-                    float percent = calculateContentBasedPercent(layoutManager, firstPos, lastPos);
-                    
-                    if (percent > 100) percent = 100;
-                    if (percent < 0) percent = 0;
-                    currentProgress = (double) percent / 100.0;
-                    updateHeader(chapterTitle, String.format("%.1f%%", percent));
+                    updateCurrentChapterFromParagraph(firstPos);
                     if (scrollProgressBar != null) {
+                        float percent = calculateContentBasedPercent(layoutManager, firstPos, lastPos);
+                        if (percent > 100) percent = 100;
+                        if (percent < 0) percent = 0;
                         scrollProgressBar.setProgress((int) (percent * 10));
                     }
+                    ensureAdjacentChapters(currentTopicId);
                 }
             }
         });
@@ -536,21 +552,7 @@ public class ReaderActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
                 updateCurrentChapterFromPage(position);
-                
-                if (adapter != null && position < adapter.getItemCount()) {
-                    int type = adapter.getItemViewType(position);
-                    if (type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) {
-                        int nextId = getNextChapterId();
-                        if (nextId != -1) {
-                            jumpToChapter(nextId);
-                        }
-                    } else if (type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER) {
-                        int prevId = getPrevChapterId();
-                        if (prevId != -1) {
-                            jumpToChapter(prevId, true);
-                        }
-                    }
-                }
+                ensureAdjacentChapters(currentTopicId);
             }
 
             @Override
@@ -731,55 +733,103 @@ public class ReaderActivity extends AppCompatActivity {
         if (chapterListAdapter != null) chapterListAdapter.updateData(filteredChapterList);
     }
     private int cacheKey(int chapterId) { return chapterId == 0 ? -rootTopicId : chapterId; }
+
     private void fetchChapterContent(int topicId, boolean scrollToEnd) {
-        if (isLoadingChapter) return;
-        isLoadingChapter = true;
-        contentReady = false;
-        canTriggerChapterChange = false;
-        fullChapterContent = "加载中...";
-        if (viewPager.getVisibility() == View.VISIBLE) calculatePages(); else prepareVerticalContent();
-        if (topicId == 0 && workData != null) {
-            TopicInfo work = workData.getTopicInfo();
-            displayChapter(0, work.getTitle(), work.getContent(), scrollToEnd);
+        LoadedChapter existing = findLoadedChapter(topicId);
+        if (existing != null) {
+            activateChapter(existing, scrollToEnd, false);
+            ensureAdjacentChapters(topicId);
             return;
         }
-        CacheManager.getInstance(this).getChapter(cacheKey(topicId), cached -> {
+
+        if (loadedChapters.isEmpty()) {
+            isLoadingChapter = true;
+            contentReady = false;
+            fullChapterContent = "加载中...";
+            if (viewPager.getVisibility() == View.VISIBLE) calculatePages(); else prepareVerticalContent();
+        }
+        requestChapter(topicId, true, scrollToEnd);
+    }
+
+    private LoadedChapter findLoadedChapter(int chapterId) {
+        for (LoadedChapter chapter : loadedChapters) if (chapter.id == chapterId) return chapter;
+        return null;
+    }
+
+    private LoadedChapter createLoadedChapter(int id, String title, String content) {
+        String markdown = com.app.fimtale.utils.BbCode.toMarkdown(content == null ? "" : content);
+        if (markdown.isEmpty()) markdown = "无内容";
+        return new LoadedChapter(id, title, markdown, parseSegments(markdown));
+    }
+
+    private void requestChapter(int chapterId, boolean activate, boolean scrollToEnd) {
+        if (loadingChapterIds.contains(chapterId)) return;
+        loadingChapterIds.add(chapterId);
+
+        if (chapterId == 0 && workData != null) {
+            TopicInfo work = workData.getTopicInfo();
+            loadingChapterIds.remove(chapterId);
+            acceptLoadedChapter(createLoadedChapter(0, work.getTitle(), work.getContent()), activate, scrollToEnd);
+            return;
+        }
+
+        CacheManager.getInstance(this).getChapter(cacheKey(chapterId), cached -> {
             if (isFinishing() || isDestroyed()) return;
             if (cached != null && cached.rootTopicId == rootTopicId) {
-                applyCachedChapter(cached, scrollToEnd);
-                preloadNextChapter();
-            } else fetchFromNetwork(topicId, scrollToEnd);
+                loadingChapterIds.remove(chapterId);
+                acceptLoadedChapter(createLoadedChapter(cached.postId, cached.title, cached.content), activate, scrollToEnd);
+            } else {
+                fetchChapterFromNetwork(chapterId, activate, scrollToEnd);
+            }
         });
     }
+
     private void showReadError(String message) {
         contentReady = false;
         isLoadingChapter = false;
         fullChapterContent = message;
+        loadedChapters.clear();
         parsedSegments.clear(); parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, message));
+        loadedChapters.add(new LoadedChapter(currentTopicId, "", message, parseSegments(message)));
         prepareVerticalContent(); calculatePages();
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
-    private void displayChapter(int id, String title, String content, boolean scrollToEnd) {
-        CachedChapter cached = new CachedChapter();
-        cached.topicId = cacheKey(id); cached.rootTopicId = rootTopicId; cached.postId = id;
-        cached.title = title; cached.content = content;
-        CacheManager.getInstance(this).cacheChapter(cached.topicId, rootTopicId, id, title, content, null);
-        applyCachedChapter(cached, scrollToEnd);
-        preloadNextChapter();
+
+    private void acceptLoadedChapter(LoadedChapter chapter, boolean activate, boolean scrollToEnd) {
+        if (findLoadedChapter(chapter.id) != null) {
+            if (activate) activateChapter(findLoadedChapter(chapter.id), scrollToEnd, false);
+            return;
+        }
+
+        // A directory/branch jump starts a fresh continuous window around the target.
+        // Background adjacent loads use activate=false and extend the existing window.
+        boolean reset = activate;
+        if (reset) loadedChapters.clear();
+        insertLoadedChapter(chapter);
+
+        if (activate) {
+            activateChapter(chapter, scrollToEnd, false);
+        } else {
+            rebuildReaderContent(true);
+        }
     }
-    private void applyCachedChapter(CachedChapter cached, boolean scrollToEnd) {
+
+    private void activateChapter(LoadedChapter chapter, boolean scrollToEnd, boolean reset) {
+        if (reset) loadedChapters.clear();
+        if (findLoadedChapter(chapter.id) == null) insertLoadedChapter(chapter);
         contentReady = true;
         isLoadingChapter = false;
-        chapterTitle = cached.title == null ? "" : cached.title;
-        currentPostId = cached.postId;
-        currentTopicId = cached.postId;
+        chapterTitle = chapter.title;
+        currentPostId = chapter.id;
+        currentTopicId = chapter.id;
         currentProgress = 0;
-        topToolbar.setTitle(chapterTitle); tvChapterTitle.setText(chapterTitle);
-        String content = com.app.fimtale.utils.BbCode.toMarkdown(cached.content);
-        fullChapterContent = content.isEmpty() ? "无内容" : content;
-        parseContent(fullChapterContent);
-        prepareVerticalContent(); calculatePages();
+        fullChapterContent = chapter.content;
+        parsedSegments = chapter.segments;
+        topToolbar.setTitle(chapterTitle);
+        tvChapterTitle.setText(chapterTitle);
+        rebuildReaderContent(false);
         positionReader(currentTopicId, scrollToEnd);
+        ensureAdjacentChapters(currentTopicId);
         if (initialProgress < 0 && currentTopicId == initialTopicId && UserPreferences.isLoggedIn(this)) {
             final int loadedChapter = currentTopicId;
             RetrofitClient.getInstance().saveReadingProgress(new com.app.fimtale.model.ReadProgress(rootTopicId, loadedChapter, 0))
@@ -801,42 +851,90 @@ public class ReaderActivity extends AppCompatActivity {
         }
     }
 
+    private void insertLoadedChapter(LoadedChapter chapter) {
+        if (findLoadedChapter(chapter.id) != null) return;
+        if (loadedChapters.isEmpty()) { loadedChapters.add(chapter); return; }
+
+        int currentIndex = indexOfLoadedChapter(currentTopicId);
+        int previousId = previousChapterId(currentTopicId);
+        int nextId = nextChapterId(currentTopicId);
+        if (chapter.id == previousId && currentIndex >= 0) {
+            loadedChapters.add(currentIndex, chapter);
+        } else if (chapter.id == nextId && currentIndex >= 0) {
+            loadedChapters.add(currentIndex + 1, chapter);
+        } else if (chapter.id == 0) {
+            loadedChapters.add(0, chapter);
+        } else {
+            loadedChapters.add(chapter);
+        }
+    }
+
+    private int indexOfLoadedChapter(int chapterId) {
+        for (int i = 0; i < loadedChapters.size(); i++) if (loadedChapters.get(i).id == chapterId) return i;
+        return -1;
+    }
+
+    private int nextChapterId(int chapterId) {
+        List<TopicDetailResponse.ChapterEdge> choices = com.app.fimtale.model.ChapterNavigation.choices(workData, chapterId);
+        return choices.size() == 1 ? (choices.get(0).to == null ? 0 : choices.get(0).to) : -1;
+    }
+
+    private int previousChapterId(int chapterId) {
+        return com.app.fimtale.model.ChapterNavigation.previous(workData, chapterId);
+    }
+
+    private void ensureAdjacentChapters(int chapterId) {
+        if (!contentReady || chapterId < 0) return;
+        int nextId = nextChapterId(chapterId);
+        int previousId = previousChapterId(chapterId);
+        if (nextId != -1 && findLoadedChapter(nextId) == null) requestChapter(nextId, false, false);
+        if (previousId != -1 && findLoadedChapter(previousId) == null) requestChapter(previousId, false, false);
+    }
+
+    private void fetchChapterFromNetwork(int chapterId, boolean activate, boolean scrollToEnd) {
+        RetrofitClient.getInstance().getChapter(chapterId).enqueue(new Callback<com.app.fimtale.model.ChapterResponse>() {
+            @Override public void onResponse(Call<com.app.fimtale.model.ChapterResponse> call, Response<com.app.fimtale.model.ChapterResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                loadingChapterIds.remove(chapterId);
+                com.app.fimtale.model.ChapterResponse data = response.body();
+                if (response.isSuccessful() && data != null && data.chapter != null && data.chapter.workId == rootTopicId) {
+                    CacheManager.getInstance(ReaderActivity.this).cacheChapter(data.chapter.id, rootTopicId,
+                            data.chapter.id, data.chapter.title, data.chapter.content, null);
+                    acceptLoadedChapter(createLoadedChapter(data.chapter.id, data.chapter.title, data.chapter.content), activate, scrollToEnd);
+                } else if (activate) showReadError("章节加载失败，请从目录重试");
+            }
+            @Override public void onFailure(Call<com.app.fimtale.model.ChapterResponse> call, Throwable t) {
+                loadingChapterIds.remove(chapterId);
+                if (activate && !isFinishing() && !isDestroyed()) showReadError("网络错误，请从目录重试");
+            }
+        });
+    }
+
     private void positionReader(int topicId, boolean scrollToEnd) {
         if (viewPager.getVisibility() == View.VISIBLE) {
-            int initialPage = 0;
-            if (!pages.isEmpty() && pages.get(0).type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER) {
-                initialPage = 1;
-            }
-
+            int initialPage = chapterStartIndex(pages, topicId);
             if (!scrollToEnd && shouldApplyInitialProgress(topicId)) {
                 initialPage = computeTargetPagedIndex(initialProgress);
                 initialProgressApplied = true;
             } else if (scrollToEnd) {
-                initialPage = pages.size() - 1;
-                if (initialPage > 0 && pages.get(initialPage).type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) {
-                    initialPage--;
-                }
+                initialPage = chapterEndIndex(pages, topicId);
             }
 
+            if (initialPage < 0) initialPage = 0;
+            if (initialPage >= pages.size()) initialPage = Math.max(0, pages.size() - 1);
             viewPager.setCurrentItem(initialPage, false);
             updateCurrentChapterFromPage(initialPage);
         } else {
-            int pos;
+            int pos = chapterStartIndex(verticalPages, topicId);
             if (!scrollToEnd && shouldApplyInitialProgress(topicId)) {
                 pos = computeTargetVerticalIndex(initialProgress);
                 initialProgressApplied = true;
             } else if (scrollToEnd) {
-                pos = verticalPages.size() - 1;
-                if (pos > 0 && verticalPages.get(pos).type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) {
-                    pos--;
-                }
-            } else {
-                pos = 0;
-                if (!verticalPages.isEmpty() && verticalPages.get(0).type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER) {
-                    pos = 1;
-                }
+                pos = chapterEndIndex(verticalPages, topicId);
             }
 
+            if (pos < 0) pos = 0;
+            if (pos >= verticalPages.size()) pos = Math.max(0, verticalPages.size() - 1);
             int finalPos = pos;
             recyclerView.post(() -> {
                 RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
@@ -850,38 +948,59 @@ public class ReaderActivity extends AppCompatActivity {
         }
     }
 
-    private void fetchFromNetwork(int chapterId, boolean scrollToEnd) {
-        RetrofitClient.getInstance().getChapter(chapterId).enqueue(new Callback<com.app.fimtale.model.ChapterResponse>() {
-            @Override public void onResponse(Call<com.app.fimtale.model.ChapterResponse> call, Response<com.app.fimtale.model.ChapterResponse> response) {
-                if (isFinishing() || isDestroyed()) return;
-                com.app.fimtale.model.ChapterResponse data = response.body();
-                if (response.isSuccessful() && data != null && data.chapter != null && data.chapter.workId == rootTopicId) {
-                    displayChapter(data.chapter.id, data.chapter.title, data.chapter.content, scrollToEnd);
-                } else showReadError("章节加载失败，请从目录重试");
-            }
-            @Override public void onFailure(Call<com.app.fimtale.model.ChapterResponse> call, Throwable t) {
-                if (!isFinishing() && !isDestroyed()) showReadError("网络错误，请从目录重试");
-            }
-        });
+    private int chapterStartIndex(List<ReaderPage> data, int chapterId) {
+        for (int i = 0; i < data.size(); i++) if (data.get(i).chapterId == chapterId) return i;
+        return data.isEmpty() ? 0 : 0;
     }
-    private void preloadNextChapter() {
-        int nextId = getNextChapterId();
-        if (nextId <= 0) return;
-        final int workId = rootTopicId;
-        CacheManager cache = CacheManager.getInstance(this);
-        cache.getChapter(nextId, cached -> {
-            if (cached != null || isFinishing() || isDestroyed()) return;
-            RetrofitClient.getInstance().getChapter(nextId).enqueue(new Callback<com.app.fimtale.model.ChapterResponse>() {
-                @Override public void onResponse(Call<com.app.fimtale.model.ChapterResponse> call, Response<com.app.fimtale.model.ChapterResponse> response) {
-                    com.app.fimtale.model.ChapterResponse data = response.body();
-                    if (response.isSuccessful() && data != null && data.chapter != null && data.chapter.workId == workId) {
-                        cache.cacheChapter(data.chapter.id, workId, data.chapter.id, data.chapter.title, data.chapter.content, null);
-                    }
-                }
-                @Override public void onFailure(Call<com.app.fimtale.model.ChapterResponse> call, Throwable t) {}
+
+    private int chapterEndIndex(List<ReaderPage> data, int chapterId) {
+        int start = chapterStartIndex(data, chapterId);
+        for (int i = start + 1; i < data.size(); i++) {
+            if (data.get(i).chapterId != chapterId) return i - 1;
+        }
+        return data.isEmpty() ? 0 : data.size() - 1;
+    }
+
+    private void rebuildReaderContent(boolean preservePosition) {
+        final int preservedTopicId = currentTopicId;
+        int oldPage = viewPager == null ? 0 : viewPager.getCurrentItem();
+        int oldPageOffset = oldPage - chapterStartIndex(pages, preservedTopicId);
+        int oldVerticalPosition = RecyclerView.NO_POSITION;
+        int oldVerticalTop = 0;
+        if (recyclerView != null && recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
+            LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+            oldVerticalPosition = manager.findFirstVisibleItemPosition();
+            View first = oldVerticalPosition == RecyclerView.NO_POSITION ? null : manager.findViewByPosition(oldVerticalPosition);
+            if (first != null) oldVerticalTop = first.getTop();
+        }
+
+        calculatePages();
+        prepareVerticalContent();
+        if (!preservePosition) return;
+
+        int pageTarget = chapterStartIndex(pages, preservedTopicId) + Math.max(0, oldPageOffset);
+        if (viewPager != null && !pages.isEmpty()) {
+            viewPager.post(() -> {
+                int target = Math.min(pageTarget, pages.size() - 1);
+                viewPager.setCurrentItem(target, false);
+                updateCurrentChapterFromPage(target);
             });
-        });
+        }
+        if (oldVerticalPosition != RecyclerView.NO_POSITION && !verticalPages.isEmpty()) {
+            int verticalOffset = oldVerticalPosition - chapterStartIndex(verticalPages, preservedTopicId);
+            int target = chapterStartIndex(verticalPages, preservedTopicId) + Math.max(0, verticalOffset);
+            final int savedVerticalTop = oldVerticalTop;
+            recyclerView.post(() -> {
+                RecyclerView.LayoutManager layout = recyclerView.getLayoutManager();
+                if (layout instanceof LinearLayoutManager) {
+                    ((LinearLayoutManager) layout).scrollToPositionWithOffset(
+                            Math.min(target, verticalPages.size() - 1), savedVerticalTop);
+                    updateCurrentChapterFromParagraph(Math.min(target, verticalPages.size() - 1));
+                }
+            });
+        }
     }
+
 
     @Override
     protected void onPause() {
@@ -935,58 +1054,60 @@ public class ReaderActivity extends AppCompatActivity {
         hideMenu();
     }
 
+    private String indentLine(String line) {
+        if (line == null || line.isEmpty()) return line;
+        return line.startsWith("\u3000\u3000") ? line : "\u3000\u3000" + line;
+    }
+
+    private String indentLines(String content) {
+        if (content == null || content.isEmpty()) return content;
+        String[] lines = content.split("\\n", -1);
+        StringBuilder result = new StringBuilder(content.length() + lines.length * 2);
+        for (int i = 0; i < lines.length; i++) {
+            if (i > 0) result.append('\n');
+            result.append(indentLine(lines[i]));
+        }
+        return result.toString();
+    }
+
     private void updateCurrentChapterFromPage(int pageIndex) {
         if (pageIndex < 0 || pageIndex >= pages.size()) return;
-        
         ReaderPage page = pages.get(pageIndex);
-        if (page.type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER || page.type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) {
-            updateHeader(chapterTitle, "");
-            return;
-        }
-
-        int startOffset = 0;
-        int endOffset = 0;
-        
-        if (!pages.isEmpty() && pages.get(0).type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER) {
-            startOffset = 1;
-        }
-        
-        if (!pages.isEmpty() && pages.get(pages.size() - 1).type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) {
-            endOffset = 1;
-        }
-        
-        int realTotal = pages.size() - startOffset - endOffset;
-        int realIndex = pageIndex - startOffset + 1;
-        
-        if (realIndex < 1) realIndex = 1;
-        if (realIndex > realTotal) realIndex = realTotal;
-        
+        LoadedChapter chapter = findLoadedChapter(page.chapterId);
+        if (chapter == null) return;
+        currentTopicId = chapter.id;
+        currentPostId = chapter.id;
+        chapterTitle = chapter.title;
+        topToolbar.setTitle(chapterTitle);
+        int chapterStart = chapterStartIndex(pages, chapter.id);
+        int chapterEnd = chapterEndIndex(pages, chapter.id);
+        int realTotal = Math.max(1, chapterEnd - chapterStart + 1);
+        int realIndex = Math.max(0, Math.min(realTotal - 1, pageIndex - chapterStart));
         if (realTotal > 1) {
-            currentProgress = (double) (realIndex - 1) / (realTotal - 1);
-        } else if (realTotal == 1) {
-            currentProgress = 1.0;
+            currentProgress = (double) realIndex / (realTotal - 1);
         } else {
-            currentProgress = 0d;
+            currentProgress = 1.0;
         }
-
-        updateHeader(chapterTitle, realIndex + "/" + realTotal);
+        updateHeader(chapter.title, (realIndex + 1) + "/" + realTotal);
     }
 
     private void updateCurrentChapterFromParagraph(int paragraphIndex) {
-         if (verticalPages.isEmpty()) return;
-         int size = verticalPages.size();
-         float percent;
-         if (size > 1) {
-             percent = (float) paragraphIndex * 100 / (size - 1);
-             currentProgress = (double) paragraphIndex / (size - 1);
-         } else {
-             percent = 100f;
-             currentProgress = 1.0;
-         }
-         updateHeader(chapterTitle, String.format("%.1f%%", percent));
-         if (scrollProgressBar != null) {
-             scrollProgressBar.setProgress((int) (percent * 10));
-         }
+        if (paragraphIndex < 0 || paragraphIndex >= verticalPages.size()) return;
+        ReaderPage page = verticalPages.get(paragraphIndex);
+        LoadedChapter chapter = findLoadedChapter(page.chapterId);
+        if (chapter == null) return;
+        currentTopicId = chapter.id;
+        currentPostId = chapter.id;
+        chapterTitle = chapter.title;
+        topToolbar.setTitle(chapterTitle);
+        int chapterStart = chapterStartIndex(verticalPages, chapter.id);
+        int chapterEnd = chapterEndIndex(verticalPages, chapter.id);
+        int count = Math.max(1, chapterEnd - chapterStart + 1);
+        int relative = Math.max(0, Math.min(count - 1, paragraphIndex - chapterStart));
+        float percent = count > 1 ? (float) relative * 100f / (count - 1) : 100f;
+        currentProgress = count > 1 ? (double) relative / (count - 1) : 1.0;
+        updateHeader(chapter.title, String.format("%.1f%%", percent));
+        if (scrollProgressBar != null) scrollProgressBar.setProgress((int) (percent * 10));
     }
     
     private void updateHeader(String title, String progressText) {
@@ -1016,16 +1137,19 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void parseContent(String content) {
-        parsedSegments.clear();
+        parsedSegments = parseSegments(content);
+    }
+
+    private List<ContentSegment> parseSegments(String content) {
+        List<ContentSegment> segments = new ArrayList<>();
+        if (content == null) content = "";
         Pattern imgPattern = Pattern.compile("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>|!\\[.*?\\]\\((.*?)\\)");
         Matcher matcher = imgPattern.matcher(content);
         int lastEnd = 0;
         
         while (matcher.find()) {
             String textPart = content.substring(lastEnd, matcher.start());
-            if (!textPart.trim().isEmpty()) {
-                parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, textPart));
-            }
+            if (!textPart.trim().isEmpty()) segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, textPart));
             
             String imgSrc = matcher.group(1);
             if (imgSrc == null) {
@@ -1033,27 +1157,26 @@ public class ReaderActivity extends AppCompatActivity {
             }
             
             if (imgSrc != null && !imgSrc.isEmpty()) {
-                parsedSegments.add(new ContentSegment(ReaderPage.TYPE_IMAGE, imgSrc));
+                segments.add(new ContentSegment(ReaderPage.TYPE_IMAGE, imgSrc));
             }
             
             lastEnd = matcher.end();
         }
         
         String tail = content.substring(lastEnd);
-        if (!tail.trim().isEmpty()) {
-            parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, tail));
-        }
+        if (!tail.trim().isEmpty()) segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, tail));
         
-        if (parsedSegments.isEmpty() && !content.isEmpty()) {
-            String finalContent = content;
-            parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, finalContent));
+        if (segments.isEmpty() && !content.isEmpty()) {
+            segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, content));
         }
+        return segments;
     }
 
     private void prepareVerticalContent() {
         verticalPages.clear();
         paragraphStartOffsets.clear();
         chapterVerticalIndices.clear();
+        cachedWeights = null;
         
         if (fullChapterContent.equals("加载中...")) {
             verticalPages.add(new ReaderPage(ReaderPage.TYPE_LOADING, null, currentTopicId));
@@ -1063,43 +1186,37 @@ public class ReaderActivity extends AppCompatActivity {
             return;
         }
 
-        if (getPrevChapterId() != -1) {
-            verticalPages.add(new ReaderPage(ReaderPage.TYPE_PREV_CHAPTER_TRIGGER, null, -1));
-        }
-
         int currentOffset = 0;
-        
-        chapterVerticalIndices.add(verticalPages.size());
-        
-        float lineSpacing = UserPreferences.getLineSpacing(this);
         String paragraphSpacing = "\n";
 
-        verticalPages.add(new ReaderPage(ReaderPage.TYPE_TEXT, chapterTitle + paragraphSpacing, currentTopicId));
-        paragraphStartOffsets.add(currentOffset);
-        currentOffset += chapterTitle.length() + paragraphSpacing.length();
+        for (LoadedChapter chapter : loadedChapters) {
+            chapterVerticalIndices.add(verticalPages.size());
+            verticalPages.add(new ReaderPage(ReaderPage.TYPE_TEXT, indentLine(chapter.title) + paragraphSpacing, chapter.id));
+            paragraphStartOffsets.add(currentOffset);
+            currentOffset += chapter.title.length() + paragraphSpacing.length();
 
-        for (ContentSegment segment : parsedSegments) {
-            if (segment.type == ReaderPage.TYPE_TEXT) {
-                String[] paragraphs = segment.content.split("\n");
-                for (String paragraph : paragraphs) {
-                    if (!paragraph.trim().isEmpty()) {
-                        verticalPages.add(new ReaderPage(ReaderPage.TYPE_TEXT, "\u3000\u3000" + paragraph.trim(), currentTopicId));
-                        paragraphStartOffsets.add(currentOffset);
-                        currentOffset += paragraph.length() + 1;
+            for (ContentSegment segment : chapter.segments) {
+                if (segment.type == ReaderPage.TYPE_TEXT) {
+                    String[] paragraphs = segment.content.split("\\n");
+                    for (String paragraph : paragraphs) {
+                        if (!paragraph.trim().isEmpty()) {
+                            verticalPages.add(new ReaderPage(ReaderPage.TYPE_TEXT, indentLine(paragraph.trim()), chapter.id));
+                            paragraphStartOffsets.add(currentOffset);
+                            currentOffset += paragraph.length() + 1;
+                        }
                     }
+                } else if (segment.type == ReaderPage.TYPE_IMAGE) {
+                    verticalPages.add(new ReaderPage(ReaderPage.TYPE_IMAGE, segment.content, chapter.id));
+                    paragraphStartOffsets.add(currentOffset);
+                    currentOffset += 1;
                 }
-            } else if (segment.type == ReaderPage.TYPE_IMAGE) {
-                verticalPages.add(new ReaderPage(ReaderPage.TYPE_IMAGE, segment.content, currentTopicId));
-                paragraphStartOffsets.add(currentOffset);
-                currentOffset += 1;
             }
-        }
-        
-        verticalPages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, currentTopicId));
-        paragraphStartOffsets.add(currentOffset);
-        
-        if (getNextChapterId() != -1) {
-            verticalPages.add(new ReaderPage(ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER, null, -1));
+
+            // Branches have no single automatic next chapter, so retain their choice UI.
+            if (com.app.fimtale.model.ChapterNavigation.choices(workData, chapter.id).size() != 1) {
+                verticalPages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, chapter.id));
+                paragraphStartOffsets.add(currentOffset);
+            }
         }
         
         if (recyclerAdapter != null) {
@@ -1271,78 +1388,60 @@ public class ReaderActivity extends AppCompatActivity {
         pages.clear();
         chapterStartPageIndices.clear();
         pageStartOffsets.clear();
-
-        if (getPrevChapterId() != -1) {
-            pages.add(new ReaderPage(ReaderPage.TYPE_PREV_CHAPTER_TRIGGER, null, -1));
-            pageStartOffsets.add(0);
-        }
-        
         int globalOffset = 0;
-
-        chapterStartPageIndices.add(pages.size());
-        
-        List<ContentSegment> allSegments = new ArrayList<>();
-        if (!parsedSegments.isEmpty() && parsedSegments.get(0).type == ReaderPage.TYPE_TEXT) {
-             String combinedContent = chapterTitle + "\n\n" + parsedSegments.get(0).content;
-             allSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, combinedContent));
-             allSegments.addAll(parsedSegments.subList(1, parsedSegments.size()));
-        } else {
-             allSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, chapterTitle + "\n\n"));
-             allSegments.addAll(parsedSegments);
-        }
-
         float lineSpacingMultiplier = UserPreferences.getLineSpacing(this);
 
-        for (ContentSegment segment : allSegments) {
-            if (segment.type == ReaderPage.TYPE_TEXT) {
-                String formattedContent = segment.content.replaceAll("(?m)^(?=.)", "\u3000\u3000");
-                
-                StaticLayout layout = StaticLayout.Builder.obtain(formattedContent, 0, formattedContent.length(), paint, contentWidth)
-                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                        .setLineSpacing(0f, lineSpacingMultiplier)
-                        .setIncludePad(false)
-                        .build();
-
-                int startLine = 0;
-                while (startLine < layout.getLineCount()) {
-                    int lineTop = layout.getLineTop(startLine);
-                    int endLine = layout.getLineForVertical(lineTop + contentHeight);
-                    
-                    if (layout.getLineBottom(endLine) > lineTop + contentHeight) {
-                        endLine--;
-                    }
-                    
-                    if (endLine < startLine) endLine = startLine;
-                    
-                    int startOffset = layout.getLineStart(startLine);
-                    int endOffset = layout.getLineEnd(endLine);
-                    
-                    if (endOffset > startOffset) {
-                        String pageContent = formattedContent.substring(startOffset, endOffset);
-                        boolean isLastPage = (endLine >= layout.getLineCount() - 1);
-                        
-                        if (!isLastPage || !pageContent.trim().isEmpty()) {
-                            pages.add(new ReaderPage(ReaderPage.TYPE_TEXT, pageContent, currentTopicId));
-                            pageStartOffsets.add(globalOffset + startOffset);
-                        }
-                    }
-                    
-                    startLine = endLine + 1;
-                }
-                globalOffset += formattedContent.length();
-            } else if (segment.type == ReaderPage.TYPE_IMAGE) {
-                pages.add(new ReaderPage(ReaderPage.TYPE_IMAGE, segment.content, currentTopicId));
-                pageStartOffsets.add(globalOffset);
-                globalOffset += 1;
+        for (LoadedChapter chapter : loadedChapters) {
+            chapterStartPageIndices.add(pages.size());
+            List<ContentSegment> allSegments = new ArrayList<>();
+            if (!chapter.segments.isEmpty() && chapter.segments.get(0).type == ReaderPage.TYPE_TEXT) {
+                allSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT,
+                        chapter.title + "\n\n" + chapter.segments.get(0).content));
+                allSegments.addAll(chapter.segments.subList(1, chapter.segments.size()));
+            } else {
+                allSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, chapter.title + "\n\n"));
+                allSegments.addAll(chapter.segments);
             }
-        }
-        
-        pages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, currentTopicId));
-        pageStartOffsets.add(globalOffset);
-        
-        if (getNextChapterId() != -1) {
-            pages.add(new ReaderPage(ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER, null, -1));
-            pageStartOffsets.add(globalOffset);
+
+            for (ContentSegment segment : allSegments) {
+                if (segment.type == ReaderPage.TYPE_TEXT) {
+                    String formattedContent = indentLines(segment.content);
+                    StaticLayout layout = StaticLayout.Builder.obtain(formattedContent, 0, formattedContent.length(), paint, contentWidth)
+                            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                            .setLineSpacing(0f, lineSpacingMultiplier)
+                            .setIncludePad(false)
+                            .build();
+
+                    int startLine = 0;
+                    while (startLine < layout.getLineCount()) {
+                        int lineTop = layout.getLineTop(startLine);
+                        int endLine = layout.getLineForVertical(lineTop + contentHeight);
+                        if (layout.getLineBottom(endLine) > lineTop + contentHeight) endLine--;
+                        if (endLine < startLine) endLine = startLine;
+
+                        int startOffset = layout.getLineStart(startLine);
+                        int endOffset = layout.getLineEnd(endLine);
+                        if (endOffset > startOffset) {
+                            String pageContent = formattedContent.substring(startOffset, endOffset);
+                            boolean isLastPage = endLine >= layout.getLineCount() - 1;
+                            if (!isLastPage || !pageContent.trim().isEmpty()) {
+                                pages.add(new ReaderPage(ReaderPage.TYPE_TEXT, pageContent, chapter.id));
+                                pageStartOffsets.add(globalOffset + startOffset);
+                            }
+                        }
+                        startLine = endLine + 1;
+                    }
+                    globalOffset += formattedContent.length();
+                } else if (segment.type == ReaderPage.TYPE_IMAGE) {
+                    pages.add(new ReaderPage(ReaderPage.TYPE_IMAGE, segment.content, chapter.id));
+                    pageStartOffsets.add(globalOffset++);
+                }
+            }
+
+            if (com.app.fimtale.model.ChapterNavigation.choices(workData, chapter.id).size() != 1) {
+                pages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, chapter.id));
+                pageStartOffsets.add(globalOffset);
+            }
         }
         
         if (adapter != null) {
@@ -1844,11 +1943,8 @@ public class ReaderActivity extends AppCompatActivity {
     
     private int computeTargetPagedIndex(double progress01) {
         if (pages == null || pages.isEmpty()) return 0;
-        int startOffset = (!pages.isEmpty() && pages.get(0).type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER) ? 1 : 0;
-        int endOffset = (!pages.isEmpty() && pages.get(pages.size() - 1).type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) ? 1 : 0;
-        int realTotal = pages.size() - startOffset - endOffset;
-        if (realTotal <= 0) return startOffset;
-        
+        int startOffset = chapterStartIndex(pages, initialTopicId);
+        int realTotal = Math.max(1, chapterEndIndex(pages, initialTopicId) - startOffset + 1);
         int realIndex = (int) Math.floor(clamp01(progress01) * realTotal);
         if (realIndex >= realTotal) realIndex = realTotal - 1;
         if (realIndex < 0) realIndex = 0;
@@ -1857,11 +1953,8 @@ public class ReaderActivity extends AppCompatActivity {
     
     private int computeTargetVerticalIndex(double progress01) {
         if (verticalPages == null || verticalPages.isEmpty()) return 0;
-        int startOffset = (!verticalPages.isEmpty() && verticalPages.get(0).type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER) ? 1 : 0;
-        int endOffset = (!verticalPages.isEmpty() && verticalPages.get(verticalPages.size() - 1).type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) ? 1 : 0;
-        int realTotal = verticalPages.size() - startOffset - endOffset;
-        if (realTotal <= 0) return startOffset;
-        
+        int startOffset = chapterStartIndex(verticalPages, initialTopicId);
+        int realTotal = Math.max(1, chapterEndIndex(verticalPages, initialTopicId) - startOffset + 1);
         int realIndex = (int) Math.floor(clamp01(progress01) * realTotal);
         if (realIndex >= realTotal) realIndex = realTotal - 1;
         if (realIndex < 0) realIndex = 0;
@@ -1872,11 +1965,10 @@ public class ReaderActivity extends AppCompatActivity {
         return com.app.fimtale.model.ChapterNavigation.choices(workData, currentTopicId);
     }
     private int getNextChapterId() {
-        List<TopicDetailResponse.ChapterEdge> choices = nextChoices();
-        return choices.size() == 1 ? (choices.get(0).to == null ? 0 : choices.get(0).to) : -1;
+        return nextChapterId(currentTopicId);
     }
     private int getPrevChapterId() {
-        return com.app.fimtale.model.ChapterNavigation.previous(workData, currentTopicId);
+        return previousChapterId(currentTopicId);
     }
     private void showBranchChoices() {
         List<TopicDetailResponse.ChapterEdge> choices = nextChoices();

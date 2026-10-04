@@ -50,14 +50,60 @@ public final class BbCodeEditText extends AppCompatEditText {
     private List<BbCodeSyntax.Node> nodes = new ArrayList<>();
     private String parsedSource;
     private boolean sourceVisible;
+    private boolean suppressAutoIndent;
+    private int pendingEditStart = -1;
+    private String pendingInserted;
 
     public BbCodeEditText(Context context, AttributeSet attrs) {
         super(context, attrs);
         addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable text) { scheduleRender(); }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                scheduleRender();
+                if (!suppressAutoIndent && count > 0) {
+                    String inserted = s.subSequence(start, start + count).toString();
+                    if (inserted.indexOf('\n') >= 0) {
+                        pendingEditStart = start;
+                        pendingInserted = inserted;
+                    }
+                }
+            }
+            @Override public void afterTextChanged(Editable text) {
+                applyAutoIndent(text);
+                scheduleRender();
+            }
         });
+    }
+
+    @Override public void setText(CharSequence text, BufferType type) {
+        suppressAutoIndent = true;
+        try { super.setText(text, type); }
+        finally { suppressAutoIndent = false; pendingEditStart = -1; pendingInserted = null; }
+    }
+
+    private void applyAutoIndent(Editable text) {
+        if (suppressAutoIndent || pendingEditStart < 0 || pendingInserted == null) return;
+        String inserted = pendingInserted;
+        int start = pendingEditStart;
+        pendingEditStart = -1;
+        pendingInserted = null;
+        StringBuilder replacement = new StringBuilder(inserted.length() + 4);
+        int suffixStart = start + inserted.length();
+        for (int i = 0; i < inserted.length(); i++) {
+            char value = inserted.charAt(i);
+            replacement.append(value);
+            if (value != '\n') continue;
+            char next = i + 1 < inserted.length() ? inserted.charAt(i + 1)
+                    : suffixStart < text.length() ? text.charAt(suffixStart) : 0;
+            if (next != ' ' && next != '\t' && next != '\u3000') replacement.append("\u3000\u3000");
+        }
+        if (replacement.length() == inserted.length()) return;
+        int selection = getSelectionStart();
+        suppressAutoIndent = true;
+        try {
+            text.replace(start, start + inserted.length(), replacement);
+            if (selection >= start) setSelection(Math.min(text.length(), selection + replacement.length() - inserted.length()));
+        } finally { suppressAutoIndent = false; }
     }
 
     public void setSourceVisible(boolean visible) { sourceVisible = visible; renderNow(); }
