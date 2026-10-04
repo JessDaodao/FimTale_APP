@@ -245,6 +245,9 @@ public class TopicDetailActivity extends AppCompatActivity {
         commentComposerInput = findViewById(R.id.commentComposerInput);
         commentComposerSend = findViewById(R.id.commentComposerSend);
         commentsRoot = findViewById(R.id.workCommentsSection);
+        scrollView.setNestedScrollingEnabled(true);
+        scrollView.setSmoothScrollingEnabled(true);
+        scrollView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {

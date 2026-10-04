@@ -92,8 +92,11 @@ public final class WorkActions {
         like.setChecked(liked); favorite.setChecked(faved);
         like.setContentDescription((liked ? "取消点赞，" : "点赞，") + likes);
         favorite.setContentDescription((faved ? "管理收藏夹，已收藏，" : "收藏到收藏夹，") + favorites);
-        status.setVisibility(busy || !known ? View.VISIBLE : View.GONE);
-        status.setText(busy ? "正在更新…" : "互动状态加载失败，点击重试");
+        // Mutations can take a moment, but the action row should remain quiet while
+        // the server state is being reconciled. Only expose the retry affordance
+        // when the initial interaction state could not be loaded.
+        status.setVisibility(!busy && !known ? View.VISIBLE : View.GONE);
+        status.setText(!busy && !known ? "互动状态加载失败，点击重试" : "");
     }
 
     private void vote() {

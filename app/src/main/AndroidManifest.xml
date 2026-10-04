@@ -53,6 +53,16 @@
             android:exported="false"
             android:theme="@style/Theme.Fimtale.FullTransparent" />
 
+        <activity
+            android:name=".AccountSessionsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Fimtale.FullTransparent" />
+
+        <activity
+            android:name=".ContentFiltersActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Fimtale.FullTransparent" />
+
         <!-- 阅读页 -->
         <activity
             android:name=".ReaderActivity"

@@ -14,6 +14,14 @@ public interface FimTaleApiService {
     @POST("work/delete_draft") Call<Void> deleteDraft(@Header("Token") String token, @Body OnlineDraft.Delete draft);
     @GET("user/get_user") Call<CurrentUser> getCurrentUser(@Header("Token") String token);
     @POST("user/logout") Call<ResponseBody> logout(@Header("Token") String token);
+    @GET("user/get_active_sessions") Call<List<UserSession>> getActiveSessions(@Header("Token") String token);
+    @POST("user/create_api_key") Call<String> createApiKey(@Header("Token") String token);
+    @POST("user/logout") Call<Void> logoutSession(@Header("Token") String token, @Body LogoutRequest request);
+    @GET("user/get_default_content_filter") Call<ContentFilterDef> getDefaultContentFilter(@Header("Token") String token);
+    @POST("user/set_content_filter") Call<UserMaterial> setContentFilter(@Header("Token") String token,
+            @Body SetContentFilterRequest request);
+    @POST("user/user_blocklist") Call<List<BlockedUser>> updateBlocklist(@Header("Token") String token,
+            @Body BlockUserRequest request);
     @GET("search/search_works") Call<TopicListResponse> getTopicList(
             @Query("page") int page, @Query("query") String query, @Query("rank") String rank);
     @GET("search/work_feed") Call<TopicListResponse> getFeed(@Query("page") int page);

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground" android:clipChildren="false">
+    <ScrollView android:id="@+id/filterScroll" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:clipToPadding="false" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="20dp">
+            <ProgressBar android:id="@+id/filterProgress" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" android:visibility="gone" />
+            <TextView android:id="@+id/filterCurrent" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceTitleMedium" android:textColor="?attr/colorOnSurface" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
+                android:text="过滤器会隐藏超出分级上限或命中屏蔽标签的作品。"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton android:id="@+id/filterDefault" style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="默认" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/filterNone" style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp" android:text="无过滤" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp"
+                android:text="自定义过滤" android:textAppearance="?attr/textAppearanceTitleLarge" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:text="分级上限" android:textAppearance="?attr/textAppearanceLabelLarge" />
+            <Spinner android:id="@+id/filterRating" android:layout_width="match_parent" android:layout_height="52dp" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:text="屏蔽标签条件" android:textAppearance="?attr/textAppearanceLabelLarge" />
+            <RadioGroup android:id="@+id/filterOperator" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <com.google.android.material.radiobutton.MaterialRadioButton android:id="@+id/filterAny" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="任一命中" android:checked="true" />
+                <com.google.android.material.radiobutton.MaterialRadioButton android:id="@+id/filterAll" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="全部命中" />
+            </RadioGroup>
+            <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/filterInvert" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="反选此组" />
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/filterTagLayout" style="@style/Widget.Fimtale.TextInputLayout"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:hint="输入标签名称">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/filterTagInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:imeOptions="actionDone" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/filterAddTag" style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="添加标签" app:icon="@drawable/ic_tag" />
+            <com.google.android.material.chip.ChipGroup android:id="@+id/filterTags" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:id="@+id/filterExpressionSummary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton android:id="@+id/filterApply" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="应用" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/filterSavePreset" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp" android:text="保存为预设" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp"
+                android:text="我的预设" android:textAppearance="?attr/textAppearanceTitleLarge" />
+            <LinearLayout android:id="@+id/filterPresets" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+            <TextView android:id="@+id/filterPresetEmpty" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="12dp"
+                android:text="暂无预设" android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp"
+                android:text="屏蔽用户" android:textAppearance="?attr/textAppearanceTitleLarge" />
+            <TextView android:id="@+id/filterBlockedEmpty" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="12dp"
+                android:text="暂无屏蔽用户" android:textColor="?attr/colorOnSurfaceVariant" />
+            <LinearLayout android:id="@+id/filterBlocked" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+    <FrameLayout android:id="@+id/filterToolbarContainer"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" android:layout_margin="16dp"
+        android:clipChildren="false" android:clipToPadding="false">
+        <com.google.android.material.card.MaterialCardView android:id="@+id/filterHeaderSurface"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:alpha="0" android:importantForAccessibility="no" android:stateListAnimator="@null"
+            app:cardBackgroundColor="?android:attr/colorBackground" app:cardCornerRadius="16dp"
+            app:cardElevation="4dp" app:strokeWidth="0dp" />
+        <com.google.android.material.appbar.MaterialToolbar android:id="@+id/filterToolbar"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:background="@null" android:elevation="4dp" android:outlineProvider="none"
+            android:stateListAnimator="@null" app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationIconTint="?attr/colorOnSurface" app:titleTextColor="?attr/colorOnSurface">
+            <TextView android:id="@+id/filterToolbarTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="内容过滤" android:textColor="?attr/colorOnSurface" android:textSize="21sp" />
+        </com.google.android.material.appbar.MaterialToolbar>
+    </FrameLayout>
+</FrameLayout>

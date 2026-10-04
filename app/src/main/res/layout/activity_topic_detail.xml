@@ -12,7 +12,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:paddingTop="88dp"
-            android:clipToPadding="false">
+            android:clipToPadding="false"
+            android:fillViewport="true"
+            android:overScrollMode="always">
 
             <LinearLayout
                 android:layout_width="match_parent"

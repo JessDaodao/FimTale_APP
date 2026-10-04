@@ -7,10 +7,10 @@
     <FrameLayout android:id="@+id/editorForm" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:visibility="gone">
         <LinearLayout android:id="@+id/editorWritingPanel" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
             <com.app.fimtale.editor.BbCodeEditText android:id="@+id/editorBody" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
-                android:layout_marginHorizontal="12dp" android:layout_marginVertical="8dp"
-                android:hint="@string/editor_start_writing" android:paddingHorizontal="20dp" android:paddingVertical="16dp" android:gravity="top|start" android:background="@drawable/bg_input_rounded"
+                android:layout_marginHorizontal="4dp" android:layout_marginVertical="4dp"
+                android:hint="@string/editor_start_writing" android:paddingHorizontal="8dp" android:paddingVertical="8dp" android:gravity="top|start" android:background="@null"
                 android:inputType="textMultiLine|textCapSentences" android:imeOptions="flagNoExtractUi" android:textSize="18sp" android:lineSpacingExtra="6dp"
-                android:scrollbars="vertical" android:saveEnabled="false"/>
+                android:scrollbars="vertical" android:overScrollMode="always" android:saveEnabled="false"/>
             <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorSurfaceVariant"/>
             <LinearLayout android:id="@+id/editorFormatBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="8dp">
                 <com.google.android.material.button.MaterialButton android:id="@+id/editorBold" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="粗体" android:minWidth="0dp" android:paddingHorizontal="4dp"/>

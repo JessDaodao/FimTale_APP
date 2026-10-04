@@ -17,6 +17,8 @@ import android.content.Intent;
 import com.app.fimtale.AboutActivity;
 import com.app.fimtale.R;
 import com.app.fimtale.SettingsActivity;
+import com.app.fimtale.AccountSessionsActivity;
+import com.app.fimtale.ContentFiltersActivity;
 import com.app.fimtale.db.CacheManager;
 import com.app.fimtale.utils.UserPreferences;
 import com.app.fimtale.utils.DialogHelper;
@@ -76,13 +78,15 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
         Preference account = findPreference("account");
         if (account != null) account.setOnPreferenceClickListener(preference -> {
-            if (UserPreferences.isLoggedIn(requireContext())) DialogHelper.openSite(requireContext(), "/user/settings/session");
+            if (UserPreferences.isLoggedIn(requireContext())) startActivity(new Intent(requireContext(), AccountSessionsActivity.class));
             else DialogHelper.openLogin(requireContext());
             return true;
         });
         Preference filters = findPreference("content_filters");
         if (filters != null) filters.setOnPreferenceClickListener(preference -> {
-            DialogHelper.openSite(requireContext(), "/user/settings/filters"); return true;
+            if (UserPreferences.isLoggedIn(requireContext())) startActivity(new Intent(requireContext(), ContentFiltersActivity.class));
+            else DialogHelper.openLogin(requireContext());
+            return true;
         });
 
         SwitchPreferenceCompat gravityPref = findPreference("gravity_mode");

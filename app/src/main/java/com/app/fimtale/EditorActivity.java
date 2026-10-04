@@ -104,6 +104,8 @@ public class EditorActivity extends AppCompatActivity {
             return true;
         });
         title = findViewById(R.id.editorTitle); body = findViewById(R.id.editorBody);
+        body.setNestedScrollingEnabled(true);
+        body.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
         body.setSourceVisible(state != null && state.getBoolean("source_visible"));
         updateSourceButton();
         intro = findViewById(R.id.editorIntro); cover = findViewById(R.id.editorCover);
