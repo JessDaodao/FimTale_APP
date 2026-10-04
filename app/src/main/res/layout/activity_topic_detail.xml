@@ -265,7 +265,7 @@
                 android:contentDescription="查看章节目录" app:icon="@drawable/ic_menu_book"/>
         </LinearLayout>
 
-        <com.app.fimtale.ui.ShimmerSkeletonView
+        <com.fimtale.ui.ShimmerSkeletonView
             android:id="@+id/detailLoadingSkeleton"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

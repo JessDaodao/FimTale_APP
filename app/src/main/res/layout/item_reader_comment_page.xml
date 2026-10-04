@@ -56,7 +56,7 @@
         android:clipToPadding="false"
         android:paddingBottom="8dp" />
 
-    <com.app.fimtale.ui.ShimmerSkeletonView
+    <com.fimtale.ui.ShimmerSkeletonView
         android:id="@+id/readerCommentsSkeleton"
         android:layout_width="match_parent"
         android:layout_height="260dp"

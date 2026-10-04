@@ -22,7 +22,7 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <com.app.fimtale.ui.SkeletonRefreshLayout
+    <com.fimtale.ui.SkeletonRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -33,7 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
             
-            <com.app.fimtale.ui.ShimmerSkeletonView
+            <com.fimtale.ui.ShimmerSkeletonView
                 android:id="@+id/loadingSkeleton"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -75,6 +75,6 @@
                 
         </FrameLayout>
 
-    </com.app.fimtale.ui.SkeletonRefreshLayout>
+    </com.fimtale.ui.SkeletonRefreshLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

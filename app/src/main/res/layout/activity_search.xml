@@ -59,7 +59,7 @@
             app:iconTint="?attr/colorPrimary" />
     </LinearLayout>
 
-    <com.app.fimtale.ui.SkeletonRefreshLayout
+    <com.fimtale.ui.SkeletonRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -116,7 +116,7 @@
                     android:nestedScrollingEnabled="false" />
             </LinearLayout>
 
-            <com.app.fimtale.ui.ShimmerSkeletonView
+            <com.fimtale.ui.ShimmerSkeletonView
                 android:id="@+id/loadingSkeleton"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -131,6 +131,6 @@
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:visibility="gone" />
         </FrameLayout>
-    </com.app.fimtale.ui.SkeletonRefreshLayout>
+    </com.fimtale.ui.SkeletonRefreshLayout>
 
 </LinearLayout>

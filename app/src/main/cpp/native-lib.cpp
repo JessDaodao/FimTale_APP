@@ -3,7 +3,7 @@
 #include <algorithm>
 
 extern "C" JNIEXPORT jfloatArray JNICALL
-Java_com_app_fimtale_utils_GravitySensorHelper_calculateTransforms(
+Java_com_fimtale_utils_GravitySensorHelper_calculateTransforms(
         JNIEnv* env,
         jobject,
         jfloat x,

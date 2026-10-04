@@ -23,7 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <com.app.fimtale.ui.ParallaxImageView
+            <com.fimtale.ui.ParallaxImageView
                 android:id="@+id/coverImageView"
                 android:layout_width="match_parent"
                 android:layout_height="220dp"

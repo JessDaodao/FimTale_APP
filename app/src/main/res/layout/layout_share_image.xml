@@ -79,7 +79,7 @@
         android:textSize="64px"
         android:textStyle="bold" />
 
-    <com.app.fimtale.ui.FadingTextView
+    <com.fimtale.ui.FadingTextView
         android:id="@+id/shareIntroText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

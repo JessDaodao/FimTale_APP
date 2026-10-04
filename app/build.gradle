@@ -14,11 +14,11 @@ def apiUrl = providers.gradleProperty('fimtaleApiUrl').getOrElse('https://api.fi
 android {
     buildFeatures { buildConfig true }
 
-    namespace 'com.app.fimtale'
+    namespace 'com.fimtale'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.app.fimtale"
+        applicationId "com.fimtale"
         minSdk 31
         targetSdk 34
         versionCode 7

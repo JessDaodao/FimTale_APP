@@ -13,7 +13,7 @@
         android:clipToPadding="false"
         android:visibility="invisible" />
 
-    <com.app.fimtale.ui.ShimmerSkeletonView
+    <com.fimtale.ui.ShimmerSkeletonView
         android:id="@+id/loadingSkeleton"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

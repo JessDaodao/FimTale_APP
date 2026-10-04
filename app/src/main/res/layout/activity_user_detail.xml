@@ -207,7 +207,7 @@
                 android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/grid_item_topic" />
 
-            <com.app.fimtale.ui.ShimmerSkeletonView
+            <com.fimtale.ui.ShimmerSkeletonView
                 android:id="@+id/userTopicsSkeleton"
                 android:layout_width="match_parent" android:layout_height="392dp"
                 android:visibility="gone"/>
@@ -220,7 +220,7 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <com.app.fimtale.ui.ShimmerSkeletonView
+    <com.fimtale.ui.ShimmerSkeletonView
         android:id="@+id/profileLoadingSkeleton"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
