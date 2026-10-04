@@ -175,6 +175,9 @@ public class TagListActivity extends AppCompatActivity {
     private void showFilterDialog() {
         android.widget.EditText input = new android.widget.EditText(this);
         input.setSingleLine(true); input.setText(keyword); input.setHint("标签名称");
+        input.setBackgroundResource(R.drawable.bg_input_rounded);
+        int inputPadding = (int) (16 * getResources().getDisplayMetrics().density);
+        input.setPadding(inputPadding, input.getPaddingTop(), inputPadding, input.getPaddingBottom());
         new MaterialAlertDialogBuilder(this).setTitle("搜索标签").setView(input)
                 .setPositiveButton("搜索", (dialog, which) -> {
                     keyword = input.getText().toString().trim(); currentPage = 1; totalPages = 1;

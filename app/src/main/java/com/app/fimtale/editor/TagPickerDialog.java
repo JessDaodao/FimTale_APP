@@ -45,7 +45,10 @@ public final class TagPickerDialog {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"题材", "读者注意", "历史标签", "角色", "其他标签"});
         category.setAdapter(adapter); layout.addView(category, new LinearLayout.LayoutParams(-1, 48 * pad / 20));
-        search = new EditText(context); search.setSingleLine(true); search.setHint("输入名称搜索"); layout.addView(search);
+        search = new EditText(context); search.setSingleLine(true); search.setHint("输入名称搜索");
+        search.setBackgroundResource(com.app.fimtale.R.drawable.bg_input_rounded);
+        search.setPadding(pad, search.getPaddingTop(), pad, search.getPaddingBottom());
+        layout.addView(search);
         MaterialButton find = new MaterialButton(context); find.setText("搜索"); layout.addView(find);
         status = new TextView(context); layout.addView(status);
         android.widget.ScrollView scroll = new android.widget.ScrollView(context);

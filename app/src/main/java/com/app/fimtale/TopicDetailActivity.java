@@ -36,6 +36,7 @@ import com.app.fimtale.model.ChapterMenuItem;
 import com.app.fimtale.model.TopicDetailResponse;
 import com.app.fimtale.model.TopicInfo;
 import com.app.fimtale.model.TopicTags;
+import com.app.fimtale.network.ApiErrors;
 import com.app.fimtale.network.RetrofitClient;
 import com.app.fimtale.utils.UserPreferences;
 import com.bumptech.glide.Glide;
@@ -56,6 +57,8 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.gson.internal.LinkedTreeMap;
 import android.content.ClipboardManager;
 import android.content.ClipData;
@@ -66,6 +69,8 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View.MeasureSpec;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import androidx.annotation.Nullable;
 
 import com.google.zxing.BarcodeFormat;
@@ -113,9 +118,16 @@ public class TopicDetailActivity extends AppCompatActivity {
     private NestedScrollView scrollView;
     private Button startReadingButton;
     private View readingActionsBar;
+    private View commentComposerBar;
+    private TextInputEditText commentComposerInput;
+    private MaterialButton commentComposerSend;
+    private View commentsRoot;
     private WorkActions workActions;
     private WorkCommentsSection commentsSection;
     private BottomSheetDialog chaptersSheet;
+    private Call<Void> commentCall;
+    private boolean commentSending;
+    private boolean commentMode;
 
     private Markwon markwon;
     private int currentTopicId;
@@ -229,10 +241,15 @@ public class TopicDetailActivity extends AppCompatActivity {
         scrollView = findViewById(R.id.scrollView);
         startReadingButton = findViewById(R.id.startReadingButton);
         readingActionsBar = findViewById(R.id.readingActionsBar);
+        commentComposerBar = findViewById(R.id.commentComposerBar);
+        commentComposerInput = findViewById(R.id.commentComposerInput);
+        commentComposerSend = findViewById(R.id.commentComposerSend);
+        commentsRoot = findViewById(R.id.workCommentsSection);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             if (commentsSection != null && editableWork != null) commentsSection.loadIfVisible();
+            updateBottomActionMode();
             boolean shouldElevate = scrollY > 0;
             
             if (shouldElevate != isToolbarElevated) {
@@ -276,6 +293,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         if (commentsSection != null) commentsSection.close();
         if (chaptersSheet != null) chaptersSheet.dismiss();
         if (detailCall != null) { detailCall.cancel(); detailCall = null; }
+        if (commentCall != null) { commentCall.cancel(); commentCall = null; }
         if (elevationAnimator != null) elevationAnimator.cancel();
         editorAccess.close();
         super.onDestroy();
@@ -537,6 +555,9 @@ public class TopicDetailActivity extends AppCompatActivity {
         scrollView.setVisibility(View.INVISIBLE);
         if (editableWork == null && getSupportActionBar() != null) getSupportActionBar().setTitle("文章详情");
         readingActionsBar.setVisibility(View.INVISIBLE);
+        commentMode = false;
+        commentComposerBar.setVisibility(View.GONE);
+        commentComposerBar.setAlpha(1f);
 
         String token = UserPreferences.getToken(this);
         detailCall = RetrofitClient.getInstance().getWorkViewer(token, topicId);
@@ -678,6 +699,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         // Preface belongs to the work; every directory entry is a real chapter.
         java.util.List<TopicDetailResponse.ChapterEdge> roots = com.app.fimtale.model.ChapterNavigation.choices(data, 0);
         firstChapterId = roots.size() == 1 && roots.get(0).to != null ? roots.get(0).to : 0;
+        setCommentMode(false);
         readingActionsBar.setVisibility(View.VISIBLE);
     }
 
@@ -892,11 +914,101 @@ public class TopicDetailActivity extends AppCompatActivity {
             }
         });
 
+        commentComposerSend.setOnClickListener(v -> submitComment());
+        commentComposerInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
+                submitComment();
+                return true;
+            }
+            return false;
+        });
+
         authorLayout.setOnClickListener(v -> {
             if (currentAuthor != null && !TextUtils.isEmpty(currentAuthor.getUserName())) {
                 Intent intent = new Intent(this, UserDetailActivity.class);
                 intent.putExtra(UserDetailActivity.EXTRA_USERNAME, currentAuthor.getUserName());
                 startActivity(intent);
+            }
+        });
+    }
+
+    private void updateBottomActionMode() {
+        if (editableWork == null || scrollView == null || commentsRoot == null
+                || scrollView.getVisibility() != View.VISIBLE) return;
+        android.graphics.Rect viewport = new android.graphics.Rect();
+        android.graphics.Rect comments = new android.graphics.Rect();
+        if (!scrollView.getGlobalVisibleRect(viewport) || !commentsRoot.getGlobalVisibleRect(comments)) return;
+        int threshold = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24,
+                getResources().getDisplayMetrics());
+        setCommentMode(comments.top <= viewport.bottom - threshold);
+    }
+
+    private void setCommentMode(boolean showComposer) {
+        if (commentMode == showComposer && (showComposer
+                ? commentComposerBar.getVisibility() == View.VISIBLE
+                : readingActionsBar.getVisibility() == View.VISIBLE)) return;
+        commentMode = showComposer;
+        if (showComposer) {
+            readingActionsBar.animate().cancel();
+            readingActionsBar.setVisibility(View.GONE);
+            commentComposerBar.setVisibility(View.VISIBLE);
+            commentComposerBar.setAlpha(0f);
+            commentComposerBar.animate().alpha(1f).setDuration(160).start();
+        } else {
+            commentComposerBar.animate().cancel();
+            commentComposerBar.setVisibility(View.GONE);
+            readingActionsBar.setVisibility(View.VISIBLE);
+            readingActionsBar.setAlpha(0f);
+            readingActionsBar.animate().alpha(1f).setDuration(160).start();
+        }
+    }
+
+    private void submitComment() {
+        if (commentSending) return;
+        String content = commentComposerInput.getText() == null
+                ? "" : commentComposerInput.getText().toString().trim();
+        if (content.isEmpty()) {
+            commentComposerInput.setError("评论内容不能为空");
+            return;
+        }
+        if (!UserPreferences.isLoggedIn(this)) {
+            startActivity(new Intent(this, LoginActivity.class));
+            return;
+        }
+
+        String token = UserPreferences.getToken(this);
+        commentSending = true;
+        commentComposerInput.setEnabled(false);
+        commentComposerSend.setEnabled(false);
+        commentCall = RetrofitClient.getInstance().createUpdateComment(token,
+                new com.app.fimtale.model.WorkCommentRequest(currentTopicId, content));
+        commentCall.enqueue(new Callback<Void>() {
+            @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                if (call != commentCall || call.isCanceled() || isFinishing() || isDestroyed()) return;
+                commentCall = null;
+                commentSending = false;
+                commentComposerInput.setEnabled(true);
+                commentComposerSend.setEnabled(true);
+                if (response.isSuccessful()) {
+                    commentComposerInput.setText("");
+                    commentComposerInput.clearFocus();
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) imm.hideSoftInputFromWindow(commentComposerInput.getWindowToken(), 0);
+                    commentsSection.refreshLatest();
+                    Toast.makeText(TopicDetailActivity.this, "评论已发送", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(TopicDetailActivity.this, ApiErrors.message(response), Toast.LENGTH_LONG).show();
+                    if (response.code() == 401) startActivity(new Intent(TopicDetailActivity.this, LoginActivity.class));
+                }
+            }
+
+            @Override public void onFailure(Call<Void> call, Throwable error) {
+                if (call != commentCall || call.isCanceled() || isFinishing() || isDestroyed()) return;
+                commentCall = null;
+                commentSending = false;
+                commentComposerInput.setEnabled(true);
+                commentComposerSend.setEnabled(true);
+                Toast.makeText(TopicDetailActivity.this, "评论发送失败，请重试", Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -27,6 +27,8 @@ public interface FimTaleApiService {
     @GET("work/get_comments") Call<WorkCommentsResponse> getWorkComments(@Query("work_id") int workId,
             @Query("page") int page, @Query("per_page") int perPage,
             @Query("order_by") String orderBy, @Query("order_option") String orderOption);
+    @POST("work/create_update_comment") Call<Void> createUpdateComment(@Header("Token") String token,
+            @Body WorkCommentRequest comment);
     @GET("work/get_chapter") Call<ChapterResponse> getChapter(@Query("chapter_id") int chapterId);
     @GET("user/get_user_auth") Call<UserAuth> getUserAuth(@Header("Token") String token);
     @GET("work/get_work") Call<WorkEditResponse> getWorkForEdit(@Query("work_id") int workId, @Query("for_edit") boolean forEdit);

@@ -75,6 +75,20 @@ public final class WorkCommentsSection {
         scrollToComments();
     }
 
+    public void refresh() {
+        if (!closed) load(1);
+    }
+
+    /** After posting, match the website's newest-first view so the new comment is visible immediately. */
+    public void refreshLatest() {
+        if (closed) return;
+        descending = true;
+        sort.setText("从晚到早");
+        load(1);
+    }
+
+    public int top() { return root.getTop(); }
+
     private void scrollToComments() {
         scroll.post(() -> { if (!closed) scroll.smoothScrollTo(0, root.getTop()); });
     }
