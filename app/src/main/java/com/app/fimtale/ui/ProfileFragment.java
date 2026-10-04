@@ -47,7 +47,6 @@ public class ProfileFragment extends Fragment {
     private View contentLayout;
     private View emptyStateLayout;
     private View btnLogin;
-    private TextView tvWhyHow;
 
     @Nullable
     @Override
@@ -62,7 +61,6 @@ public class ProfileFragment extends Fragment {
         contentLayout = view.findViewById(R.id.contentLayout);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
         btnLogin = view.findViewById(R.id.btnLogin);
-        tvWhyHow = view.findViewById(R.id.tvWhyHow);
 
         layoutUserHeader = view.findViewById(R.id.layoutUserHeader);
         ivAvatar = view.findViewById(R.id.ivAvatar);
@@ -104,12 +102,6 @@ public class ProfileFragment extends Fragment {
         if (btnLogin != null) {
             btnLogin.setOnClickListener(v -> {
                 DialogHelper.openLogin(requireContext());
-            });
-        }
-        if (tvWhyHow != null) {
-            tvWhyHow.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(getContext(), com.app.fimtale.HelpActivity.class);
-                startActivity(intent);
             });
         }
     }

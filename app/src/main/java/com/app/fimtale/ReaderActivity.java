@@ -11,8 +11,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Html;
 import android.text.Layout;
+import android.text.SpannableString;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.text.Spanned;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
@@ -231,11 +235,17 @@ public class ReaderActivity extends AppCompatActivity {
         int type;
         String content;
         int chapterId;
+        int titleLength;
         
         ReaderPage(int type, String content, int chapterId) {
+            this(type, content, chapterId, 0);
+        }
+
+        ReaderPage(int type, String content, int chapterId, int titleLength) {
             this.type = type;
             this.content = content;
             this.chapterId = chapterId;
+            this.titleLength = titleLength;
         }
     }
 
@@ -364,11 +374,6 @@ public class ReaderActivity extends AppCompatActivity {
                     startActivity(currentTopicId == 0 ? EditorActivity.workIntent(this, rootTopicId)
                             : EditorActivity.chapterIntent(this, rootTopicId, currentTopicId));
                 }
-                return true;
-            }
-            if (item.getItemId() == R.id.action_open_site) {
-                com.app.fimtale.utils.DialogHelper.openSite(this, "/work/" + rootTopicId
-                        + (currentTopicId > 0 ? "/chapter/" + currentTopicId : ""));
                 return true;
             }
             if (item.getItemId() == R.id.action_info) {
@@ -836,25 +841,6 @@ public class ReaderActivity extends AppCompatActivity {
         rebuildReaderContent(false);
         positionReader(currentTopicId, scrollToEnd);
         ensureAdjacentChapters(currentTopicId);
-        if (initialProgress < 0 && currentTopicId == initialTopicId && UserPreferences.isLoggedIn(this)) {
-            final int loadedChapter = currentTopicId;
-            RetrofitClient.getInstance().saveReadingProgress(new com.app.fimtale.model.ReadProgress(rootTopicId, loadedChapter, 0))
-                    .enqueue(new Callback<com.app.fimtale.model.ReadProgress>() {
-                @Override public void onResponse(Call<com.app.fimtale.model.ReadProgress> call, Response<com.app.fimtale.model.ReadProgress> response) {
-                    if (isFinishing() || isDestroyed() || currentTopicId != loadedChapter) return;
-                    if (response.isSuccessful() && response.body() != null && response.body().progress > 0) {
-                        final double progress = response.body().progress;
-                        new com.google.android.material.dialog.MaterialAlertDialogBuilder(ReaderActivity.this)
-                                .setMessage("继续上次的阅读进度？").setPositiveButton("继续", (d, w) -> {
-                                    if (currentTopicId != loadedChapter) return;
-                                    initialProgress = progress; initialProgressApplied = false;
-                                    positionReader(loadedChapter, false);
-                                }).setNegativeButton("从头阅读", null).show();
-                    }
-                }
-                @Override public void onFailure(Call<com.app.fimtale.model.ReadProgress> call, Throwable t) {}
-            });
-        }
     }
 
     private void insertLoadedChapter(LoadedChapter chapter) {
@@ -1428,11 +1414,6 @@ public class ReaderActivity extends AppCompatActivity {
 
         if (contentWidth <= 0 || contentHeight <= 0) return;
 
-        TextPaint paint = new TextPaint();
-        paint.setTextSize(currentFontSize * getResources().getDisplayMetrics().scaledDensity);
-        paint.setAntiAlias(true);
-        paint.setColor(getResources().getColor(android.R.color.primary_text_dark, getTheme()));
-
         pages.clear();
         chapterStartPageIndices.clear();
         pageStartOffsets.clear();
@@ -1441,46 +1422,49 @@ public class ReaderActivity extends AppCompatActivity {
 
         for (LoadedChapter chapter : loadedChapters) {
             chapterStartPageIndices.add(pages.size());
-            TextPaint titlePaint = new TextPaint(paint);
-            titlePaint.setTextSize(readerTitleFontSize() * getResources().getDisplayMetrics().scaledDensity);
-            titlePaint.setTypeface(Typeface.DEFAULT_BOLD);
-            addPagedText(chapter.title, chapter.id, ReaderPage.TYPE_TITLE, titlePaint,
+            int segmentStart = 0;
+            StringBuilder firstBlock = new StringBuilder(chapter.title == null ? "" : chapter.title)
+                    .append("\n\n");
+            while (segmentStart < chapter.segments.size()
+                    && chapter.segments.get(segmentStart).type == ReaderPage.TYPE_TEXT) {
+                String text = chapter.segments.get(segmentStart).content;
+                firstBlock.append(segmentStart == 0 ? indentLines(text) : text);
+                segmentStart++;
+            }
+            SpannableString titleBlock = new SpannableString(firstBlock.toString());
+            int titleLength = Math.min(chapter.title == null ? 0 : chapter.title.length(), titleBlock.length());
+            if (titleLength > 0) {
+                titleBlock.setSpan(new StyleSpan(Typeface.BOLD), 0, titleLength,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                titleBlock.setSpan(new RelativeSizeSpan(1.25f), 0, titleLength,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            addPagedText(titleBlock, chapter.id, ReaderPage.TYPE_TEXT, titleLength,
                     contentWidth, contentHeight, lineSpacingMultiplier, globalOffset);
-            globalOffset += chapter.title.length();
+            globalOffset += titleBlock.length();
 
-            for (ContentSegment segment : chapter.segments) {
-                if (segment.type == ReaderPage.TYPE_TEXT) {
-                    String formattedContent = indentLines(segment.content);
-                    StaticLayout layout = StaticLayout.Builder.obtain(formattedContent, 0, formattedContent.length(), paint, contentWidth)
-                            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                            .setLineSpacing(0f, lineSpacingMultiplier)
-                            .setIncludePad(false)
-                            .build();
-
-                    int startLine = 0;
-                    while (startLine < layout.getLineCount()) {
-                        int lineTop = layout.getLineTop(startLine);
-                        int endLine = layout.getLineForVertical(lineTop + contentHeight);
-                        if (layout.getLineBottom(endLine) > lineTop + contentHeight) endLine--;
-                        if (endLine < startLine) endLine = startLine;
-
-                        int startOffset = layout.getLineStart(startLine);
-                        int endOffset = layout.getLineEnd(endLine);
-                        if (endOffset > startOffset) {
-                            String pageContent = formattedContent.substring(startOffset, endOffset);
-                            boolean isLastPage = endLine >= layout.getLineCount() - 1;
-                            if (!isLastPage || !pageContent.trim().isEmpty()) {
-                                pages.add(new ReaderPage(ReaderPage.TYPE_TEXT, pageContent, chapter.id));
-                                pageStartOffsets.add(globalOffset + startOffset);
-                            }
-                        }
-                        startLine = endLine + 1;
-                    }
-                    globalOffset += formattedContent.length();
-                } else if (segment.type == ReaderPage.TYPE_IMAGE) {
+            for (int i = segmentStart; i < chapter.segments.size();) {
+                ContentSegment segment = chapter.segments.get(i);
+                if (segment.type == ReaderPage.TYPE_IMAGE) {
                     pages.add(new ReaderPage(ReaderPage.TYPE_IMAGE, segment.content, chapter.id));
                     pageStartOffsets.add(globalOffset++);
+                    i++;
+                    continue;
                 }
+
+                StringBuilder textBlock = new StringBuilder();
+                int next = i;
+                while (next < chapter.segments.size()
+                        && chapter.segments.get(next).type == ReaderPage.TYPE_TEXT) {
+                    String text = chapter.segments.get(next).content;
+                    textBlock.append(next == i ? indentLines(text) : text);
+                    next++;
+                }
+                String formattedContent = textBlock.toString();
+                addPagedText(formattedContent, chapter.id, ReaderPage.TYPE_TEXT, 0,
+                        contentWidth, contentHeight, lineSpacingMultiplier, globalOffset);
+                globalOffset += formattedContent.length();
+                i = next;
             }
 
             // A full comments page separates adjacent chapters in page mode.
@@ -1493,10 +1477,14 @@ public class ReaderActivity extends AppCompatActivity {
         }
     }
 
-    private void addPagedText(String content, int chapterId, int pageType, TextPaint paint,
+    private void addPagedText(CharSequence content, int chapterId, int pageType, int titleLength,
                               int contentWidth, int contentHeight, float lineSpacingMultiplier,
                               int globalOffset) {
-        String formattedContent = content == null ? "" : content;
+        CharSequence formattedContent = content == null ? "" : content;
+        TextPaint paint = new TextPaint();
+        paint.setTextSize(currentFontSize * getResources().getDisplayMetrics().scaledDensity);
+        paint.setAntiAlias(true);
+        paint.setColor(getResources().getColor(android.R.color.primary_text_dark, getTheme()));
         StaticLayout layout = StaticLayout.Builder.obtain(formattedContent, 0, formattedContent.length(), paint, contentWidth)
                 .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .setLineSpacing(0f, lineSpacingMultiplier)
@@ -1512,10 +1500,11 @@ public class ReaderActivity extends AppCompatActivity {
             int startOffset = layout.getLineStart(startLine);
             int endOffset = layout.getLineEnd(endLine);
             if (endOffset > startOffset) {
-                String pageContent = formattedContent.substring(startOffset, endOffset);
+                String pageContent = formattedContent.subSequence(startOffset, endOffset).toString();
                 boolean isLastPage = endLine >= layout.getLineCount() - 1;
                 if (!isLastPage || !pageContent.trim().isEmpty()) {
-                    pages.add(new ReaderPage(pageType, pageContent, chapterId));
+                    int pageTitleLength = Math.max(0, Math.min(titleLength, endOffset) - startOffset);
+                    pages.add(new ReaderPage(pageType, pageContent, chapterId, pageTitleLength));
                     pageStartOffsets.add(globalOffset + startOffset);
                 }
             }
@@ -1769,6 +1758,18 @@ public class ReaderActivity extends AppCompatActivity {
                     markwon.setMarkdown(textHolder.textView, page.content);
                 } else {
                     textHolder.textView.setText(page.content);
+                }
+                if (page.titleLength > 0) {
+                    CharSequence rendered = textHolder.textView.getText();
+                    SpannableString styled = new SpannableString(rendered == null ? "" : rendered);
+                    int titleEnd = Math.min(page.titleLength, styled.length());
+                    if (titleEnd > 0) {
+                        styled.setSpan(new StyleSpan(Typeface.BOLD), 0, titleEnd,
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        styled.setSpan(new RelativeSizeSpan(1.25f), 0, titleEnd,
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    textHolder.textView.setText(styled, TextView.BufferType.SPANNABLE);
                 }
                 textHolder.textView.setOnTouchListener(touchListener);
                 textHolder.itemView.setOnTouchListener(touchListener);

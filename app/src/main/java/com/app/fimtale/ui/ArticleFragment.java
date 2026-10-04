@@ -1,8 +1,6 @@
 package com.app.fimtale.ui;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,13 +25,11 @@ import androidx.recyclerview.widget.ConcatAdapter;
 import com.app.fimtale.adapter.LoadingCardAdapter;
 
 import com.app.fimtale.R;
-import com.app.fimtale.adapter.SearchHistoryAdapter;
 import com.app.fimtale.adapter.TopicAdapter;
 import com.app.fimtale.model.Topic;
 import com.app.fimtale.model.TopicListResponse;
 import com.app.fimtale.model.TopicViewItem;
 import com.app.fimtale.network.RetrofitClient;
-import com.app.fimtale.utils.UserPreferences;
 import com.app.fimtale.utils.DialogHelper;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -55,11 +51,7 @@ public class ArticleFragment extends Fragment {
     private LoadingCardAdapter loadingFooter;
     private LinearLayout emptyStateLayout;
     private Button btnLogin;
-    private TextView tvWhyHow;
     private TextView tvNoResults;
-    private android.widget.PopupWindow historyPopupWindow;
-    private SearchHistoryAdapter historyAdapter;
-    
     private RecyclerView recyclerView;
     private TopicAdapter adapter;
     private List<TopicViewItem> dataList = new ArrayList<>();
@@ -67,7 +59,6 @@ public class ArticleFragment extends Fragment {
     private int totalPages = 1;
     private boolean isLoading = false;
     private Call<TopicListResponse> topicsCall;
-    private String currentQuery = null;
     private String currentSortBy = "";
 
     @Nullable
@@ -86,7 +77,6 @@ public class ArticleFragment extends Fragment {
         loadingSkeleton = view.findViewById(R.id.loadingSkeleton);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
         btnLogin = view.findViewById(R.id.btnLogin);
-        tvWhyHow = view.findViewById(R.id.tvWhyHow);
         tvNoResults = view.findViewById(R.id.tvNoResults);
 
         tabLayout.addTab(tabLayout.newTab().setText("全部"));
@@ -100,71 +90,16 @@ public class ArticleFragment extends Fragment {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
                 menuInflater.inflate(R.menu.article_menu, menu);
-                
-                MenuItem searchItem = menu.findItem(R.id.action_search);
-                androidx.appcompat.widget.SearchView searchView = (androidx.appcompat.widget.SearchView) searchItem.getActionView();
-                
-                searchView.setQueryHint("搜索文章...");
-                
-                if (currentQuery != null && !currentQuery.isEmpty()) {
-                    searchItem.expandActionView();
-                    searchView.setQuery(currentQuery, false);
-                    searchView.clearFocus();
-                }
-                
-                searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
-                    @Override
-                    public boolean onQueryTextSubmit(String query) {
-                        currentQuery = query;
-                        currentPage = 1;
-                        
-                        UserPreferences.saveSearchHistory(getContext(), query);
-                        
-                        loadTopics();
-                        searchView.clearFocus();
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onQueryTextChange(String newText) {
-                        if (newText.isEmpty()) {
-                            showSearchHistoryPopup(searchView, searchView);
-                        } else {
-                            if (historyPopupWindow != null) {
-                                historyPopupWindow.dismiss();
-                            }
-                        }
-                        return true;
-                    }
-                });
-                
-                searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
-                    @Override
-                    public boolean onMenuItemActionExpand(MenuItem item) {
-                        searchView.post(searchView::clearFocus);
-                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                            showSearchHistoryPopup(searchView, searchView);
-                        }, 100);
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onMenuItemActionCollapse(MenuItem item) {
-                        if (currentQuery != null) {
-                            currentQuery = null;
-                            currentPage = 1;
-                            
-                            loadTopics();
-                        }
-                        return true;
-                    }
-                });
             }
 
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
                 if (menuItem.getItemId() == R.id.action_filter) {
                     showFilterDialog();
+                    return true;
+                }
+                if (menuItem.getItemId() == R.id.action_search) {
+                    startActivity(new android.content.Intent(requireContext(), com.app.fimtale.SearchActivity.class));
                     return true;
                 }
                 return false;
@@ -174,69 +109,9 @@ public class ArticleFragment extends Fragment {
         loadContent();
     }
 
-    private void showSearchHistoryPopup(View anchorView, androidx.appcompat.widget.SearchView searchView) {
-        List<String> history = UserPreferences.getSearchHistory(getContext());
-        if (history.isEmpty()) return;
-
-        if (historyPopupWindow != null && historyPopupWindow.isShowing()) {
-            historyAdapter.updateData(history);
-            return;
-        }
-
-        View popupView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_search_history, null);
-        RecyclerView historyRecyclerView = popupView.findViewById(R.id.historyRecyclerView);
-        TextView tvClearHistory = popupView.findViewById(R.id.tvClearHistory);
-
-        historyAdapter = new SearchHistoryAdapter(history, new SearchHistoryAdapter.OnHistoryClickListener() {
-            @Override
-            public void onHistoryClick(String query) {
-                searchView.setQuery(query, true);
-                historyPopupWindow.dismiss();
-            }
-
-            @Override
-            public void onDeleteClick(String query) {
-                UserPreferences.removeSearchHistoryItem(getContext(), query);
-                List<String> updatedHistory = UserPreferences.getSearchHistory(getContext());
-                if (updatedHistory.isEmpty()) {
-                    historyPopupWindow.dismiss();
-                } else {
-                    historyAdapter.updateData(updatedHistory);
-                }
-            }
-        });
-
-        historyRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        historyRecyclerView.setAdapter(historyAdapter);
-
-        tvClearHistory.setOnClickListener(v -> {
-            new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("确认清除")
-                    .setMessage("是否清除所有搜索历史？")
-                    .setPositiveButton("清除", (dialog, which) -> {
-                        UserPreferences.clearSearchHistory(getContext());
-                        historyPopupWindow.dismiss();
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
-        });
-
-        historyPopupWindow = new android.widget.PopupWindow(popupView, 
-                ViewGroup.LayoutParams.MATCH_PARENT, 
-                ViewGroup.LayoutParams.WRAP_CONTENT, true);
-        
-        historyPopupWindow.setElevation(10f);
-        historyPopupWindow.setOutsideTouchable(true);
-        historyPopupWindow.showAsDropDown(anchorView);
-    }
-
     private void setupEmptyState() {
         btnLogin.setOnClickListener(v -> {
             DialogHelper.openLogin(requireContext());
-        });
-        tvWhyHow.setOnClickListener(v -> {
-            android.content.Intent intent = new android.content.Intent(getContext(), com.app.fimtale.HelpActivity.class);
-            startActivity(intent);
         });
     }
 
@@ -344,7 +219,7 @@ public class ArticleFragment extends Fragment {
         recyclerView.setVisibility(requestedPage == 1 ? View.INVISIBLE : View.VISIBLE);
 
         topicsCall = RetrofitClient.getInstance().getTopicList(requestedPage,
-                com.app.fimtale.network.SearchQuery.keywords(currentQuery), com.app.fimtale.network.SearchQuery.rank(currentSortBy));
+                null, com.app.fimtale.network.SearchQuery.rank(currentSortBy));
         topicsCall.enqueue(new Callback<TopicListResponse>() {
             @Override public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
                 if (!isAdded() || getView() == null || call.isCanceled() || call != topicsCall) return;
@@ -385,7 +260,6 @@ public class ArticleFragment extends Fragment {
     }
     @Override public void onDestroyView() {
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
-        if (historyPopupWindow != null) { historyPopupWindow.dismiss(); historyPopupWindow = null; }
         isLoading = false;
         super.onDestroyView();
     }

@@ -53,7 +53,6 @@ public class HomeFragment extends Fragment {
     private LinearLayout btnPosts;
     private LinearLayout btnTags;
     private Button btnLogin;
-    private TextView tvWhyHow;
     private TabLayout tabLayout;
     private ViewPager2 bannerViewPager;
     private ShimmerSkeletonView loadingSkeleton;
@@ -120,7 +119,6 @@ public class HomeFragment extends Fragment {
         viewMoreButton = footer.findViewById(R.id.viewMoreButton);
         emptyStateLayout = view.findViewById(R.id.emptyStateLayout);
         btnLogin = view.findViewById(R.id.btnLogin);
-        tvWhyHow = view.findViewById(R.id.tvWhyHow);
 
         setupBannerViewPager();
         setupRecyclerView(header, footer);
@@ -154,10 +152,6 @@ public class HomeFragment extends Fragment {
     private void setupEmptyState() {
         btnLogin.setOnClickListener(v -> {
             DialogHelper.openLogin(requireContext());
-        });
-        tvWhyHow.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), com.app.fimtale.HelpActivity.class);
-            startActivity(intent);
         });
     }
 

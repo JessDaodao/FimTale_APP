@@ -200,7 +200,20 @@
 
                 <LinearLayout
                     android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp" android:orientation="horizontal">
+                    android:layout_marginTop="12dp" android:orientation="vertical">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/continueReadingButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="继续阅读"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/likeWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
@@ -215,6 +228,7 @@
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
                         android:text="投HP" android:contentDescription="投送 HP" android:checkable="true"
                         app:icon="@drawable/ic_star_outline"/>
+                    </LinearLayout>
                 </LinearLayout>
                 <TextView android:id="@+id/workActionStatus"
                     android:layout_width="match_parent" android:layout_height="wrap_content"

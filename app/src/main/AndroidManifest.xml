@@ -96,10 +96,11 @@
             android:exported="false"
             android:theme="@style/Theme.Fimtale.FullTransparent" />
 
-        <!-- 帮助页 -->
+        <!-- 独立搜索页 -->
         <activity
-            android:name=".HelpActivity"
+            android:name=".SearchActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Fimtale.FullTransparent" />
 
         <!-- 关于页 -->
