@@ -29,6 +29,7 @@ public interface FimTaleApiService {
     @GET("work/get_work") Call<TopicDetailResponse> getWork(@Query("work_id") int workId);
     @GET("work/get_work") Call<TopicDetailResponse> getWorkViewer(@Header("Token") String token, @Query("work_id") int workId);
     @POST("work/do_work_vote") Call<Void> voteWork(@Header("Token") String token, @Body WorkInteractions.Vote vote);
+    @POST("work/do_work_high_praise") Call<Void> highPraiseWork(@Header("Token") String token, @Body WorkInteractions.HighPraise highPraise);
     @GET("user/get_favorite_folders") Call<List<WorkInteractions.Folder>> getFavoriteFolders(@Header("Token") String token);
     @POST("work/add_favorite_work") Call<Void> addFavoriteWork(@Header("Token") String token, @Body WorkInteractions.FavoriteRequest favorite);
     @POST("work/remove_favorite_work") Call<Void> removeFavoriteWork(@Header("Token") String token, @Body WorkInteractions.FavoriteRequest favorite);

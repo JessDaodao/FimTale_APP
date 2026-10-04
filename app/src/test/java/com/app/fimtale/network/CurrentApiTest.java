@@ -154,6 +154,7 @@ public class CurrentApiTest {
                 + "\"favs\":[{\"folder_id\":null},{\"folder_id\":7},{\"folder_id\":7}]}}")
                 .getWorkViewer("session-token", 42).execute().body();
         assertTrue(result.viewer.isLiked());
+        assertEquals(1, result.viewer.highPraiseCount());
         assertEquals(new java.util.LinkedHashSet<>(java.util.Arrays.asList(0, 7)), result.viewer.folderIds());
         assertEquals(12, result.getTopicInfo().getLikeCount());
         assertEquals("session-token", request.get().header("Token"));
@@ -172,6 +173,12 @@ public class CurrentApiTest {
         JsonObject voteBody = new JsonParser().parse(vote.readUtf8()).getAsJsonObject();
         assertEquals(42, voteBody.get("work_id").getAsInt());
         assertEquals(1, voteBody.get("operation").getAsInt());
+        api("null").highPraiseWork("session-token", new WorkInteractions.HighPraise(42, 2)).execute();
+        assertEquals("/api/work/do_work_high_praise", request.get().url().encodedPath());
+        Buffer highPraise = new Buffer(); request.get().body().writeTo(highPraise);
+        JsonObject highPraiseBody = new JsonParser().parse(highPraise.readUtf8()).getAsJsonObject();
+        assertEquals(42, highPraiseBody.get("work_id").getAsInt());
+        assertEquals(2, highPraiseBody.get("count").getAsInt());
         api("{\"id\":9,\"folder_id\":null}").addFavoriteWork("session-token", new WorkInteractions.FavoriteRequest(42, 0)).execute();
         assertEquals("/api/work/add_favorite_work", request.get().url().encodedPath());
         Buffer favorite = new Buffer(); request.get().body().writeTo(favorite);

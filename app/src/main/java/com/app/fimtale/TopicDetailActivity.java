@@ -20,6 +20,7 @@ import android.widget.LinearLayout;
 import com.app.fimtale.ui.ShimmerSkeletonView;
 import com.app.fimtale.ui.WorkActions;
 import com.app.fimtale.ui.WorkCommentsSection;
+import com.app.fimtale.ui.FtemojiPicker;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.animation.ObjectAnimator;
@@ -715,9 +716,6 @@ public class TopicDetailActivity extends AppCompatActivity {
     private void updateCommentCount(int count) {
         currentCommentCount = count;
         commentCountTextView.setText(String.valueOf(count));
-        TextView commentsButton = findViewById(R.id.showCommentsButton);
-        commentsButton.setText(String.valueOf(count));
-        commentsButton.setContentDescription("查看评论，" + count + " 条");
         if (commentsSection != null) commentsSection.setCount(count);
     }
 
@@ -906,7 +904,6 @@ public class TopicDetailActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         findViewById(R.id.showChaptersButton).setOnClickListener(v -> showChapters());
-        findViewById(R.id.showCommentsButton).setOnClickListener(v -> showComments());
         commentCountTextView.setOnClickListener(v -> showComments());
         startReadingButton.setOnClickListener(v -> {
             if (firstChapterId != -1) {
@@ -918,6 +915,8 @@ public class TopicDetailActivity extends AppCompatActivity {
         });
 
         commentComposerSend.setOnClickListener(v -> submitComment());
+        findViewById(R.id.commentComposerEmoji).setOnClickListener(v -> FtemojiPicker.show(this,
+                name -> insertCommentText(":ftemoji_" + name + ":")));
         commentComposerInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
                 submitComment();
@@ -1014,6 +1013,14 @@ public class TopicDetailActivity extends AppCompatActivity {
                 Toast.makeText(TopicDetailActivity.this, "评论发送失败，请重试", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void insertCommentText(String value) {
+        int start = Math.max(0, commentComposerInput.getSelectionStart());
+        int end = Math.max(start, commentComposerInput.getSelectionEnd());
+        commentComposerInput.getText().replace(start, end, value);
+        commentComposerInput.requestFocus();
+        commentComposerInput.setSelection(Math.min(commentComposerInput.length(), start + value.length()));
     }
 
 }

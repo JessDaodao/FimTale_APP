@@ -16,6 +16,13 @@ public final class WorkInteractions {
             if (operations != null) for (Operation item : operations) if (item != null && item.operation == 1) return true;
             return false;
         }
+        public int highPraiseCount() {
+            int count = 0;
+            if (operations != null) for (Operation item : operations) {
+                if (item != null && item.operation == 3) count++;
+            }
+            return count;
+        }
         public Set<Integer> folderIds() {
             Set<Integer> ids = new LinkedHashSet<>();
             if (favs != null) for (Favorite item : favs) if (item != null) ids.add(item.folderId == null ? 0 : item.folderId);
@@ -33,6 +40,11 @@ public final class WorkInteractions {
         @SerializedName("work_id") public final int workId;
         public final int operation = 1;
         public Vote(int workId) { this.workId = workId; }
+    }
+    public static class HighPraise {
+        @SerializedName("work_id") public final int workId;
+        public final int count;
+        public HighPraise(int workId, int count) { this.workId = workId; this.count = count; }
     }
     public static class FavoriteRequest {
         @SerializedName("work_id") public final int workId;

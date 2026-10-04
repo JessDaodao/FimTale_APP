@@ -44,6 +44,10 @@
                 android:paddingVertical="10dp" />
         </com.google.android.material.textfield.TextInputLayout>
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/commentComposerEmoji" style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="48dp" android:layout_height="48dp" android:layout_marginStart="6dp"
+            android:contentDescription="插入表情" app:icon="@drawable/ic_emoji" />
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/commentComposerSend" style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="52dp" android:layout_height="52dp" android:layout_marginStart="8dp"
             android:contentDescription="发送评论" app:icon="@drawable/ic_send" />

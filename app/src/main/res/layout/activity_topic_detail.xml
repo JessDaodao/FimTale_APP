@@ -182,7 +182,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textSize="11sp"
-                        android:drawableStart="@drawable/ic_star"
+                        android:drawableStart="@drawable/ic_bookmark"
                         android:drawablePadding="4dp"
                         android:gravity="center_vertical"
                         tools:text="20" />
@@ -204,16 +204,17 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/likeWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="0" android:contentDescription="点赞" android:checkable="true" app:icon="@drawable/ic_thumb_up"/>
+                        android:text="0" android:contentDescription="点赞" android:checkable="true" app:icon="@drawable/ic_thumb_up_outline"/>
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/favoriteWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
                         android:layout_marginHorizontal="8dp" android:text="0" android:contentDescription="收藏"
-                        android:checkable="true" app:icon="@drawable/ic_star"/>
+                        android:checkable="true" app:icon="@drawable/ic_bookmark_outline"/>
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/showCommentsButton" style="@style/Widget.Fimtale.WorkAction"
+                        android:id="@+id/highPraiseWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="0" android:contentDescription="查看评论" app:icon="@drawable/ic_comment_count"/>
+                        android:text="投HP" android:contentDescription="投送 HP" android:checkable="true"
+                        app:icon="@drawable/ic_star_outline"/>
                 </LinearLayout>
                 <TextView android:id="@+id/workActionStatus"
                     android:layout_width="match_parent" android:layout_height="wrap_content"

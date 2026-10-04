@@ -33,6 +33,7 @@ public final class ShimmerSkeletonView extends View {
     public ShimmerSkeletonView(Context context) { this(context, null); }
     public ShimmerSkeletonView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+        paint.setDither(true);
         int background = themeColor(android.R.attr.colorBackground);
         int foreground = themeColor(com.google.android.material.R.attr.colorOnSurface);
         baseColor = ColorUtils.blendARGB(background, foreground, .09f);
@@ -152,8 +153,16 @@ public final class ShimmerSkeletonView extends View {
         else feed();
         float band = Math.max(dp(100), getWidth() * .32f);
         // A diagonal gradient creates a tilted light band as it moves horizontally.
+        // Several eased stops keep the highlight's edges gradual instead of producing
+        // a visible slope break at the center of the band.
+        int soft = ColorUtils.blendARGB(baseColor, highlightColor, .12f);
+        int medium = ColorUtils.blendARGB(baseColor, highlightColor, .42f);
+        int bright = ColorUtils.blendARGB(baseColor, highlightColor, .76f);
         shimmer = new LinearGradient(-band, band * .55f, band, -band * .55f,
-                new int[]{baseColor, highlightColor, baseColor}, new float[]{0, .5f, 1}, Shader.TileMode.CLAMP);
+                new int[]{baseColor, soft, medium, bright, highlightColor, highlightColor,
+                        bright, medium, soft, baseColor},
+                new float[]{0f, .14f, .28f, .4f, .48f, .52f, .6f, .72f, .86f, 1f},
+                Shader.TileMode.CLAMP);
     }
     private void feed() {
         float y = dp(8);

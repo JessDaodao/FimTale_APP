@@ -30,6 +30,7 @@ public final class BbCode {
         // BBCode text is literal; only [markdown] blocks opt into Markdown syntax.
         text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
         text = replaceImages(text);
+        text = replaceFtemoji(text);
         text = text.replaceAll("(?is)\\[url=([^\\]]+)\\](.*?)\\[/url\\]", "[$2]($1)")
                 .replaceAll("(?is)\\[url\\](.*?)\\[/url\\]", "[$1]($1)");
         text = text.replaceAll("(?i)\\[b\\]", "<b>").replaceAll("(?i)\\[/b\\]", "</b>")
@@ -51,8 +52,9 @@ public final class BbCode {
                 .replaceAll("(?i)\\[/?(?:color|size|font|sub|sup|mention)(?:[ =][^\\]]*)?\\]", "")
                 .replaceAll("(?i)\\[collapse(?:[ =][^\\]]*)?\\]", "\n\n")
                 .replaceAll("(?i)\\[/collapse\\]", "\n\n");
-        // Spoilers and interactive blocks remain labelled, so hidden text is not exposed by conversion.
-        text = text.replaceAll("(?is)\\[spoiler(?:[ =][^\\]]*)?\\].*?\\[/spoiler\\]", "[剧透内容，请在网站查看]");
+        // Keep spoiler text behind the same black bar used by the website.
+        text = text.replaceAll("(?is)\\[spoiler(?:[ =][^\\]]*)?\\](.*?)\\[/spoiler\\]",
+                "<span style=\"background-color:#000000;color:transparent;padding:0 2px\">&nbsp;&nbsp;&nbsp;&nbsp;</span>");
         for (int i = 0; i < literal.size(); i++) text = text.replace("\u0000FT_BLOCK_" + i + "\u0000", literal.get(i));
         return text.trim();
     }
@@ -65,6 +67,19 @@ public final class BbCode {
             images.appendReplacement(result, Matcher.quoteReplacement(replacement));
         }
         images.appendTail(result);
+        return result.toString();
+    }
+
+    private static String replaceFtemoji(String source) {
+        Matcher emojis = Pattern.compile(":ftemoji_([a-zA-Z0-9_]+):").matcher(source);
+        StringBuffer result = new StringBuffer();
+        while (emojis.find()) {
+            String name = emojis.group(1);
+            String url = SiteUrls.media("/img/ftemoji/" + name + ".png");
+            String replacement = url == null ? emojis.group() : "![ftemoji_" + name + "](" + url + ")";
+            emojis.appendReplacement(result, Matcher.quoteReplacement(replacement));
+        }
+        emojis.appendTail(result);
         return result.toString();
     }
 }

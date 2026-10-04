@@ -50,6 +50,7 @@ public class Topic {
     public int getFollowers() { return followers; }
     public int getWordCount() { return wordCount; }
     public int getHighPraise() { return highPraise; }
+    public int getOrigin() { return origin; }
     public boolean isFavorite() { return isFavorite; }
     
     public void setId(int id) { this.id = id; }

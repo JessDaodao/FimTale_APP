@@ -22,6 +22,7 @@ import com.app.fimtale.editor.BbCodeEditText;
 import com.app.fimtale.editor.EditorViewModel;
 import com.app.fimtale.editor.TagPickerDialog;
 import com.app.fimtale.editor.WorkInput;
+import com.app.fimtale.ui.FtemojiPicker;
 import com.app.fimtale.utils.DialogHelper;
 import com.app.fimtale.utils.UserPreferences;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -132,6 +133,9 @@ public class EditorActivity extends AppCompatActivity {
         findViewById(R.id.editorBold).setOnClickListener(v -> wrap("b"));
         findViewById(R.id.editorItalic).setOnClickListener(v -> wrap("i"));
         findViewById(R.id.editorQuote).setOnClickListener(v -> wrap("quote"));
+        findViewById(R.id.editorSpoiler).setOnClickListener(v -> wrap("spoiler"));
+        findViewById(R.id.editorEmoji).setOnClickListener(v -> FtemojiPicker.show(this,
+                name -> insertAtCaret(body, ":ftemoji_" + name + ":")));
         findViewById(R.id.editorImage).setOnClickListener(v -> imagePicker.launch("image/*"));
         findViewById(R.id.editorUploadCover).setOnClickListener(v -> coverPicker.launch("image/*"));
         findViewById(R.id.editorSource).setOnClickListener(v -> {
@@ -426,6 +430,13 @@ public class EditorActivity extends AppCompatActivity {
         String selected = body.getText().subSequence(start, end).toString();
         body.getText().replace(start, end, "[" + tag + "]" + selected + "[/" + tag + "]");
         body.requestFocus(); body.setSelection(start + tag.length() + 2, start + tag.length() + 2 + selected.length());
+    }
+    private void insertAtCaret(EditText field, String value) {
+        int start = Math.max(0, field.getSelectionStart());
+        int end = Math.max(start, field.getSelectionEnd());
+        field.getText().replace(start, end, value);
+        field.requestFocus();
+        field.setSelection(Math.min(field.length(), start + value.length()));
     }
     private void updateSourceButton() {
         TextView button = findViewById(R.id.editorSource);

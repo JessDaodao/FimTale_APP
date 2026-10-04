@@ -1,10 +1,13 @@
 package com.app.fimtale.ui;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import com.app.fimtale.R;
 import com.app.fimtale.model.TopicDetailResponse;
 import com.app.fimtale.model.WorkInteractions;
@@ -28,7 +31,7 @@ public final class WorkActions {
     private final int workId;
     private final Runnable login;
     private final Consumer<TopicDetailResponse> updated;
-    private final MaterialButton like, favorite;
+    private final MaterialButton like, favorite, highPraise;
     private final TextView status;
     private TopicDetailResponse data;
     private String stateToken;
@@ -41,9 +44,15 @@ public final class WorkActions {
         stateToken = UserPreferences.getToken(activity);
         like = activity.findViewById(R.id.likeWorkButton);
         favorite = activity.findViewById(R.id.favoriteWorkButton);
+        highPraise = activity.findViewById(R.id.highPraiseWorkButton);
+        ColorStateList transparent = ColorStateList.valueOf(Color.TRANSPARENT);
+        like.setBackgroundTintList(transparent);
+        favorite.setBackgroundTintList(transparent);
+        highPraise.setBackgroundTintList(transparent);
         status = activity.findViewById(R.id.workActionStatus);
         like.setOnClickListener(v -> vote());
         favorite.setOnClickListener(v -> chooseFavorites());
+        highPraise.setOnClickListener(v -> chooseHighPraise());
         status.setOnClickListener(v -> { if (!busy) refresh(); });
     }
 
@@ -83,15 +92,26 @@ public final class WorkActions {
     private void render() {
         boolean liked = known && data != null && data.viewer != null && data.viewer.isLiked();
         boolean faved = known && data != null && data.viewer != null && !data.viewer.folderIds().isEmpty();
+        int hpGiven = known && data != null && data.viewer != null ? data.viewer.highPraiseCount() : 0;
         int likes = data == null ? 0 : data.getTopicInfo().getLikeCount();
         int favorites = data == null ? 0 : data.getTopicInfo().getFavoriteCount();
         like.setText(String.valueOf(likes));
         favorite.setText(String.valueOf(favorites));
+        highPraise.setText("投HP");
         boolean enabled = !busy && data != null && (known || !UserPreferences.isLoggedIn(activity));
-        like.setEnabled(enabled); favorite.setEnabled(enabled);
+        like.setEnabled(enabled); favorite.setEnabled(enabled); highPraise.setEnabled(enabled);
         like.setChecked(liked); favorite.setChecked(faved);
+        highPraise.setChecked(hpGiven > 0);
+        like.setIcon(ContextCompat.getDrawable(activity,
+                liked ? R.drawable.ic_thumb_up : R.drawable.ic_thumb_up_outline));
+        favorite.setIcon(ContextCompat.getDrawable(activity,
+                faved ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline));
+        highPraise.setIcon(ContextCompat.getDrawable(activity,
+                hpGiven > 0 ? R.drawable.ic_star : R.drawable.ic_star_outline));
         like.setContentDescription((liked ? "取消点赞，" : "点赞，") + likes);
         favorite.setContentDescription((faved ? "管理收藏夹，已收藏，" : "收藏到收藏夹，") + favorites);
+        int hpTotal = data == null ? 0 : data.getTopicInfo().getHighPraise();
+        highPraise.setContentDescription((hpGiven > 0 ? "已投 HP，" : "投送 HP，") + "作品收到 " + hpTotal + " 个");
         // Mutations can take a moment, but the action row should remain quiet while
         // the server state is being reconciled. Only expose the retry affordance
         // when the initial interaction state could not be loaded.
@@ -163,6 +183,39 @@ public final class WorkActions {
                 if (!valid(call, token)) return;
                 busy = false; render();
                 Toast.makeText(activity, "收藏夹加载失败，请重试", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void chooseHighPraise() {
+        if (!authenticated()) return;
+        String token = stateToken;
+        boolean reprint = data != null && data.getTopicInfo() != null && data.getTopicInfo().getOrigin() == 3;
+        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(activity)
+                .setTitle("投送 HP")
+                .setMessage("确定要给这篇作品的作者投送 HighPraise 吗？每个 HP 会从你的账户扣除 50 比特，作者获得 100 比特。HP 一经投送无法撤回。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("投 1 个", (d, which) -> sendHighPraise(1, token));
+        if (!reprint) dialog.setNeutralButton("投 2 个", (d, which) -> sendHighPraise(2, token));
+        dialog.show();
+    }
+
+    private void sendHighPraise(int count, String token) {
+        if (!token.equals(UserPreferences.getToken(activity))) { onResume(); return; }
+        busy = true; render();
+        Call<Void> call = RetrofitClient.getInstance().highPraiseWork(token,
+                new WorkInteractions.HighPraise(workId, count));
+        activeCall = call;
+        call.enqueue(new Callback<Void>() {
+            @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                if (!valid(call, token)) return;
+                if (!response.isSuccessful()) Toast.makeText(activity, ApiErrors.message(response), Toast.LENGTH_LONG).show();
+                refresh();
+            }
+            @Override public void onFailure(Call<Void> call, Throwable error) {
+                if (!valid(call, token)) return;
+                Toast.makeText(activity, "未收到投 HP 结果，正在核对状态", Toast.LENGTH_LONG).show();
+                refresh();
             }
         });
     }

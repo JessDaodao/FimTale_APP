@@ -1,44 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/readerCommentsRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
 
     <LinearLayout
+        android:id="@+id/readerCommentsHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="8dp">
 
         <TextView
-            android:id="@+id/tvChapterTitle"
+            android:id="@+id/readerCommentsTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="推荐阅读"
-            android:textSize="20sp"
+            android:text="评论"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
             android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface" />
+            android:textColor="?attr/colorOnBackground" />
 
-        <TextView
-            android:id="@+id/tvContinueRead"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/readerCommentsRefresh"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="左滑继续阅读"
-            android:textSize="14sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:visibility="gone" />
+            android:text="刷新" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/readerCommentsSort"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="从早到晚" />
     </LinearLayout>
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/readerCommentsButton"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="查看评论"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvRecommendedTopics"
+        android:id="@+id/readerCommentsList"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        tools:listitem="@layout/grid_item_topic" />
+        android:nestedScrollingEnabled="true"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp" />
 
+    <com.app.fimtale.ui.ShimmerSkeletonView
+        android:id="@+id/readerCommentsSkeleton"
+        android:layout_width="match_parent"
+        android:layout_height="260dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/readerCommentsStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/readerCommentsPager"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/readerCommentsPrevious"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="上一页" />
+
+        <TextView
+            android:id="@+id/readerCommentsPage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/readerCommentsNext"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="下一页" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/readerCommentComposerBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/readerCommentComposerInputLayout"
+            style="@style/Widget.Fimtale.TextInputLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="发表评论">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/readerCommentComposerInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:imeOptions="actionSend"
+                android:inputType="textMultiLine|textCapSentences"
+                android:maxLines="3"
+                android:minLines="1"
+                android:paddingVertical="10dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/readerCommentComposerEmoji"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="6dp"
+            android:contentDescription="插入表情"
+            app:icon="@drawable/ic_emoji" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/readerCommentComposerSend"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="发送评论"
+            app:icon="@drawable/ic_send" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/readerContinueRead"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingVertical="8dp"
+        android:text="左滑继续阅读"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="14sp"
+        android:visibility="gone" />
 </LinearLayout>

@@ -41,6 +41,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Inline BBCode rendering over the original Editable, preserving selection, IME and undo. */
 public final class BbCodeEditText extends AppCompatEditText {
@@ -50,60 +52,14 @@ public final class BbCodeEditText extends AppCompatEditText {
     private List<BbCodeSyntax.Node> nodes = new ArrayList<>();
     private String parsedSource;
     private boolean sourceVisible;
-    private boolean suppressAutoIndent;
-    private int pendingEditStart = -1;
-    private String pendingInserted;
 
     public BbCodeEditText(Context context, AttributeSet attrs) {
         super(context, attrs);
         addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                scheduleRender();
-                if (!suppressAutoIndent && count > 0) {
-                    String inserted = s.subSequence(start, start + count).toString();
-                    if (inserted.indexOf('\n') >= 0) {
-                        pendingEditStart = start;
-                        pendingInserted = inserted;
-                    }
-                }
-            }
-            @Override public void afterTextChanged(Editable text) {
-                applyAutoIndent(text);
-                scheduleRender();
-            }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { scheduleRender(); }
+            @Override public void afterTextChanged(Editable text) { scheduleRender(); }
         });
-    }
-
-    @Override public void setText(CharSequence text, BufferType type) {
-        suppressAutoIndent = true;
-        try { super.setText(text, type); }
-        finally { suppressAutoIndent = false; pendingEditStart = -1; pendingInserted = null; }
-    }
-
-    private void applyAutoIndent(Editable text) {
-        if (suppressAutoIndent || pendingEditStart < 0 || pendingInserted == null) return;
-        String inserted = pendingInserted;
-        int start = pendingEditStart;
-        pendingEditStart = -1;
-        pendingInserted = null;
-        StringBuilder replacement = new StringBuilder(inserted.length() + 4);
-        int suffixStart = start + inserted.length();
-        for (int i = 0; i < inserted.length(); i++) {
-            char value = inserted.charAt(i);
-            replacement.append(value);
-            if (value != '\n') continue;
-            char next = i + 1 < inserted.length() ? inserted.charAt(i + 1)
-                    : suffixStart < text.length() ? text.charAt(suffixStart) : 0;
-            if (next != ' ' && next != '\t' && next != '\u3000') replacement.append("\u3000\u3000");
-        }
-        if (replacement.length() == inserted.length()) return;
-        int selection = getSelectionStart();
-        suppressAutoIndent = true;
-        try {
-            text.replace(start, start + inserted.length(), replacement);
-            if (selection >= start) setSelection(Math.min(text.length(), selection + replacement.length() - inserted.length()));
-        } finally { suppressAutoIndent = false; }
     }
 
     public void setSourceVisible(boolean visible) { sourceVisible = visible; renderNow(); }
@@ -150,6 +106,7 @@ public final class BbCodeEditText extends AppCompatEditText {
         try {
             for (Object span : decoration) text.removeSpan(span);
             decoration.clear();
+            addVisualParagraphIndent(text, source);
             int[] paragraph = BbCodeSyntax.activeParagraph(source, hasFocus() ? getSelectionStart() : -1, hasFocus() ? getSelectionEnd() : -1);
             Set<String> usedImages = new HashSet<>();
             List<BbCodeSyntax.Node> sizeAncestors = new ArrayList<>();
@@ -157,6 +114,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                 while (!sizeAncestors.isEmpty() && sizeAncestors.get(sizeAncestors.size() - 1).end <= node.start)
                     sizeAncestors.remove(sizeAncestors.size() - 1);
                 if (node.name.equals("img")) {
+                    if (insideNode("spoiler", node.start, node.end)) continue;
                     String url = SiteUrls.media(source.substring(node.contentStart, node.contentEnd).trim());
                     if (!sourceVisible && !intersects(paragraph, node.start, node.end) && url != null
                             && source.substring(node.start, node.end).indexOf('\n') < 0 && isAttachedToWindow()) {
@@ -179,11 +137,29 @@ public final class BbCodeEditText extends AppCompatEditText {
                     span(text, new ForegroundColorSpan(getLinkTextColors().getDefaultColor()), node.contentStart, node.contentEnd);
                     continue;
                 }
-                boolean styled = style(text, source, node, sizeAncestors.size());
+                boolean styled = style(text, source, node, sizeAncestors.size(),
+                        !sourceVisible && !intersects(paragraph, node.start, node.end));
                 if (node.name.equals("size")) sizeAncestors.add(node);
                 if (styled) {
                     syntax(text, node.start, node.contentStart, paragraph);
                     syntax(text, node.contentEnd, node.end, paragraph);
+                }
+            }
+            Matcher emojis = Pattern.compile(":ftemoji_([a-zA-Z0-9_]+):").matcher(source);
+            while (emojis.find()) {
+                if (insideLiteral(emojis.start(), emojis.end()) || insideNode("spoiler", emojis.start(), emojis.end()) || sourceVisible
+                        || intersects(paragraph, emojis.start(), emojis.end()) || !isAttachedToWindow()) continue;
+                String url = SiteUrls.media("/img/ftemoji/" + emojis.group(1) + ".png");
+                if (url == null) continue;
+                usedImages.add(url);
+                InlineImage image = images.get(url);
+                if (image == null) {
+                    image = new InlineImage(); images.put(url, image);
+                    image.requests.load(url).override(dp(24), dp(24)).fitCenter().into(image);
+                }
+                if (image.drawable != null) {
+                    image.drawable.setBounds(0, 0, dp(24), dp(24));
+                    span(text, new ImageSpan(image.drawable), emojis.start(), emojis.end());
                 }
             }
             java.util.Iterator<Map.Entry<String, InlineImage>> iterator = images.entrySet().iterator();
@@ -194,7 +170,33 @@ public final class BbCodeEditText extends AppCompatEditText {
         } finally { endBatchEdit(); }
     }
 
-    private boolean style(Editable text, String source, BbCodeSyntax.Node node, int sizeDepth) {
+    /** Applies the two-character first-line indent without changing the saved Editable text. */
+    private void addVisualParagraphIndent(Editable text, String source) {
+        Paint paint = getPaint();
+        int indent = Math.max(1, Math.round(paint.measureText("\u3000\u3000")));
+        int paragraphStart = 0;
+        for (int i = 0; i <= source.length(); i++) {
+            if (i < source.length() && source.charAt(i) != '\n') continue;
+            if (i > paragraphStart) {
+                span(text, new LeadingMarginSpan.Standard(indent, 0), paragraphStart, i);
+            }
+            paragraphStart = i + 1;
+        }
+    }
+
+    private boolean insideLiteral(int start, int end) {
+        return insideNode("code", start, end) || insideNode("markdown", start, end) || insideNode("img", start, end);
+    }
+
+    private boolean insideNode(String name, int start, int end) {
+        for (BbCodeSyntax.Node node : nodes) {
+            if (node.name.equals(name)
+                    && start >= node.contentStart && end <= node.contentEnd) return true;
+        }
+        return false;
+    }
+
+    private boolean style(Editable text, String source, BbCodeSyntax.Node node, int sizeDepth, boolean renderSpoiler) {
         int start = node.contentStart, end = node.contentEnd;
         switch (node.name) {
             case "b": span(text, new StyleSpan(Typeface.BOLD), start, end); break;
@@ -210,6 +212,12 @@ public final class BbCodeEditText extends AppCompatEditText {
             case "code":
                 span(text, new TypefaceSpan("monospace"), start, end);
                 span(text, new BackgroundColorSpan(ColorUtils.setAlphaComponent(getCurrentTextColor(), 20)), start, end); break;
+            case "spoiler":
+                if (renderSpoiler) {
+                    span(text, new BackgroundColorSpan(Color.BLACK), start, end);
+                    span(text, new ForegroundColorSpan(Color.TRANSPARENT), start, end);
+                }
+                break;
             case "color": case "bg-color":
                 try {
                     String color = node.argument;

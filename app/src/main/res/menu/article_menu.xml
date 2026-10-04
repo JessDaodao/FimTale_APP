@@ -5,11 +5,13 @@
         android:id="@+id/action_filter"
         android:icon="@drawable/ic_filter_list"
         android:title="过滤器"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"
+        app:iconTint="?attr/colorControlNormal" />
     <item
         android:id="@+id/action_search"
         android:icon="@drawable/ic_search"
         android:title="搜索"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
-        app:showAsAction="always|collapseActionView" />
+        app:showAsAction="always|collapseActionView"
+        app:iconTint="?attr/colorControlNormal" />
 </menu>

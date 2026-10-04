@@ -33,6 +33,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.graphics.Insets;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import androidx.preference.PreferenceManager;
@@ -58,6 +59,7 @@ import com.app.fimtale.model.TopicInfo;
 import com.app.fimtale.model.TopicListResponse;
 import com.app.fimtale.model.TopicViewItem;
 import com.app.fimtale.network.RetrofitClient;
+import com.app.fimtale.ui.ReaderCommentsPanel;
 import com.app.fimtale.utils.UserPreferences;
 import android.widget.ProgressBar;
 
@@ -67,6 +69,7 @@ import io.noties.markwon.html.HtmlPlugin;
 import io.noties.markwon.image.glide.GlideImagesPlugin;
 import okhttp3.ResponseBody;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.slider.Slider;
 import com.google.android.material.tabs.TabLayout;
 
@@ -186,6 +189,8 @@ public class ReaderActivity extends AppCompatActivity {
     private GestureDetector gestureDetector;
 
     private List<ContentSegment> parsedSegments = new ArrayList<>();
+    private BottomSheetDialog readerCommentsSheet;
+    private ReaderCommentsPanel readerCommentsSheetPanel;
 
     /** Chapters currently joined into one continuous reader data set. */
     private final List<LoadedChapter> loadedChapters = new ArrayList<>();
@@ -221,6 +226,7 @@ public class ReaderActivity extends AppCompatActivity {
         static final int TYPE_NEXT_CHAPTER_TRIGGER = 3;
         static final int TYPE_PREV_CHAPTER_TRIGGER = 4;
         static final int TYPE_IMAGE = 5;
+        static final int TYPE_TITLE = 6;
         
         int type;
         String content;
@@ -1010,6 +1016,8 @@ public class ReaderActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (readerCommentsSheetPanel != null) readerCommentsSheetPanel.close();
+        if (readerCommentsSheet != null) readerCommentsSheet.dismiss();
         editorAccess.close();
         super.onDestroy();
         progressSaveHandler.removeCallbacks(progressSaveRunnable);
@@ -1052,6 +1060,43 @@ public class ReaderActivity extends AppCompatActivity {
         }
         fetchChapterContent(chapterId, scrollToEnd);
         hideMenu();
+    }
+
+    private void showReaderCommentsBottomSheet(int chapterId) {
+        if (isFinishing() || isDestroyed()) return;
+        if (readerCommentsSheet != null && readerCommentsSheet.isShowing()) return;
+
+        View content = getLayoutInflater().inflate(R.layout.item_reader_comment_page, null);
+        readerCommentsSheet = new BottomSheetDialog(this);
+        readerCommentsSheet.setContentView(content);
+        readerCommentsSheetPanel = new ReaderCommentsPanel(this, content, rootTopicId);
+        readerCommentsSheetPanel.bind(chapterId);
+        readerCommentsSheet.setOnDismissListener(dialog -> {
+            if (readerCommentsSheetPanel != null) {
+                readerCommentsSheetPanel.close();
+                readerCommentsSheetPanel = null;
+            }
+            readerCommentsSheet = null;
+        });
+        readerCommentsSheet.show();
+
+        content.post(() -> {
+            View parent = content.getParent() instanceof View ? (View) content.getParent() : null;
+            if (parent == null) return;
+            ViewGroup.LayoutParams params = parent.getLayoutParams();
+            if (params != null) {
+                params.height = (int) (getResources().getDisplayMetrics().heightPixels * 0.78f);
+                parent.setLayoutParams(params);
+            }
+            try {
+                com.google.android.material.bottomsheet.BottomSheetBehavior<View> behavior =
+                        com.google.android.material.bottomsheet.BottomSheetBehavior.from(parent);
+                behavior.setSkipCollapsed(true);
+                behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+            } catch (IllegalArgumentException ignored) {
+                // The dialog theme may provide a non-standard bottom sheet parent.
+            }
+        });
     }
 
     private String indentLine(String line) {
@@ -1143,7 +1188,7 @@ public class ReaderActivity extends AppCompatActivity {
     private List<ContentSegment> parseSegments(String content) {
         List<ContentSegment> segments = new ArrayList<>();
         if (content == null) content = "";
-        Pattern imgPattern = Pattern.compile("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>|!\\[.*?\\]\\((.*?)\\)");
+        Pattern imgPattern = Pattern.compile("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>|!\\[([^\\]]*)\\]\\((.*?)\\)");
         Matcher matcher = imgPattern.matcher(content);
         int lastEnd = 0;
         
@@ -1152,9 +1197,14 @@ public class ReaderActivity extends AppCompatActivity {
             if (!textPart.trim().isEmpty()) segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, textPart));
             
             String imgSrc = matcher.group(1);
-            if (imgSrc == null) {
-                imgSrc = matcher.group(2);
+            String markdownAlt = matcher.group(2);
+            if (imgSrc == null && markdownAlt != null && markdownAlt.matches("ftemoji_[a-zA-Z0-9_]+")) {
+                String inlineEmoji = content.substring(matcher.start(), matcher.end());
+                if (!inlineEmoji.trim().isEmpty()) segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, inlineEmoji));
+                lastEnd = matcher.end();
+                continue;
             }
+            if (imgSrc == null) imgSrc = matcher.group(3);
             
             if (imgSrc != null && !imgSrc.isEmpty()) {
                 segments.add(new ContentSegment(ReaderPage.TYPE_IMAGE, imgSrc));
@@ -1191,7 +1241,7 @@ public class ReaderActivity extends AppCompatActivity {
 
         for (LoadedChapter chapter : loadedChapters) {
             chapterVerticalIndices.add(verticalPages.size());
-            verticalPages.add(new ReaderPage(ReaderPage.TYPE_TEXT, indentLine(chapter.title) + paragraphSpacing, chapter.id));
+            verticalPages.add(new ReaderPage(ReaderPage.TYPE_TITLE, chapter.title + paragraphSpacing, chapter.id));
             paragraphStartOffsets.add(currentOffset);
             currentOffset += chapter.title.length() + paragraphSpacing.length();
 
@@ -1212,11 +1262,9 @@ public class ReaderActivity extends AppCompatActivity {
                 }
             }
 
-            // Branches have no single automatic next chapter, so retain their choice UI.
-            if (com.app.fimtale.model.ChapterNavigation.choices(workData, chapter.id).size() != 1) {
-                verticalPages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, chapter.id));
-                paragraphStartOffsets.add(currentOffset);
-            }
+            // Keep a comments entry between every chapter in continuous mode.
+            verticalPages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, chapter.id));
+            paragraphStartOffsets.add(currentOffset);
         }
         
         if (recyclerAdapter != null) {
@@ -1393,17 +1441,14 @@ public class ReaderActivity extends AppCompatActivity {
 
         for (LoadedChapter chapter : loadedChapters) {
             chapterStartPageIndices.add(pages.size());
-            List<ContentSegment> allSegments = new ArrayList<>();
-            if (!chapter.segments.isEmpty() && chapter.segments.get(0).type == ReaderPage.TYPE_TEXT) {
-                allSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT,
-                        chapter.title + "\n\n" + chapter.segments.get(0).content));
-                allSegments.addAll(chapter.segments.subList(1, chapter.segments.size()));
-            } else {
-                allSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, chapter.title + "\n\n"));
-                allSegments.addAll(chapter.segments);
-            }
+            TextPaint titlePaint = new TextPaint(paint);
+            titlePaint.setTextSize(readerTitleFontSize() * getResources().getDisplayMetrics().scaledDensity);
+            titlePaint.setTypeface(Typeface.DEFAULT_BOLD);
+            addPagedText(chapter.title, chapter.id, ReaderPage.TYPE_TITLE, titlePaint,
+                    contentWidth, contentHeight, lineSpacingMultiplier, globalOffset);
+            globalOffset += chapter.title.length();
 
-            for (ContentSegment segment : allSegments) {
+            for (ContentSegment segment : chapter.segments) {
                 if (segment.type == ReaderPage.TYPE_TEXT) {
                     String formattedContent = indentLines(segment.content);
                     StaticLayout layout = StaticLayout.Builder.obtain(formattedContent, 0, formattedContent.length(), paint, contentWidth)
@@ -1438,14 +1483,43 @@ public class ReaderActivity extends AppCompatActivity {
                 }
             }
 
-            if (com.app.fimtale.model.ChapterNavigation.choices(workData, chapter.id).size() != 1) {
-                pages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, chapter.id));
-                pageStartOffsets.add(globalOffset);
-            }
+            // A full comments page separates adjacent chapters in page mode.
+            pages.add(new ReaderPage(ReaderPage.TYPE_COMMENT, null, chapter.id));
+            pageStartOffsets.add(globalOffset);
         }
         
         if (adapter != null) {
             adapter.notifyDataSetChanged();
+        }
+    }
+
+    private void addPagedText(String content, int chapterId, int pageType, TextPaint paint,
+                              int contentWidth, int contentHeight, float lineSpacingMultiplier,
+                              int globalOffset) {
+        String formattedContent = content == null ? "" : content;
+        StaticLayout layout = StaticLayout.Builder.obtain(formattedContent, 0, formattedContent.length(), paint, contentWidth)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(0f, lineSpacingMultiplier)
+                .setIncludePad(false)
+                .build();
+        int startLine = 0;
+        while (startLine < layout.getLineCount()) {
+            int lineTop = layout.getLineTop(startLine);
+            int endLine = layout.getLineForVertical(lineTop + contentHeight);
+            if (layout.getLineBottom(endLine) > lineTop + contentHeight) endLine--;
+            if (endLine < startLine) endLine = startLine;
+
+            int startOffset = layout.getLineStart(startLine);
+            int endOffset = layout.getLineEnd(endLine);
+            if (endOffset > startOffset) {
+                String pageContent = formattedContent.substring(startOffset, endOffset);
+                boolean isLastPage = endLine >= layout.getLineCount() - 1;
+                if (!isLastPage || !pageContent.trim().isEmpty()) {
+                    pages.add(new ReaderPage(pageType, pageContent, chapterId));
+                    pageStartOffsets.add(globalOffset + startOffset);
+                }
+            }
+            startLine = endLine + 1;
         }
     }
 
@@ -1455,6 +1529,10 @@ public class ReaderActivity extends AppCompatActivity {
         } else {
             showMenu();
         }
+    }
+
+    private float readerTitleFontSize() {
+        return currentFontSize * 1.25f;
     }
 
     private void animateButtonColor(TextView tv, int fromColor, int toColor) {
@@ -1603,19 +1681,11 @@ public class ReaderActivity extends AppCompatActivity {
                 return new LoadingViewHolder(view);
             } else if (viewType == ReaderPage.TYPE_COMMENT) {
                 View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_reader_comment_page, parent, false);
-                
                 if (isVerticalMode) {
                     ViewGroup.LayoutParams params = view.getLayoutParams();
                     params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                     view.setLayoutParams(params);
-                    
-                    RecyclerView rv = view.findViewById(R.id.rvRecommendedTopics);
-                    LinearLayout.LayoutParams rvParams = (LinearLayout.LayoutParams) rv.getLayoutParams();
-                    rvParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                    rvParams.weight = 0;
-                    rv.setLayoutParams(rvParams);
                 }
-                
                 return new CommentViewHolder(view);
             } else if (viewType == ReaderPage.TYPE_IMAGE) {
                 View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_reader_image, parent, false);
@@ -1670,7 +1740,10 @@ public class ReaderActivity extends AppCompatActivity {
                 commentHolder.bind(page.chapterId);
             } else if (holder instanceof TextViewHolder) {
                 TextViewHolder textHolder = (TextViewHolder) holder;
-                textHolder.textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, currentFontSize);
+                boolean isChapterTitle = page.type == ReaderPage.TYPE_TITLE;
+                textHolder.textView.setTextSize(TypedValue.COMPLEX_UNIT_SP,
+                        isChapterTitle ? readerTitleFontSize() : currentFontSize);
+                textHolder.textView.setTypeface(isChapterTitle ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
                 float lineSpacing = UserPreferences.getLineSpacing(ReaderActivity.this);
                 textHolder.textView.setLineSpacing(0, lineSpacing);
                 
@@ -1837,29 +1910,30 @@ public class ReaderActivity extends AppCompatActivity {
         
         class CommentViewHolder extends RecyclerView.ViewHolder {
             TextView tvChapterTitle;
-            RecyclerView rvRecommendedTopics;
             TextView tvContinueRead;
-            ChapterListAdapter nextChaptersAdapter;
+            View commentsHeader;
+            View commentsButton;
+            View commentsList;
+            View commentsSkeleton;
+            View commentsStatus;
+            View commentsPager;
+            View commentsComposer;
+            ReaderCommentsPanel commentsPanel;
             
             CommentViewHolder(View itemView) {
                 super(itemView);
-                tvChapterTitle = itemView.findViewById(R.id.tvChapterTitle);
-                rvRecommendedTopics = itemView.findViewById(R.id.rvRecommendedTopics);
-                tvContinueRead = itemView.findViewById(R.id.tvContinueRead);
-                
-                rvRecommendedTopics.setLayoutManager(new LinearLayoutManager(itemView.getContext()) {
-                    @Override
-                    public boolean canScrollVertically() {
-                        return !isVerticalMode;
-                    }
-                });
-                
-                nextChaptersAdapter = new ChapterListAdapter(true);
-                rvRecommendedTopics.setAdapter(nextChaptersAdapter);
+                commentsHeader = itemView.findViewById(R.id.readerCommentsHeader);
+                commentsButton = itemView.findViewById(R.id.readerCommentsButton);
+                tvChapterTitle = itemView.findViewById(R.id.readerCommentsTitle);
+                tvContinueRead = itemView.findViewById(R.id.readerContinueRead);
+                commentsList = itemView.findViewById(R.id.readerCommentsList);
+                commentsSkeleton = itemView.findViewById(R.id.readerCommentsSkeleton);
+                commentsStatus = itemView.findViewById(R.id.readerCommentsStatus);
+                commentsPager = itemView.findViewById(R.id.readerCommentsPager);
+                commentsComposer = itemView.findViewById(R.id.readerCommentComposerBar);
             }
             
             void bind(int chapterId) {
-                // 根据模式调整可见性和样式
                 int theme = UserPreferences.getReaderTheme(ReaderActivity.this);
                 int textColor;
                 if (theme >= 1 && theme <= 3) {
@@ -1869,32 +1943,40 @@ public class ReaderActivity extends AppCompatActivity {
                 }
 
                 if (isVerticalMode) {
-                    if (tvChapterTitle != null) tvChapterTitle.setVisibility(View.GONE);
-                    if (rvRecommendedTopics != null) rvRecommendedTopics.setVisibility(View.GONE);
+                    if (commentsPanel != null) { commentsPanel.close(); commentsPanel = null; }
+                    commentsHeader.setVisibility(View.GONE);
+                    commentsButton.setVisibility(View.VISIBLE);
+                    commentsList.setVisibility(View.GONE);
+                    commentsSkeleton.setVisibility(View.GONE);
+                    commentsStatus.setVisibility(View.GONE);
+                    commentsPager.setVisibility(View.GONE);
+                    commentsComposer.setVisibility(View.GONE);
+                    tvContinueRead.setVisibility(View.GONE);
+                    commentsButton.setOnClickListener(v -> showReaderCommentsBottomSheet(chapterId));
                 } else {
-                    if (tvChapterTitle != null) {
-                        tvChapterTitle.setVisibility(View.VISIBLE);
-                        tvChapterTitle.setText("章节列表");
-                        tvChapterTitle.setTextColor(textColor);
-                    }
-                    if (rvRecommendedTopics != null) rvRecommendedTopics.setVisibility(View.VISIBLE);
+                    commentsButton.setVisibility(View.GONE);
+                    commentsHeader.setVisibility(View.VISIBLE);
+                    commentsComposer.setVisibility(View.VISIBLE);
+                    tvChapterTitle.setText("评论");
+                    tvChapterTitle.setTextColor(textColor);
+                    if (commentsPanel != null) commentsPanel.close();
+                    commentsPanel = new ReaderCommentsPanel(ReaderActivity.this, itemView, rootTopicId);
+                    commentsPanel.bind(chapterId);
                 }
 
-                int nextChapterId = getNextChapterId();
-                tvContinueRead.setVisibility(View.VISIBLE);
+                int nextChapterId = getNextChapterId(chapterId);
                 tvContinueRead.setTextColor(textColor);
-                
-                if (nextChoices().size() > 1) {
+                if (isVerticalMode) {
+                    tvContinueRead.setVisibility(View.GONE);
+                    tvContinueRead.setOnClickListener(null);
+                } else if (nextChoices(chapterId).size() > 1) {
+                    tvContinueRead.setVisibility(View.VISIBLE);
                     tvContinueRead.setText("选择剧情分支");
-                    tvContinueRead.setOnClickListener(v -> showBranchChoices());
+                    tvContinueRead.setOnClickListener(v -> showBranchChoices(chapterId));
                 } else if (nextChapterId != -1) {
-                    if (isVerticalMode) {
-                        tvContinueRead.setVisibility(View.GONE);
-                    } else {
-                        tvContinueRead.setText("左滑进入下一章");
-                        tvContinueRead.setOnClickListener(v -> jumpToChapter(nextChapterId));
-                        tvContinueRead.setVisibility(View.VISIBLE);
-                    }
+                    tvContinueRead.setText("左滑继续阅读");
+                    tvContinueRead.setOnClickListener(v -> jumpToChapter(nextChapterId));
+                    tvContinueRead.setVisibility(View.VISIBLE);
                 } else {
                     tvContinueRead.setText("当前为最后一章");
                     tvContinueRead.setOnClickListener(null);
@@ -1904,30 +1986,25 @@ public class ReaderActivity extends AppCompatActivity {
                 if (!isVerticalMode) {
                     ViewGroup.LayoutParams params = tvContinueRead.getLayoutParams();
                     if (params != null) {
-                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
                         tvContinueRead.setLayoutParams(params);
                     }
-                    tvContinueRead.setGravity(android.view.Gravity.NO_GRAVITY);
-                    tvContinueRead.setPadding(0, 0, 0, 0);
+                    tvContinueRead.setGravity(android.view.Gravity.CENTER);
                     tvContinueRead.setTextSize(14);
                 }
-                
-                if (!isVerticalMode) {
-                    nextChaptersAdapter.updateData(filteredChapterList);
-                    
-                    int currentIndex = -1;
-                    for (int i = 0; i < filteredChapterList.size(); i++) {
-                        if (filteredChapterList.get(i).getId() == currentTopicId) {
-                            currentIndex = i;
-                            break;
-                        }
-                    }
-                    
-                    if (currentIndex != -1) {
-                        rvRecommendedTopics.scrollToPosition(currentIndex);
-                    }
+            }
+        }
+
+        @Override
+        public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+            if (holder instanceof CommentViewHolder) {
+                CommentViewHolder commentHolder = (CommentViewHolder) holder;
+                if (commentHolder.commentsPanel != null) {
+                    commentHolder.commentsPanel.close();
+                    commentHolder.commentsPanel = null;
                 }
             }
+            super.onViewRecycled(holder);
         }
     }
     
@@ -1964,14 +2041,23 @@ public class ReaderActivity extends AppCompatActivity {
     private List<TopicDetailResponse.ChapterEdge> nextChoices() {
         return com.app.fimtale.model.ChapterNavigation.choices(workData, currentTopicId);
     }
+    private List<TopicDetailResponse.ChapterEdge> nextChoices(int chapterId) {
+        return com.app.fimtale.model.ChapterNavigation.choices(workData, chapterId);
+    }
     private int getNextChapterId() {
         return nextChapterId(currentTopicId);
+    }
+    private int getNextChapterId(int chapterId) {
+        return nextChapterId(chapterId);
     }
     private int getPrevChapterId() {
         return previousChapterId(currentTopicId);
     }
     private void showBranchChoices() {
-        List<TopicDetailResponse.ChapterEdge> choices = nextChoices();
+        showBranchChoices(currentTopicId);
+    }
+    private void showBranchChoices(int chapterId) {
+        List<TopicDetailResponse.ChapterEdge> choices = nextChoices(chapterId);
         String[] labels = new String[choices.size()];
         for (int i = 0; i < choices.size(); i++) {
             TopicDetailResponse.ChapterEdge edge = choices.get(i);
