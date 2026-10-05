@@ -8,6 +8,7 @@ import androidx.lifecycle.Lifecycle;
 import com.fimtale.ui.ArticleFragment;
 import com.fimtale.ui.HomeFragment;
 import com.fimtale.ui.ProfileFragment;
+import com.fimtale.utils.MdiIcons;
 import com.fimtale.utils.UpdateChecker;
 import com.fimtale.utils.UserPreferences;
 import android.widget.ImageView;
@@ -16,6 +17,7 @@ import android.graphics.Rect;
 import android.view.View;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +42,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        bottomNav.getMenu().findItem(R.id.nav_article).setIcon(
+                MdiIcons.drawable(this, CommunityMaterial.Icon.cmd_book_open_page_variant));
+        bottomNav.getMenu().findItem(R.id.nav_profile).setIcon(
+                MdiIcons.drawable(this, CommunityMaterial.Icon.cmd_account));
 
         final View rootView = findViewById(android.R.id.content);
         rootView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
@@ -156,10 +162,12 @@ public class MainActivity extends AppCompatActivity {
             toolbarIcon.setImageResource(R.drawable.ic_fimtale_logo);
         } else if (itemId == R.id.nav_article) {
             toolbarTitle.setText("文章列表");
-            toolbarIcon.setImageResource(R.drawable.ic_menu_book);
+            toolbarIcon.setImageDrawable(
+                    MdiIcons.drawable(this, CommunityMaterial.Icon.cmd_book_open_page_variant));
         } else if (itemId == R.id.nav_profile) {
             toolbarTitle.setText("我的");
-            toolbarIcon.setImageResource(R.drawable.ic_person);
+            toolbarIcon.setImageDrawable(
+                    MdiIcons.drawable(this, CommunityMaterial.Icon.cmd_account));
         }
     }
 

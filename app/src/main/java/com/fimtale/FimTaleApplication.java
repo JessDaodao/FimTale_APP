@@ -9,6 +9,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.PreferenceManager;
 import com.fimtale.utils.GravitySensorHelper;
+import com.mikepenz.iconics.Iconics;
+import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial;
 import java.util.WeakHashMap;
 
 public class FimTaleApplication extends Application implements Application.ActivityLifecycleCallbacks {
@@ -26,6 +28,8 @@ public class FimTaleApplication extends Application implements Application.Activ
     public void onCreate() {
         super.onCreate();
         instance = this;
+        Iconics.registerFont(CommunityMaterial.INSTANCE);
+        Iconics.init(this);
         registerActivityLifecycleCallbacks(this);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
