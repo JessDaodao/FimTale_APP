@@ -250,6 +250,45 @@ public class EditorActivityTest {
         return (com.fimtale.editor.EditorFormatDialog) activity.getSupportFragmentManager()
                 .findFragmentByTag(com.fimtale.editor.EditorFormatDialog.TAG);
     }
+    private com.fimtale.ui.BottomSheetMenu moreMenu(EditorActivity activity) {
+        try {
+            Field field = EditorActivity.class.getDeclaredField("moreMenu"); field.setAccessible(true);
+            return (com.fimtale.ui.BottomSheetMenu) field.get(activity);
+        } catch (ReflectiveOperationException failure) { throw new AssertionError(failure); }
+    }
+    @Test public void bottomMenuSavesDraftAndUpdatesConflictAndBusyActions() throws Exception {
+        try (ActivityScenario<EditorActivity> scenario = ActivityScenario.launch(EditorActivity.workIntent(context, 42))) {
+            EditorViewModel model = ready(scenario);
+            scenario.onActivity(activity -> {
+                ((EditText) activity.findViewById(R.id.editorBody)).setText("菜单草稿");
+                ((com.google.android.material.appbar.MaterialToolbar) activity.findViewById(R.id.toolbar))
+                        .getMenu().performIdentifierAction(R.id.action_more, 0);
+                assertTrue(moreMenu(activity).isShowing());
+                assertNull(moreMenu(activity).findViewById(R.id.action_draft_conflict));
+                moreMenu(activity).findViewById(R.id.action_save_draft).performClick();
+                assertFalse(moreMenu(activity).isShowing());
+            });
+            waitFor(() -> cloud.values().stream().anyMatch(draft -> draft.payload.toString().contains("菜单草稿")));
+            scenario.onActivity(activity -> {
+                ((com.google.android.material.appbar.MaterialToolbar) activity.findViewById(R.id.toolbar))
+                        .getMenu().performIdentifierAction(R.id.action_more, 0);
+                model.syncConflict = true; model.busy = true; model.changes.setValue(model.changes.getValue() + 1);
+                assertNotNull(moreMenu(activity).findViewById(R.id.action_draft_conflict));
+                assertFalse(moreMenu(activity).findViewById(R.id.action_discard_draft).isEnabled());
+                moreMenu(activity).findViewById(R.id.action_discard_draft).performClick();
+                assertTrue(moreMenu(activity).isShowing());
+                model.busy = false; model.syncConflict = false; model.changes.setValue(model.changes.getValue() + 1);
+                assertNull(moreMenu(activity).findViewById(R.id.action_draft_conflict));
+            });
+            captureFormats("editor-more-menu");
+            scenario.recreate();
+            scenario.onActivity(activity -> {
+                assertFalse(moreMenu(activity).isShowing());
+                assertEquals("菜单草稿", ((EditText) activity.findViewById(R.id.editorBody)).getText().toString());
+            });
+            assertEquals(0, writes.get());
+        }
+    }
     private void captureFormats(String name) throws Exception {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync(); SystemClock.sleep(300);
         android.graphics.Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();

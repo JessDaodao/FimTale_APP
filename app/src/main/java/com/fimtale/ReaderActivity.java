@@ -104,6 +104,7 @@ public class ReaderActivity extends AppCompatActivity {
     private View menuOverlay;
     private View dimLayer;
     private MaterialToolbar topToolbar;
+    private com.fimtale.ui.BottomSheetMenu moreMenu;
     private LinearLayout bottomSheetContainer;
     private View bottomMenu;
     private View btnChapterList;
@@ -357,7 +358,8 @@ public class ReaderActivity extends AppCompatActivity {
 
         topToolbar.setNavigationOnClickListener(v -> finish());
         topToolbar.inflateMenu(R.menu.menu_reader);
-        topToolbar.setOnMenuItemClickListener(item -> {
+        androidx.appcompat.widget.Toolbar.OnMenuItemClickListener menuActions = item -> {
+            if (item.getItemId() == R.id.action_more) { moreMenu.show(); return true; }
             if (item.getItemId() == R.id.action_edit_content) {
                 if (workData != null && editorAccess.canEdit(workData.getAuthorInfo())) {
                     startActivity(currentTopicId == 0 ? EditorActivity.workIntent(this, rootTopicId)
@@ -376,8 +378,10 @@ public class ReaderActivity extends AppCompatActivity {
                 return true;
             }
             return false;
-        });
-        
+        };
+        topToolbar.setOnMenuItemClickListener(menuActions);
+        moreMenu = new com.fimtale.ui.BottomSheetMenu(this, R.menu.reader_more_menu, menuActions::onMenuItemClick);
+
         dimLayer.setOnClickListener(v -> hideMenu());
         
         btnChapterList.setOnClickListener(v -> toggleChapterList());
@@ -702,8 +706,10 @@ public class ReaderActivity extends AppCompatActivity {
     private long editorVersion;
 
     private void updateEditorMenu() {
-        if (topToolbar != null && topToolbar.getMenu().findItem(R.id.action_edit_content) != null)
-            topToolbar.getMenu().findItem(R.id.action_edit_content).setVisible(workData != null && editorAccess.canEdit(workData.getAuthorInfo()));
+        if (moreMenu != null) {
+            moreMenu.getMenu().findItem(R.id.action_edit_content).setVisible(workData != null && editorAccess.canEdit(workData.getAuthorInfo()));
+            if (moreMenu.isShowing()) moreMenu.refresh();
+        }
     }
 
     @Override protected void onResume() {
@@ -998,6 +1004,7 @@ public class ReaderActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (moreMenu != null) moreMenu.dismiss();
         if (readerCommentsSheetPanel != null) readerCommentsSheetPanel.close();
         if (readerCommentsSheet != null) readerCommentsSheet.dismiss();
         editorAccess.close();

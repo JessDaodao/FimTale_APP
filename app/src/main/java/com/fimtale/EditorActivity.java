@@ -53,6 +53,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
     private int boundVersion = -1;
     private TagPickerDialog tagPicker;
     private BottomSheetDialog metadataSheet;
+    private com.fimtale.ui.BottomSheetMenu moreMenu;
     private View metadataSheetView;
     private CaptchaDialogHost captcha;
     private final ActivityResultLauncher<Intent> login = registerForActivityResult(
@@ -86,7 +87,8 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         metadataVisible = state != null && state.getBoolean("metadata_visible");
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> leave());
-        toolbar.setOnMenuItemClickListener(item -> {
+        androidx.appcompat.widget.Toolbar.OnMenuItemClickListener menuActions = item -> {
+            if (item.getItemId() == R.id.action_more) { moreMenu.show(); return true; }
             if (model.busy) { toast("请等待当前操作完成"); return true; }
             if (item.getItemId() == R.id.action_editor_metadata) { showMetadata(true); }
             else if (item.getItemId() == R.id.action_editor_submit) submit();
@@ -102,10 +104,12 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
                 new MaterialAlertDialogBuilder(this).setTitle("放弃草稿？")
                         .setMessage("此操作会删除在线草稿及本机待同步修改，并重新读取已发表的内容。")
                         .setNegativeButton("取消", null).setPositiveButton("放弃草稿", (d, w) -> model.discardDraft()).show();
-            } else if (item.getItemId() == R.id.action_check_published) checkPublished();
+            }
             else return false;
             return true;
-        });
+        };
+        toolbar.setOnMenuItemClickListener(menuActions);
+        moreMenu = new com.fimtale.ui.BottomSheetMenu(this, R.menu.editor_more_menu, menuActions::onMenuItemClick);
         title = findViewById(R.id.editorTitle); body = findViewById(R.id.editorBody);
         body.setNestedScrollingEnabled(true);
         body.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
@@ -199,7 +203,10 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         for (int i = 0; i < toolbar.getMenu().size(); i++) toolbar.getMenu().getItem(i).setEnabled(!model.busy && model.initialized);
         toolbar.getMenu().findItem(R.id.action_editor_metadata).setEnabled(model.ready && !model.busy);
         toolbar.getMenu().findItem(R.id.action_editor_submit).setEnabled(model.ready && !model.busy);
-        toolbar.getMenu().findItem(R.id.action_draft_conflict).setVisible(model.syncConflict);
+        for (int i = 0; i < moreMenu.getMenu().size(); i++)
+            moreMenu.getMenu().getItem(i).setEnabled(!model.busy && model.initialized);
+        moreMenu.getMenu().findItem(R.id.action_draft_conflict).setVisible(model.syncConflict);
+        if (moreMenu.isShowing()) moreMenu.refresh();
         if (model.document != null) {
             binding = true;
             boolean announcement = model.allowAnnouncement || model.document.work.type == 4;
@@ -493,6 +500,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         out.putBoolean("metadata_visible", metadataVisible); out.putBoolean("source_visible", body.isSourceVisible()); super.onSaveInstanceState(out);
     }
     @Override protected void onDestroy() {
+        if (moreMenu != null) moreMenu.dismiss();
         if (tagPicker != null) tagPicker.dismiss();
         if (metadataSheet != null) metadataSheet.dismiss();
         super.onDestroy();

@@ -26,6 +26,6 @@
             </com.fimtale.ui.icons.MdiToolbar>
         </FrameLayout>
     </FrameLayout>
-    <com.fimtale.ui.icons.MdiButton android:id="@+id/draftsCreate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="16dp" android:text="@string/draft_create" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="pencil"/>
+    <com.google.android.material.button.MaterialButton android:id="@+id/draftsCreate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="16dp" android:text="@string/draft_create"/>
 </LinearLayout>

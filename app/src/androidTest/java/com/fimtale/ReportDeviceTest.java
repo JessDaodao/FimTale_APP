@@ -62,6 +62,7 @@ public class ReportDeviceTest {
             else if (path.endsWith("get_user_page_tab")) data = "{\"content\":{\"items\":[],\"total\":0}}";
             else if (path.endsWith("get_user_auth")) data = "{\"user_id\":9}";
             else if (path.endsWith("get_comments")) data = "{\"items\":[],\"total\":0}";
+            else if (path.endsWith("update_read_progress")) data = "{}";
             else if (path.endsWith("get_work")) data = "{\"work\":{\"id\":71323,\"title\":\"举报测试文章\",\"intro\":\"文章举报入口测试\","
                     + "\"preface\":\"用于检查原生举报弹窗。\",\"user\":{\"user_id\":456,\"username\":\"测试用户\"}},\"chapters\":[],\"viewer\":{}}";
             else throw new AssertionError("Unexpected endpoint " + path);
@@ -82,6 +83,12 @@ public class ReportDeviceTest {
         return (ReportDialog) activity.getSupportFragmentManager().findFragmentByTag(ReportDialog.TAG);
     }
     private AlertDialog dialog(AppCompatActivity activity) { return (AlertDialog) fragment(activity).requireDialog(); }
+    private com.fimtale.ui.BottomSheetMenu moreMenu(AppCompatActivity activity) {
+        try {
+            Field field = activity.getClass().getDeclaredField("moreMenu"); field.setAccessible(true);
+            return (com.fimtale.ui.BottomSheetMenu) field.get(activity);
+        } catch (ReflectiveOperationException failure) { throw new AssertionError(failure); }
+    }
     private <T extends AppCompatActivity> void await(ActivityScenario<T> scenario, Predicate<T> ready) {
         long deadline = SystemClock.uptimeMillis() + 8000; AtomicBoolean done = new AtomicBoolean();
         while (SystemClock.uptimeMillis() < deadline && !done.get()) {
@@ -128,8 +135,11 @@ public class ReportDeviceTest {
     @Test public void userMenuUsesResolvedUserIdAndKeepsNativeDialogAfterRecreation() throws Exception {
         Intent intent = new Intent(instrumentation.getTargetContext(), UserDetailActivity.class).putExtra(UserDetailActivity.EXTRA_USERNAME, "测试用户");
         try (ActivityScenario<UserDetailActivity> scenario = ActivityScenario.launch(intent)) {
-            await(scenario, activity -> ((androidx.appcompat.widget.Toolbar) activity.findViewById(R.id.toolbar)).getMenu().findItem(R.id.action_report_user).isEnabled());
-            clickLabel("更多"); clickLabel("举报用户");
+            await(scenario, activity -> "测试用户".contentEquals(((TextView) activity.findViewById(R.id.tvUsername)).getText()));
+            clickLabel("更多");
+            scenario.onActivity(activity -> assertTrue(moreMenu(activity).isShowing()));
+            capture("user-more-menu");
+            clickLabel("举报用户");
             scenario.onActivity(activity -> {
                 assertEquals("用户 @测试用户", ((TextView) dialog(activity).findViewById(R.id.reportTarget)).getText().toString());
                 ((EditText) dialog(activity).findViewById(R.id.reportContent)).setText("用户举报说明，附相关事实。");
@@ -161,5 +171,36 @@ public class ReportDeviceTest {
             capture("report-work-night"); assertPayload(1, 71323);
             scenario.onActivity(activity -> dialog(activity).getButton(AlertDialog.BUTTON_NEGATIVE).performClick());
         }
+    }
+
+    @Test public void readerBottomMenuKeepsAuthorPermissionsAndOpensTheCorrectWork() throws Exception {
+        instrumentation.runOnMainSync(() -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES));
+        Intent intent = new Intent(instrumentation.getTargetContext(), ReaderActivity.class)
+                .putExtra(ReaderActivity.EXTRA_WORK_ID, 71323).putExtra(ReaderActivity.EXTRA_CHAPTER_ID, 0);
+        for (boolean author : new boolean[]{false, true}) {
+            session.edit().putString("user_id", author ? "456" : "9").commit();
+            try (ActivityScenario<ReaderActivity> scenario = ActivityScenario.launch(intent)) {
+                await(scenario, activity -> "举报测试文章".equals(String.valueOf(
+                        ((androidx.appcompat.widget.Toolbar) activity.findViewById(R.id.topToolbar)).getTitle())));
+                scenario.onActivity(activity -> {
+                    androidx.appcompat.widget.Toolbar toolbar = activity.findViewById(R.id.topToolbar);
+                    toolbar.getMenu().performIdentifierAction(R.id.action_more, 0);
+                    com.fimtale.ui.BottomSheetMenu sheet = moreMenu(activity);
+                    assertTrue(sheet.isShowing());
+                    assertEquals(author, sheet.findViewById(R.id.action_edit_content) != null);
+                    assertNotNull(sheet.findViewById(R.id.action_info));
+                });
+                capture(author ? "reader-more-author" : "reader-more-menu");
+                Instrumentation.ActivityMonitor monitor = instrumentation.addMonitor(TopicDetailActivity.class.getName(), null, false);
+                try {
+                    scenario.onActivity(activity -> moreMenu(activity).findViewById(R.id.action_info).performClick());
+                    android.app.Activity details = instrumentation.waitForMonitorWithTimeout(monitor, 5000);
+                    assertNotNull(details);
+                    assertEquals(71323, details.getIntent().getIntExtra(TopicDetailActivity.EXTRA_TOPIC_ID, 0));
+                    instrumentation.runOnMainSync(details::finish);
+                } finally { instrumentation.removeMonitor(monitor); }
+            }
+        }
+        assertTrue(submissions.isEmpty());
     }
 }

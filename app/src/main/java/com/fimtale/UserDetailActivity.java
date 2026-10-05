@@ -78,6 +78,7 @@ public class UserDetailActivity extends AppCompatActivity {
     private CollapsingToolbarLayout collapsingToolbar;
     private MaterialCardView toolbarContainer;
     private Toolbar toolbar;
+    private com.fimtale.ui.BottomSheetMenu moreMenu;
     private TextView tvToolbarTitle;
     private NestedScrollView scrollView;
     private boolean isToolbarElevated = false;
@@ -115,6 +116,7 @@ public class UserDetailActivity extends AppCompatActivity {
             return;
         }
         this.currentUsername = username;
+        moreMenu = new com.fimtale.ui.BottomSheetMenu(this, R.menu.user_more_menu, this::onOptionsItemSelected);
 
         initView();
         loadData(username);
@@ -248,6 +250,7 @@ public class UserDetailActivity extends AppCompatActivity {
         UserDetailResponse info = data;
         currentUserId = info.getId();
         reportUsername = TextUtils.isEmpty(info.getUserName()) ? currentUsername : info.getUserName();
+        updateMoreMenu();
         invalidateOptionsMenu();
 
         tvUsername.setText(info.getUserName());
@@ -437,6 +440,7 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     @Override protected void onDestroy() {
+        if (moreMenu != null) moreMenu.dismiss();
         if (profileCall != null) { profileCall.cancel(); profileCall = null; }
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
         if (elevationAnimator != null) elevationAnimator.cancel();
@@ -455,12 +459,19 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     @Override public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_report_user).setEnabled(currentUserId > 0);
+        updateMoreMenu();
         return super.onPrepareOptionsMenu(menu);
+    }
+
+    private void updateMoreMenu() {
+        if (moreMenu == null) return;
+        moreMenu.getMenu().findItem(R.id.action_report_user).setEnabled(currentUserId > 0);
+        if (moreMenu.isShowing()) moreMenu.refresh();
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_more) { moreMenu.show(); return true; }
         if (item.getItemId() == R.id.action_report_user) {
             com.fimtale.report.ReportDialog.show(this, com.fimtale.report.ReportRequest.USER, currentUserId,
                     getString(R.string.report_user_target, reportUsername));
