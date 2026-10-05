@@ -28,7 +28,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="220dp"
                 android:scaleType="matrix"
-                tools:src="@drawable/placeholder_image"
                 android:contentDescription="@null" />
 
             <LinearLayout
@@ -127,47 +126,47 @@
                 android:gravity="start|center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <com.fimtale.ui.icons.MdiTextView
                     android:id="@+id/wordCountTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_word_count"
+                    app:mdiDrawableStart="text-box-outline"
                     android:drawablePadding="2dp"
                     android:gravity="center_vertical"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:text="12k" />
 
-                <TextView
+                <com.fimtale.ui.icons.MdiTextView
                     android:id="@+id/viewCountTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:drawableStart="@drawable/ic_view_count"
+                    app:mdiDrawableStart="eye-outline"
                     android:drawablePadding="2dp"
                     android:gravity="center_vertical"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:text="3.5k" />
 
-                <TextView
+                <com.fimtale.ui.icons.MdiTextView
                     android:id="@+id/commentCountTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:drawableStart="@drawable/ic_comment_count"
+                    app:mdiDrawableStart="comment-text-outline"
                     android:drawablePadding="2dp"
                     android:gravity="center_vertical"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:text="128" />
 
-                <TextView
+                <com.fimtale.ui.icons.MdiTextView
                     android:id="@+id/favoriteCountTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:drawableStart="@drawable/ic_star"
+                    app:mdiDrawableStart="star"
                     android:drawablePadding="2dp"
                     android:gravity="center_vertical"
                     android:textSize="10sp"

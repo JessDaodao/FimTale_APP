@@ -6,8 +6,8 @@
             <TextView android:id="@+id/draftPreview" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:maxLines="2" android:ellipsize="end" android:textAppearance="?attr/textAppearanceBodyMedium" android:textColor="?attr/colorOnSurfaceVariant"/>
             <TextView android:id="@+id/draftTime" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant"/>
         </LinearLayout>
-        <ImageButton android:id="@+id/draftMore" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_more_vert" android:contentDescription="@string/draft_options" app:tint="?attr/colorOnSurfaceVariant"/>
+        <com.fimtale.ui.icons.MdiImageButton android:id="@+id/draftMore" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:scaleType="centerInside"
+            app:mdiIcon="dots-vertical" android:contentDescription="@string/draft_options" app:tint="?attr/colorOnSurfaceVariant"/>
     </LinearLayout>
     <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginHorizontal="20dp" android:background="?attr/colorSurfaceVariant"/>
 </LinearLayout>

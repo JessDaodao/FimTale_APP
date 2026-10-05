@@ -2,14 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
-        android:icon="@drawable/ic_fimtale_logo"
         android:title="@string/nav_home" />
     <item
         android:id="@+id/nav_article"
-        android:icon="@drawable/ic_menu_book"
         android:title="@string/nav_article" />
     <item
         android:id="@+id/nav_profile"
-        android:icon="@drawable/ic_person"
         android:title="@string/nav_profile" />
 </menu>

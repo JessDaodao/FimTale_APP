@@ -36,7 +36,7 @@
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
-                <com.google.android.material.appbar.MaterialToolbar
+                <com.fimtale.ui.icons.MdiToolbar
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"

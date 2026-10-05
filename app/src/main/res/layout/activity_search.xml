@@ -6,11 +6,11 @@
     android:background="?android:attr/colorBackground"
     android:orientation="vertical">
 
-    <com.google.android.material.appbar.MaterialToolbar
+    <com.fimtale.ui.icons.MdiToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:navigationIcon="@drawable/ic_arrow_back"
+        app:mdiNavigationIcon="arrow-left"
         app:navigationIconTint="?attr/colorOnSurface">
 
         <TextView
@@ -19,7 +19,7 @@
             android:text="搜索"
             android:textAppearance="?attr/textAppearanceTitleLarge"
             android:textColor="?attr/colorOnSurface" />
-    </com.google.android.material.appbar.MaterialToolbar>
+    </com.fimtale.ui.icons.MdiToolbar>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -29,7 +29,7 @@
         android:paddingEnd="16dp"
         android:paddingBottom="12dp">
 
-        <com.google.android.material.textfield.TextInputLayout
+        <com.fimtale.ui.icons.MdiTextInputLayout
             android:id="@+id/searchInputLayout"
             style="@style/Widget.Fimtale.TextInputLayout"
             android:layout_width="0dp"
@@ -45,9 +45,9 @@
                 android:imeOptions="actionSearch"
                 android:inputType="text"
                 android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
+        </com.fimtale.ui.icons.MdiTextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
+        <com.fimtale.ui.icons.MdiButton
             android:id="@+id/searchButton"
             style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="52dp"
@@ -55,7 +55,7 @@
             android:layout_marginStart="8dp"
             android:contentDescription="提交搜索"
             app:backgroundTint="@android:color/transparent"
-            app:icon="@drawable/ic_search"
+            app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="magnify"
             app:iconTint="?attr/colorPrimary" />
     </LinearLayout>
 

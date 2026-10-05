@@ -105,34 +105,13 @@
                     android:textColor="?android:attr/textColorSecondary"
                     android:textSize="12sp" />
 
-                <FrameLayout
-                    android:layout_width="22dp"
-                    android:layout_height="12dp">
-
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:src="@drawable/bg_battery_frame"
-                        app:tint="?android:attr/textColorSecondary" />
-
-                    <View
-                        android:id="@+id/viewBatteryLevel"
-                        android:layout_width="13dp"
-                        android:layout_height="6dp"
-                        android:layout_gravity="start|center_vertical"
-                        android:layout_marginStart="2.5dp"
-                        android:background="@drawable/bg_battery_level_clip" />
-                </FrameLayout>
-
-                <ImageView
-                    android:id="@+id/ivCharging"
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:layout_marginStart="2dp"
-                    android:src="@drawable/ic_charging"
-                    android:visibility="gone"
-                    app:tint="?android:attr/textColorSecondary"
-                    tools:visibility="visible" />
+                <com.fimtale.ui.icons.MdiImageView
+                    android:id="@+id/ivBattery"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    app:mdiIcon="battery"
+                    app:tint="?android:attr/textColorSecondary" />
             </LinearLayout>
 
         </RelativeLayout>
@@ -151,13 +130,13 @@
                 android:background="#80000000"
                 android:alpha="0" />
 
-            <com.google.android.material.appbar.MaterialToolbar
+            <com.fimtale.ui.icons.MdiToolbar
                 android:id="@+id/topToolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:layout_margin="16dp"
                 android:background="@drawable/bg_reader_menu_rounded"
-                app:navigationIcon="@drawable/ic_arrow_back"
+                app:mdiNavigationIcon="arrow-left"
                 app:navigationIconTint="?attr/colorOnBackground"
                 app:title="阅读"
                 app:titleTextColor="?attr/colorOnBackground" />
@@ -397,12 +376,12 @@
                     android:orientation="horizontal"
                     android:padding="16dp">
 
-                    <TextView
+                    <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/btnChapterList"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:drawableTop="@drawable/ic_menu_book"
+                        app:mdiDrawableTop="book-open-page-variant"
                         app:drawableTint="?attr/colorOnBackground"
                         android:gravity="center"
                         android:text="目录"
@@ -411,12 +390,12 @@
                         android:focusable="true"
                         android:padding="8dp" />
 
-                    <TextView
+                    <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/btnSettings"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:drawableTop="@drawable/ic_settings"
+                        app:mdiDrawableTop="cog"
                         app:drawableTint="?attr/colorOnBackground"
                         android:gravity="center"
                         android:text="设置"
@@ -438,7 +417,7 @@
         android:clickable="true"
         android:focusable="true">
 
-        <TextView
+        <com.fimtale.ui.icons.MdiTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -447,7 +426,7 @@
             android:textSize="18sp"
             android:padding="16dp"
             android:gravity="center"
-            android:drawableTop="@drawable/ic_menu_book"
+            app:mdiDrawableTop="book-open-page-variant"
             android:drawablePadding="8dp"
             app:drawableTint="#FFFFFF"/>
 

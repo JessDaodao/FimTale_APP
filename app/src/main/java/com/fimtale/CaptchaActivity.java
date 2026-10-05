@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
@@ -58,8 +60,8 @@ public class CaptchaActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL);
-        MaterialToolbar toolbar = new MaterialToolbar(this); toolbar.setTitle("发表验证");
-        toolbar.setNavigationIcon(R.drawable.ic_arrow_back); toolbar.setNavigationOnClickListener(v -> finish());
+        MaterialToolbar toolbar = new com.fimtale.ui.icons.MdiToolbar(this); toolbar.setTitle("发表验证");
+        toolbar.setNavigationIcon(MdiIcons.drawable(this, "arrow-left")); toolbar.setNavigationOnClickListener(v -> finish());
         layout.addView(toolbar);
         List<String> labels = new ArrayList<>();
         addProvider(labels, "Cloudflare", "turnstile", BuildConfig.TURNSTILE_SITE_KEY);

@@ -14,9 +14,9 @@
             <TextView android:id="@+id/accountSessionHint" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginTop="6dp" android:text="以下是当前账号的活跃登录会话和有效 API Token。"
                 android:textColor="?attr/colorOnSurfaceVariant" />
-            <com.google.android.material.button.MaterialButton android:id="@+id/accountRefresh"
+            <com.fimtale.ui.icons.MdiButton android:id="@+id/accountRefresh"
                 style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_gravity="end" android:text="刷新" app:icon="@drawable/ic_history" />
+                android:layout_gravity="end" android:text="刷新" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="refresh" />
             <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:id="@+id/accountProgress"
                 android:layout_width="48dp"
@@ -37,19 +37,19 @@
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
                 android:text="API Token 是长期有效的会话凭证，新 Token 只会在创建后显示一次。"
                 android:textColor="?attr/colorOnSurfaceVariant" />
-            <com.google.android.material.button.MaterialButton android:id="@+id/accountCreateToken"
+            <com.fimtale.ui.icons.MdiButton android:id="@+id/accountCreateToken"
                 android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp"
-                android:text="创建 API Token" app:icon="@drawable/ic_post" />
-            <com.google.android.material.textfield.TextInputLayout android:id="@+id/accountTokenLayout"
+                android:text="创建 API Token" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="key-plus" />
+            <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/accountTokenLayout"
                 android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
                 android:hint="新 API Token" android:visibility="gone" style="@style/Widget.Fimtale.TextInputLayout">
                 <com.google.android.material.textfield.TextInputEditText android:id="@+id/accountToken"
                     android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text"
                     android:focusable="false" android:textIsSelectable="true" />
-            </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.button.MaterialButton android:id="@+id/accountCopyToken"
+            </com.fimtale.ui.icons.MdiTextInputLayout>
+            <com.fimtale.ui.icons.MdiButton android:id="@+id/accountCopyToken"
                 style="@style/Widget.Material3.Button.TonalButton" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" android:text="复制 Token" android:visibility="gone" app:icon="@drawable/ic_post" />
+                android:layout_marginTop="8dp" android:text="复制 Token" android:visibility="gone" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="content-copy" />
         </LinearLayout>
     </ScrollView>
     <FrameLayout android:id="@+id/accountToolbarContainer"
@@ -60,13 +60,13 @@
             android:alpha="0" android:importantForAccessibility="no" android:stateListAnimator="@null"
             app:cardBackgroundColor="?android:attr/colorBackground" app:cardCornerRadius="16dp"
             app:cardElevation="4dp" app:strokeWidth="0dp" />
-        <com.google.android.material.appbar.MaterialToolbar android:id="@+id/accountToolbar"
+        <com.fimtale.ui.icons.MdiToolbar android:id="@+id/accountToolbar"
             android:layout_width="match_parent" android:layout_height="match_parent"
             android:background="@null" android:elevation="4dp" android:outlineProvider="none"
-            android:stateListAnimator="@null" app:navigationIcon="@drawable/ic_arrow_back"
+            android:stateListAnimator="@null" app:mdiNavigationIcon="arrow-left"
             app:navigationIconTint="?attr/colorOnSurface" app:titleTextColor="?attr/colorOnSurface">
             <TextView android:id="@+id/accountToolbarTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="账户与会话" android:textColor="?attr/colorOnSurface" android:textSize="21sp" />
-        </com.google.android.material.appbar.MaterialToolbar>
+        </com.fimtale.ui.icons.MdiToolbar>
     </FrameLayout>
 </FrameLayout>

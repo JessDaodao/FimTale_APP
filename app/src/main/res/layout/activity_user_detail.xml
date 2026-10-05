@@ -37,8 +37,7 @@
                         android:id="@+id/ivBackground"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        tools:src="@drawable/placeholder_image"/>
+                        android:scaleType="centerCrop"/>
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.imageview.ShapeableImageView
@@ -261,7 +260,7 @@
                 app:layout_collapseMode="pin"
                 app:strokeWidth="0dp">
 
-                <com.google.android.material.appbar.MaterialToolbar
+                <com.fimtale.ui.icons.MdiToolbar
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
@@ -277,7 +276,7 @@
                         android:textColor="?attr/colorOnSurface"
                         android:alpha="0"
                         tools:text="Username" />
-                </com.google.android.material.appbar.MaterialToolbar>
+                </com.fimtale.ui.icons.MdiToolbar>
             </com.google.android.material.card.MaterialCardView>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>

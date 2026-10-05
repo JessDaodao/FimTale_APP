@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -373,7 +375,7 @@ public class EditorActivity extends AppCompatActivity {
     private void renderTagsIn(View root) {
         ChipGroup group = root.findViewById(R.id.editorTags); group.removeAllViews();
         model.document.tags.forEach((id, name) -> {
-            Chip chip = new Chip(this); chip.setText(name); chip.setCloseIconVisible(true);
+            Chip chip = new Chip(this); chip.setText(name); chip.setCloseIcon(MdiIcons.drawable(this, "close")); chip.setCloseIconVisible(true);
             chip.setOnCloseIconClickListener(v -> { if (!model.busy) { model.document.tags.remove(id); model.document.tagGroups.remove(id); model.changed(); renderTagsIn(root); } });
             group.addView(chip);
         });
@@ -381,7 +383,7 @@ public class EditorActivity extends AppCompatActivity {
     private void renderTags() {
         ChipGroup group = findViewById(R.id.editorTags); group.removeAllViews();
         model.document.tags.forEach((id, name) -> {
-            Chip chip = new Chip(this); chip.setText(name); chip.setCloseIconVisible(true);
+            Chip chip = new Chip(this); chip.setText(name); chip.setCloseIcon(MdiIcons.drawable(this, "close")); chip.setCloseIconVisible(true);
             chip.setOnCloseIconClickListener(v -> {
                 if (model.busy) return;
                 model.document.tags.remove(id); model.document.tagGroups.remove(id); model.changed(); renderTags();
@@ -417,7 +419,7 @@ public class EditorActivity extends AppCompatActivity {
         showMetadata(true);
         if (metadataSheetView != null) {
             EditText field = metadataSheetView.findViewById(fieldId);
-            if (field != null) { field.setError(message); field.requestFocus(); }
+            if (field != null) { MdiIcons.setError(field, message); field.requestFocus(); }
         }
     }
     private void checkPublished() {

@@ -1,5 +1,7 @@
 package com.fimtale.ui;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -94,7 +96,7 @@ public class HomeFragment extends Fragment {
 
         requireActivity().addMenuProvider(new androidx.core.view.MenuProvider() {
             @Override public void onCreateMenu(@NonNull android.view.Menu menu, @NonNull android.view.MenuInflater inflater) {
-                inflater.inflate(R.menu.home_menu, menu);
+                MdiIcons.inflateMenu(requireContext(), inflater, R.menu.home_menu, menu);
             }
             @Override public boolean onMenuItemSelected(@NonNull android.view.MenuItem item) {
                 if (item.getItemId() != R.id.action_publish) return false;

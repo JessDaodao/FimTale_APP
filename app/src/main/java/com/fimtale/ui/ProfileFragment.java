@@ -1,5 +1,7 @@
 package com.fimtale.ui;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -80,7 +82,7 @@ public class ProfileFragment extends Fragment {
         requireActivity().addMenuProvider(new MenuProvider() {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                menuInflater.inflate(R.menu.profile_menu, menu);
+                MdiIcons.inflateMenu(requireContext(), menuInflater, R.menu.profile_menu, menu);
             }
 
             @Override
@@ -199,8 +201,8 @@ public class ProfileFragment extends Fragment {
 
             Glide.with(this)
                     .load(avatarUrl)
-                    .placeholder(R.drawable.ic_person)
-                    .error(R.drawable.ic_person)
+                    .placeholder(MdiIcons.drawable(requireContext(), "account"))
+                    .error(MdiIcons.drawable(requireContext(), "account"))
                     .into(ivAvatar);
 
         } else {
@@ -208,7 +210,7 @@ public class ProfileFragment extends Fragment {
             tvBio.setText("登录以使用更多功能");
             int color = com.google.android.material.color.MaterialColors.getColor(ivAvatar, com.google.android.material.R.attr.colorOnSurfaceVariant);
             ivAvatar.setImageTintList(android.content.res.ColorStateList.valueOf(color));
-            ivAvatar.setImageResource(R.drawable.ic_person);
+            ivAvatar.setImageDrawable(MdiIcons.drawable(requireContext(), "account"));
             layoutUserHeader.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), LoginActivity.class);
                 startActivity(intent);

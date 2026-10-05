@@ -1,5 +1,7 @@
 package com.fimtale.ui;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.View;
@@ -7,7 +9,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
 import com.fimtale.R;
 import com.fimtale.model.TopicDetailResponse;
 import com.fimtale.model.WorkInteractions;
@@ -102,12 +103,9 @@ public final class WorkActions {
         like.setEnabled(enabled); favorite.setEnabled(enabled); highPraise.setEnabled(enabled);
         like.setChecked(liked); favorite.setChecked(faved);
         highPraise.setChecked(hpGiven > 0);
-        like.setIcon(ContextCompat.getDrawable(activity,
-                liked ? R.drawable.ic_thumb_up : R.drawable.ic_thumb_up_outline));
-        favorite.setIcon(ContextCompat.getDrawable(activity,
-                faved ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline));
-        highPraise.setIcon(ContextCompat.getDrawable(activity,
-                hpGiven > 0 ? R.drawable.ic_star : R.drawable.ic_star_outline));
+        like.setIcon(MdiIcons.drawable(activity, liked ? "thumb-up" : "thumb-up-outline"));
+        favorite.setIcon(MdiIcons.drawable(activity, faved ? "bookmark" : "bookmark-outline"));
+        highPraise.setIcon(MdiIcons.drawable(activity, hpGiven > 0 ? "star" : "star-outline"));
         like.setContentDescription((liked ? "取消点赞，" : "点赞，") + likes);
         favorite.setContentDescription((faved ? "管理收藏夹，已收藏，" : "收藏到收藏夹，") + favorites);
         int hpTotal = data == null ? 0 : data.getTopicInfo().getHighPraise();

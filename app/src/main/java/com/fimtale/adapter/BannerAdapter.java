@@ -1,5 +1,7 @@
 package com.fimtale.adapter;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
 import android.view.LayoutInflater;
@@ -60,8 +62,8 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
 
         Glide.with(holder.itemView.getContext())
                 .load(topic.getBackground())
-                .placeholder(R.drawable.ic_default_article_cover)
-                .error(R.drawable.ic_default_article_cover)
+                .placeholder(MdiIcons.drawable(holder.itemView.getContext(), "file-document-outline"))
+                .error(MdiIcons.drawable(holder.itemView.getContext(), "file-document-outline"))
                 .into(holder.imageView);
     }
 

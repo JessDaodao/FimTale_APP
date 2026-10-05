@@ -11,7 +11,7 @@
         <item name="android:insetBottom">0dp</item>
         <item name="iconGravity">textTop</item>
         <item name="iconPadding">6dp</item>
-        <item name="iconSize">24dp</item>
+        <item name="iconSize">@dimen/mdi_icon_size</item>
         <item name="iconTint">@color/work_action_tint</item>
         <item name="toggleCheckedStateOnClick">false</item>
     </style>

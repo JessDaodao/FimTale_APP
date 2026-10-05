@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="mdiIcon" format="string" />
+    <attr name="mdiIconSize" format="dimension" />
+    <attr name="mdiDrawableStart" format="string" />
+    <attr name="mdiDrawableTop" format="string" />
+    <attr name="mdiNavigationIcon" format="string" />
+</resources>

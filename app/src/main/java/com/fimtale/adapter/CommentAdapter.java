@@ -1,5 +1,7 @@
 package com.fimtale.adapter;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.view.LayoutInflater;
 import android.content.Context;
 import android.content.Intent;
@@ -59,8 +61,8 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         Glide.with(holder.itemView.getContext())
                 .load(comment.getAvatarUrl())
                 .transform(new CircleCrop())
-                .placeholder(R.drawable.placeholder_image)
-                .error(R.drawable.placeholder_image)
+                .placeholder(MdiIcons.drawable(holder.itemView.getContext(), "account"))
+                .error(MdiIcons.drawable(holder.itemView.getContext(), "account"))
                 .into(holder.ivAvatar);
     }
 

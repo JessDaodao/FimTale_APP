@@ -41,8 +41,7 @@
                             android:id="@+id/detailCoverImageView"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:scaleType="centerCrop"
-                            tools:src="@drawable/placeholder_image"/>
+                            android:scaleType="centerCrop"/>
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -120,8 +119,7 @@
                         android:id="@+id/authorAvatarImageView"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                        tools:src="@drawable/placeholder_image"/>
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"/>
 
                     <TextView
                         android:id="@+id/authorNameTextView"
@@ -144,45 +142,45 @@
                     android:visibility="gone"
                     tools:visibility="visible">
 
-                    <TextView
+                    <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/wordCountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="16dp"
                         android:textSize="11sp"
-                        android:drawableStart="@drawable/ic_word_count"
+                        app:mdiDrawableStart="text-box-outline"
                         android:drawablePadding="4dp"
                         android:gravity="center_vertical"
                         tools:text="1.2万" />
 
-                    <TextView
+                    <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/viewCountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="16dp"
                         android:textSize="11sp"
-                        android:drawableStart="@drawable/ic_view_count"
+                        app:mdiDrawableStart="eye-outline"
                         android:drawablePadding="4dp"
                         android:gravity="center_vertical"
                         tools:text="1000" />
 
-                    <TextView
+                    <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/commentCountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="16dp"
                         android:textSize="11sp"
-                        android:drawableStart="@drawable/ic_comment_count"
+                        app:mdiDrawableStart="comment-text-outline"
                         android:drawablePadding="4dp"
                         android:gravity="center_vertical"
                         tools:text="50" />
 
-                    <TextView
+                    <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/favoriteCountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textSize="11sp"
-                        android:drawableStart="@drawable/ic_bookmark"
+                        app:mdiDrawableStart="bookmark"
                         android:drawablePadding="4dp"
                         android:gravity="center_vertical"
                         tools:text="20" />
@@ -201,20 +199,20 @@
                 <LinearLayout
                     android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="12dp" android:orientation="horizontal">
-                    <com.google.android.material.button.MaterialButton
+                    <com.fimtale.ui.icons.MdiButton
                         android:id="@+id/likeWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="0" android:contentDescription="点赞" android:checkable="true" app:icon="@drawable/ic_thumb_up_outline"/>
-                    <com.google.android.material.button.MaterialButton
+                        android:text="0" android:contentDescription="点赞" android:checkable="true" app:mdiIcon="thumb-up-outline"/>
+                    <com.fimtale.ui.icons.MdiButton
                         android:id="@+id/favoriteWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
                         android:layout_marginHorizontal="8dp" android:text="0" android:contentDescription="收藏"
-                        android:checkable="true" app:icon="@drawable/ic_bookmark_outline"/>
-                    <com.google.android.material.button.MaterialButton
+                        android:checkable="true" app:mdiIcon="bookmark-outline"/>
+                    <com.fimtale.ui.icons.MdiButton
                         android:id="@+id/highPraiseWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
                         android:text="投HP" android:contentDescription="投送 HP" android:checkable="true"
-                        app:icon="@drawable/ic_star_outline"/>
+                        app:mdiIcon="star-outline"/>
                 </LinearLayout>
                 <TextView android:id="@+id/workActionStatus"
                     android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -258,11 +256,11 @@
                 android:id="@+id/startReadingButton"
                 android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:text="开始阅读"/>
-            <com.google.android.material.button.MaterialButton
+            <com.fimtale.ui.icons.MdiButton
                 android:id="@+id/showChaptersButton" style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginStart="12dp" android:text="目录"
-                android:contentDescription="查看章节目录" app:icon="@drawable/ic_menu_book"/>
+                android:contentDescription="查看章节目录" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="book-open-page-variant"/>
         </LinearLayout>
 
         <com.fimtale.ui.ShimmerSkeletonView
@@ -308,7 +306,7 @@
                     app:layout_collapseMode="pin"
                     app:strokeWidth="0dp">
 
-                    <com.google.android.material.appbar.MaterialToolbar
+                    <com.fimtale.ui.icons.MdiToolbar
                         android:id="@+id/toolbar"
                         android:layout_width="match_parent"
                         android:layout_height="?attr/actionBarSize"

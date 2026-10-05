@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -88,6 +90,7 @@ public class TagArticlesActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
             getSupportActionBar().setDisplayShowTitleEnabled(true);
             // Keep the ActionBar's title in sync so window updates cannot replace it.
             getSupportActionBar().setTitle("# " + tagName);
@@ -147,7 +150,7 @@ public class TagArticlesActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_tag_articles, menu);
+        MdiIcons.inflateMenu(this, getMenuInflater(), R.menu.menu_tag_articles, menu);
         tagInfoMenuItem = menu.findItem(R.id.action_tag_info);
         updateTagInfoMenuItemVisibility();
         return true;

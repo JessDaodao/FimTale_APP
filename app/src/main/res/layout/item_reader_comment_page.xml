@@ -111,7 +111,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <com.google.android.material.textfield.TextInputLayout
+        <com.fimtale.ui.icons.MdiTextInputLayout
             android:id="@+id/readerCommentComposerInputLayout"
             style="@style/Widget.Fimtale.TextInputLayout"
             android:layout_width="0dp"
@@ -129,25 +129,25 @@
                 android:maxLines="3"
                 android:minLines="1"
                 android:paddingVertical="10dp" />
-        </com.google.android.material.textfield.TextInputLayout>
+        </com.fimtale.ui.icons.MdiTextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
+        <com.fimtale.ui.icons.MdiButton
             android:id="@+id/readerCommentComposerEmoji"
             style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="6dp"
             android:contentDescription="插入表情"
-            app:icon="@drawable/ic_emoji" />
+            app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="emoticon-happy-outline" />
 
-        <com.google.android.material.button.MaterialButton
+        <com.fimtale.ui.icons.MdiButton
             android:id="@+id/readerCommentComposerSend"
             style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="52dp"
             android:layout_height="52dp"
             android:layout_marginStart="8dp"
             android:contentDescription="发送评论"
-            app:icon="@drawable/ic_send" />
+            app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="send" />
     </LinearLayout>
 
     <TextView

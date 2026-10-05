@@ -18,14 +18,14 @@
                 app:cardBackgroundColor="?android:attr/colorBackground" app:cardCornerRadius="16dp"
                 app:cardElevation="4dp" app:strokeWidth="0dp"
                 android:importantForAccessibility="no"/>
-            <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="match_parent"
+            <com.fimtale.ui.icons.MdiToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="match_parent"
                 android:background="@null" android:elevation="4dp" android:outlineProvider="none" android:stateListAnimator="@null"
-                app:navigationIcon="@drawable/ic_arrow_back" app:navigationIconTint="?attr/colorOnSurface" app:titleTextColor="?attr/colorOnSurface">
+                app:mdiNavigationIcon="arrow-left" app:navigationIconTint="?attr/colorOnSurface" app:titleTextColor="?attr/colorOnSurface">
                 <TextView android:id="@+id/tvToolbarTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="@string/drafts_title" android:textSize="21sp" android:textColor="?attr/colorOnSurface"/>
-            </com.google.android.material.appbar.MaterialToolbar>
+            </com.fimtale.ui.icons.MdiToolbar>
         </FrameLayout>
     </FrameLayout>
-    <com.google.android.material.button.MaterialButton android:id="@+id/draftsCreate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="16dp" android:text="@string/draft_create" app:icon="@drawable/ic_edit"/>
+    <com.fimtale.ui.icons.MdiButton android:id="@+id/draftsCreate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="16dp" android:text="@string/draft_create" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="pencil"/>
 </LinearLayout>

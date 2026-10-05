@@ -22,11 +22,11 @@
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
 
-            <com.google.android.material.imageview.ShapeableImageView
+            <com.fimtale.ui.icons.MdiShapeableImageView
                 android:id="@+id/ivAvatar"
                 android:layout_width="90dp"
                 android:layout_height="90dp"
-                android:src="@drawable/ic_person"
+                app:mdiIcon="account"
                 android:scaleType="centerCrop"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                 app:layout_constraintStart_toStartOf="parent"
@@ -80,13 +80,13 @@
             <LinearLayout android:id="@+id/btnPublish" android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
                 android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp">
-                <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_edit" app:tint="?attr/colorOnSurface"/>
+                <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size" app:mdiIcon="pencil" app:tint="?attr/colorOnSurface"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="发表文章" android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
             <LinearLayout android:id="@+id/btnMyWorks" android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
                 android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp">
-                <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_menu_book" app:tint="?attr/colorOnSurface"/>
+                <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size" app:mdiIcon="book-open-page-variant" app:tint="?attr/colorOnSurface"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="我的作品" android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
 
@@ -102,10 +102,10 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="8dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_favorite"
+                <com.fimtale.ui.icons.MdiImageView
+                    android:layout_width="@dimen/mdi_icon_size"
+                    android:layout_height="@dimen/mdi_icon_size"
+                    app:mdiIcon="heart"
                     app:tint="?attr/colorOnSurface"/>
 
                 <TextView
@@ -129,10 +129,10 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="8dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_history"
+                <com.fimtale.ui.icons.MdiImageView
+                    android:layout_width="@dimen/mdi_icon_size"
+                    android:layout_height="@dimen/mdi_icon_size"
+                    app:mdiIcon="history"
                     app:tint="?attr/colorOnSurface"/>
 
                 <TextView

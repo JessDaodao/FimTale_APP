@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.os.Bundle;
@@ -219,7 +221,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
     private void renderTags() {
         tags.removeAllViews();
         for (String value : editorTags) {
-            Chip chip = new Chip(this); chip.setText(value); chip.setCloseIconVisible(true);
+            Chip chip = new Chip(this); chip.setText(value); chip.setCloseIcon(MdiIcons.drawable(this, "close")); chip.setCloseIconVisible(true);
             chip.setOnCloseIconClickListener(v -> { editorTags.remove(value); renderTags(); renderEditorSummary(); }); tags.addView(chip);
         }
     }

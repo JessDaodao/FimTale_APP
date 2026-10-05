@@ -1,5 +1,7 @@
 package com.fimtale.editor;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.Context;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -82,7 +84,7 @@ public final class TagPickerDialog {
                 int count = 0;
                 for (TagGroup group : response.body()) if (group.tags != null) for (TagInfo tag : group.tags) {
                     count++;
-                    Chip chip = new Chip(context); chip.setText(tag.getName()); chip.setCheckable(true); chip.setChecked(selected.containsKey(tag.getId()));
+                    Chip chip = new Chip(context); chip.setText(tag.getName()); chip.setCheckedIcon(MdiIcons.drawable(context, "check")); chip.setCheckable(true); chip.setChecked(selected.containsKey(tag.getId()));
                     chip.setOnCheckedChangeListener((button, checked) -> {
                         if (checked) { selected.put(tag.getId(), tag.getName()); groups.put(tag.getId(), group.name); }
                         else { selected.remove(tag.getId()); groups.remove(tag.getId()); } changed.run();

@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
@@ -207,6 +209,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
         toolbar.setNavigationOnClickListener(v -> finish());
 
         appBarLayout = findViewById(R.id.app_bar);
@@ -275,7 +278,7 @@ public class TopicDetailActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_topic_detail, menu);
+        MdiIcons.inflateMenu(this, getMenuInflater(), R.menu.menu_topic_detail, menu);
         return true;
     }
 
@@ -627,11 +630,11 @@ public class TopicDetailActivity extends AppCompatActivity {
             if (finalCoverUrl != null) {
                 Glide.with(this)
                         .load(finalCoverUrl)
-                        .placeholder(R.drawable.ic_default_article_cover)
-                        .error(R.drawable.ic_default_article_cover)
+                        .placeholder(MdiIcons.drawable(this, "file-document-outline"))
+                        .error(MdiIcons.drawable(this, "file-document-outline"))
                         .into(coverImageView);
             } else {
-                coverImageView.setImageResource(R.drawable.ic_default_article_cover);
+                coverImageView.setImageDrawable(MdiIcons.drawable(this, "file-document-outline"));
             }
         } else {
             imageContainer.setVisibility(View.GONE);
@@ -647,8 +650,8 @@ public class TopicDetailActivity extends AppCompatActivity {
             String authorAvatarUrl = author.getAvatar();
             Glide.with(this)
                     .load(authorAvatarUrl)
-                    .placeholder(R.drawable.ic_person)
-                    .error(R.drawable.ic_person)
+                    .placeholder(MdiIcons.drawable(this, "account"))
+                    .error(MdiIcons.drawable(this, "account"))
                     .into(authorAvatarImageView);
 
             wordCountTextView.setText(String.valueOf(topic.getWordCount()));
@@ -967,7 +970,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         String content = commentComposerInput.getText() == null
                 ? "" : commentComposerInput.getText().toString().trim();
         if (content.isEmpty()) {
-            commentComposerInput.setError("评论内容不能为空");
+            MdiIcons.setError(commentComposerInput, "评论内容不能为空");
             return;
         }
         if (!UserPreferences.isLoggedIn(this)) {

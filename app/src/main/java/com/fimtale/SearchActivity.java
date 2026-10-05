@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -91,6 +93,7 @@ public class SearchActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
             getSupportActionBar().setTitle("");
         }
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -178,7 +181,7 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     @Override public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_search, menu);
+        MdiIcons.inflateMenu(this, getMenuInflater(), R.menu.menu_search, menu);
         return true;
     }
 
@@ -193,7 +196,7 @@ public class SearchActivity extends AppCompatActivity {
     private void submitSearch() {
         String query = searchInput.getText() == null ? "" : searchInput.getText().toString().trim();
         if (query.isEmpty()) {
-            searchInput.setError("请输入搜索内容");
+            MdiIcons.setError(searchInput, "请输入搜索内容");
             showHistory();
             return;
         }

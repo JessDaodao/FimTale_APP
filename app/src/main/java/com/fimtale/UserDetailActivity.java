@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -122,6 +124,7 @@ public class UserDetailActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
             getSupportActionBar().setTitle("");
         }
 
@@ -285,7 +288,7 @@ public class UserDetailActivity extends AppCompatActivity {
         String avatarUrl = info.getAvatar();
         Glide.with(this)
              .load(avatarUrl)
-             .placeholder(R.drawable.ic_person)
+             .placeholder(MdiIcons.drawable(this, "account"))
              .into(ivAvatar);
 
         chipGroupBadges.removeAllViews();

@@ -32,7 +32,7 @@
         android:layout_marginTop="12dp" android:layout_marginBottom="16dp"
         android:orientation="horizontal" android:gravity="center_vertical"
         android:visibility="gone">
-        <com.google.android.material.textfield.TextInputLayout
+        <com.fimtale.ui.icons.MdiTextInputLayout
             android:id="@+id/commentComposerInputLayout"
             android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
             android:hint="发表评论" style="@style/Widget.Fimtale.TextInputLayout">
@@ -42,14 +42,14 @@
                 android:maxLines="3" android:minLines="1" android:gravity="top|start"
                 android:inputType="textMultiLine|textCapSentences" android:imeOptions="actionSend"
                 android:paddingVertical="10dp" />
-        </com.google.android.material.textfield.TextInputLayout>
-        <com.google.android.material.button.MaterialButton
+        </com.fimtale.ui.icons.MdiTextInputLayout>
+        <com.fimtale.ui.icons.MdiButton
             android:id="@+id/commentComposerEmoji" style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="48dp" android:layout_height="48dp" android:layout_marginStart="6dp"
-            android:contentDescription="插入表情" app:icon="@drawable/ic_emoji" />
-        <com.google.android.material.button.MaterialButton
+            android:contentDescription="插入表情" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="emoticon-happy-outline" />
+        <com.fimtale.ui.icons.MdiButton
             android:id="@+id/commentComposerSend" style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="52dp" android:layout_height="52dp" android:layout_marginStart="8dp"
-            android:contentDescription="发送评论" app:icon="@drawable/ic_send" />
+            android:contentDescription="发送评论" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="send" />
     </LinearLayout>
 </LinearLayout>

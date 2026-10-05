@@ -1,5 +1,7 @@
 package com.fimtale.adapter;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
@@ -122,8 +124,8 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
             Glide.with(topicHolder.itemView.getContext())
                     .load(topic.getBackground())
-                    .placeholder(R.drawable.ic_default_article_cover)
-                    .error(R.drawable.ic_default_article_cover)
+                    .placeholder(MdiIcons.drawable(topicHolder.itemView.getContext(), "file-document-outline"))
+                    .error(MdiIcons.drawable(topicHolder.itemView.getContext(), "file-document-outline"))
                     .listener(new RequestListener<Drawable>() {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {

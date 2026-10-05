@@ -1,5 +1,7 @@
 package com.fimtale.ui;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -89,7 +91,7 @@ public class ArticleFragment extends Fragment {
         requireActivity().addMenuProvider(new MenuProvider() {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                menuInflater.inflate(R.menu.article_menu, menu);
+                MdiIcons.inflateMenu(requireContext(), menuInflater, R.menu.article_menu, menu);
             }
 
             @Override

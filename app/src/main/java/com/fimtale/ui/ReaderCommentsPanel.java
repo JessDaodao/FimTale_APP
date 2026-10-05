@@ -1,5 +1,7 @@
 package com.fimtale.ui;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.Context;
 import android.content.Intent;
 import android.view.inputmethod.EditorInfo;
@@ -165,7 +167,7 @@ public final class ReaderCommentsPanel {
         if (sending || closed) return;
         String content = input.getText() == null ? "" : input.getText().toString().trim();
         if (content.isEmpty()) {
-            input.setError("评论内容不能为空");
+            MdiIcons.setError(input, "评论内容不能为空");
             return;
         }
         if (!UserPreferences.isLoggedIn(activity)) {

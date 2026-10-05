@@ -1,6 +1,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="?android:attr/colorBackground">
-    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:navigationIcon="@drawable/ic_arrow_back" app:menu="@menu/editor_menu"/>
+    <com.fimtale.ui.icons.MdiToolbar android:id="@+id/toolbar" android:layout_width="match_parent" android:layout_height="?attr/actionBarSize" app:mdiNavigationIcon="arrow-left" app:menu="@menu/editor_menu"/>
     <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/editorProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:indeterminate="true"/>
     <TextView android:id="@+id/editorStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp" android:paddingVertical="4dp" android:textSize="12sp" android:textColor="?attr/colorOnSurfaceVariant" android:accessibilityLiveRegion="polite"/>
     <com.google.android.material.button.MaterialButton android:id="@+id/editorRetry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="重试加载" android:visibility="gone"/>

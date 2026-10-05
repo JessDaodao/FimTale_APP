@@ -34,10 +34,10 @@
                     android:clickable="true"
                     android:focusable="true">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_gallery"
+                    <com.fimtale.ui.icons.MdiImageView
+                        android:layout_width="@dimen/mdi_icon_size"
+                        android:layout_height="@dimen/mdi_icon_size"
+                        app:mdiIcon="image-multiple"
                         app:tint="?attr/colorPrimary"/>
 
                     <TextView
@@ -58,10 +58,10 @@
                     android:clickable="true"
                     android:focusable="true">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_post"
+                    <com.fimtale.ui.icons.MdiImageView
+                        android:layout_width="@dimen/mdi_icon_size"
+                        android:layout_height="@dimen/mdi_icon_size"
+                        app:mdiIcon="text-box-outline"
                         app:tint="?attr/colorPrimary"/>
 
                     <TextView
@@ -82,10 +82,10 @@
                     android:clickable="true"
                     android:focusable="true">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_tag"
+                    <com.fimtale.ui.icons.MdiImageView
+                        android:layout_width="@dimen/mdi_icon_size"
+                        android:layout_height="@dimen/mdi_icon_size"
+                        app:mdiIcon="tag"
                         app:tint="?attr/colorPrimary"/>
 
                     <TextView

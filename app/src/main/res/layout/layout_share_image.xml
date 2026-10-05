@@ -112,10 +112,10 @@
             android:gravity="center_vertical"
             android:layout_marginEnd="32px">
 
-            <ImageView
+            <com.fimtale.ui.icons.MdiImageView
                 android:layout_width="36px"
                 android:layout_height="36px"
-                android:src="@drawable/ic_word_count"
+                app:mdiIcon="text-box-outline"
                 app:tint="#999999" />
 
             <TextView
@@ -134,10 +134,10 @@
             android:gravity="center_vertical"
             android:layout_marginEnd="32px">
 
-            <ImageView
+            <com.fimtale.ui.icons.MdiImageView
                 android:layout_width="36px"
                 android:layout_height="36px"
-                android:src="@drawable/ic_view_count"
+                app:mdiIcon="eye-outline"
                 app:tint="#999999" />
 
             <TextView
@@ -156,10 +156,10 @@
             android:gravity="center_vertical"
             android:layout_marginEnd="32px">
 
-            <ImageView
+            <com.fimtale.ui.icons.MdiImageView
                 android:layout_width="36px"
                 android:layout_height="36px"
-                android:src="@drawable/ic_comment_count"
+                app:mdiIcon="comment-text-outline"
                 app:tint="#999999" />
 
             <TextView
@@ -177,10 +177,10 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <ImageView
+            <com.fimtale.ui.icons.MdiImageView
                 android:layout_width="36px"
                 android:layout_height="36px"
-                android:src="@drawable/ic_favorite"
+                app:mdiIcon="heart"
                 app:tint="#999999" />
 
             <TextView

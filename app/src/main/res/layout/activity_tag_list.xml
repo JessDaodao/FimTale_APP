@@ -65,7 +65,7 @@
                 app:layout_collapseMode="pin"
                 app:strokeWidth="0dp">
 
-                <com.google.android.material.appbar.MaterialToolbar
+                <com.fimtale.ui.icons.MdiToolbar
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"

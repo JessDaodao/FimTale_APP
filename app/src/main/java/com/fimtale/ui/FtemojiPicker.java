@@ -1,5 +1,7 @@
 package com.fimtale.ui;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -12,7 +14,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -111,7 +112,7 @@ public final class FtemojiPicker {
             holder.button.setContentDescription("插入表情 " + name);
             holder.button.setOnClickListener(v -> onSelected.accept(name));
             if (holder.target != null) Glide.with(context).clear(holder.target);
-            holder.button.setIcon(ContextCompat.getDrawable(context, R.drawable.placeholder_image));
+            holder.button.setIcon(MdiIcons.drawable(context, "emoticon-outline"));
             holder.target = new CustomTarget<Drawable>() {
                 @Override public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                     holder.button.setIcon(resource);

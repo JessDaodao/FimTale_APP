@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -113,9 +115,7 @@ public class ReaderActivity extends AppCompatActivity {
     private TextView tvChapterProgress;
     private TextView tvBatteryLevel;
     private android.widget.TextClock tcSystemTime;
-    private View viewBatteryLevel;
-    private ImageView ivCharging;
-    private ImageView ivBatteryFrame;
+    private ImageView ivBattery;
     private ProgressBar scrollProgressBar;
 
     private BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
@@ -128,15 +128,11 @@ public class ReaderActivity extends AppCompatActivity {
             if (tvBatteryLevel != null) {
                 tvBatteryLevel.setText(batteryPct + "%");
             }
-            if (viewBatteryLevel != null && viewBatteryLevel.getBackground() != null) {
-                viewBatteryLevel.getBackground().setLevel(batteryPct * 100);
-            }
-
-            if (ivCharging != null) {
+            if (ivBattery != null) {
                 int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
                 boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                         status == BatteryManager.BATTERY_STATUS_FULL;
-                ivCharging.setVisibility(isCharging ? View.VISIBLE : View.GONE);
+                ivBattery.setImageDrawable(MdiIcons.battery(ReaderActivity.this, batteryPct, isCharging));
             }
         }
     };
@@ -288,22 +284,7 @@ public class ReaderActivity extends AppCompatActivity {
         tvChapterProgress = findViewById(R.id.tvChapterProgress);
         tvBatteryLevel = findViewById(R.id.tvBatteryLevel);
         tcSystemTime = findViewById(R.id.tcSystemTime);
-        viewBatteryLevel = findViewById(R.id.viewBatteryLevel);
-        ivCharging = findViewById(R.id.ivCharging);
-        
-        View batteryLayout = findViewById(R.id.batteryLayout);
-        if (batteryLayout instanceof ViewGroup) {
-            ViewGroup batteryContainer = (ViewGroup) batteryLayout;
-            for (int i = 0; i < batteryContainer.getChildCount(); i++) {
-                View child = batteryContainer.getChildAt(i);
-                if (child instanceof FrameLayout) {
-                    FrameLayout frame = (FrameLayout) child;
-                    if (frame.getChildAt(0) instanceof ImageView) {
-                        ivBatteryFrame = (ImageView) frame.getChildAt(0);
-                    }
-                }
-            }
-        }
+        ivBattery = findViewById(R.id.ivBattery);
         
         scrollProgressBar = findViewById(R.id.scrollProgressBar);
         
@@ -1369,14 +1350,8 @@ public class ReaderActivity extends AppCompatActivity {
         if (tvBatteryLevel != null) tvBatteryLevel.setTextColor(textColor);
         if (tcSystemTime != null) tcSystemTime.setTextColor(textColor);
         
-        if (ivCharging != null) {
-            ivCharging.setColorFilter(textColor);
-        }
-        if (ivBatteryFrame != null) {
-            ivBatteryFrame.setColorFilter(textColor);
-        }
-        if (viewBatteryLevel != null) {
-            viewBatteryLevel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(textColor));
+        if (ivBattery != null) {
+            ivBattery.setImageTintList(android.content.res.ColorStateList.valueOf(textColor));
         }
         
         if (adapter != null) adapter.notifyDataSetChanged();
@@ -1789,8 +1764,8 @@ public class ReaderActivity extends AppCompatActivity {
                     Glide.with(imageHolder.imageView.getContext())
                             .load(page.content)
                             .apply(RequestOptions.bitmapTransform(new RoundedCorners(cornerRadius)))
-                            .placeholder(R.drawable.placeholder_image)
-                            .error(android.R.drawable.ic_menu_report_image)
+                            .placeholder(MdiIcons.drawable(ReaderActivity.this, "image-outline"))
+                            .error(MdiIcons.drawable(ReaderActivity.this, "image-broken-variant"))
                             .into(imageHolder.imageView);
                 } catch (Exception e) {
                     e.printStackTrace();

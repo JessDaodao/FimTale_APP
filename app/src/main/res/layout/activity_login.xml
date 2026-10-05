@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical">
-    <com.google.android.material.appbar.MaterialToolbar
+    <com.fimtale.ui.icons.MdiToolbar
         android:id="@+id/toolbar" android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize" app:navigationIcon="@drawable/ic_arrow_back" />
+        android:layout_height="?attr/actionBarSize" app:mdiNavigationIcon="arrow-left" />
     <WebView android:id="@+id/login_webview" android:layout_width="match_parent"
         android:layout_height="0dp" android:layout_weight="1" />
 </LinearLayout>

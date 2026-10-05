@@ -1,9 +1,9 @@
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/editorMetadataPanel" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:visibility="gone">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="20dp" android:orientation="vertical">
-        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="标题">
+        <com.fimtale.ui.icons.MdiTextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="标题">
             <com.google.android.material.textfield.TextInputEditText android:id="@+id/editorTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textCapSentences" android:saveEnabled="false"/>
-        </com.google.android.material.textfield.TextInputLayout>
+        </com.fimtale.ui.icons.MdiTextInputLayout>
             <LinearLayout android:id="@+id/editorWorkFields" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="作品信息" android:textAppearance="?attr/textAppearanceTitleMedium" android:layout_marginTop="24dp" android:layout_marginBottom="12dp"/>
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="作品类型" android:labelFor="@id/editorType"/>
@@ -17,22 +17,22 @@
                 <Spinner android:id="@+id/editorOrigin" android:layout_width="match_parent" android:layout_height="48dp" android:saveEnabled="false"/>
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="连载状态" android:labelFor="@id/editorPublish"/>
                 <Spinner android:id="@+id/editorPublish" android:layout_width="match_parent" android:layout_height="48dp" android:saveEnabled="false"/>
-                <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="简介" android:layout_marginTop="12dp">
+                <com.fimtale.ui.icons.MdiTextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="简介" android:layout_marginTop="12dp">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editorIntro" android:layout_width="match_parent" android:layout_height="wrap_content" android:minLines="3" android:gravity="top" android:inputType="textMultiLine" android:saveEnabled="false"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                </com.fimtale.ui.icons.MdiTextInputLayout>
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="分类标签与角色（选填）" android:textAppearance="?attr/textAppearanceTitleSmall" android:layout_marginTop="20dp"/>
                 <com.google.android.material.chip.ChipGroup android:id="@+id/editorTags" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                 <com.google.android.material.button.MaterialButton android:id="@+id/editorAddTags" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="选择标签或角色"/>
-                <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="封面图片地址（选填）" android:layout_marginTop="16dp">
+                <com.fimtale.ui.icons.MdiTextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="封面图片地址（选填）" android:layout_marginTop="16dp">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editorCover" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" android:saveEnabled="false"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                </com.fimtale.ui.icons.MdiTextInputLayout>
                 <com.google.android.material.button.MaterialButton android:id="@+id/editorUploadCover" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="上传封面"/>
-                <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="原文链接（翻译或转载时填写）" android:layout_marginTop="12dp">
+                <com.fimtale.ui.icons.MdiTextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="原文链接（翻译或转载时填写）" android:layout_marginTop="12dp">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editorOriginLink" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" android:saveEnabled="false"/>
-                </com.google.android.material.textfield.TextInputLayout>
-                <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="前作 ID（选填）" android:layout_marginTop="12dp">
+                </com.fimtale.ui.icons.MdiTextInputLayout>
+                <com.fimtale.ui.icons.MdiTextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="前作 ID（选填）" android:layout_marginTop="12dp">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editorPrequel" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:saveEnabled="false"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                </com.fimtale.ui.icons.MdiTextInputLayout>
                 <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/editorHandbook" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="我已阅读《用户手册》，并同意遵守相关规定"/>
                 <com.google.android.material.button.MaterialButton android:id="@+id/editorOpenHandbook" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="阅读用户手册"/>
             </LinearLayout>

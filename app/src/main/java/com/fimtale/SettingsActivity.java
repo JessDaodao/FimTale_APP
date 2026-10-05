@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -29,6 +31,7 @@ public class SettingsActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
             getSupportActionBar().setTitle("设置");
         }
         toolbar.setNavigationOnClickListener(v -> onBackPressed());

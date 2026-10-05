@@ -1,5 +1,7 @@
 package com.fimtale;
 
+import com.fimtale.utils.MdiIcons;
+
 import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -59,6 +61,7 @@ public class TagListActivity extends AppCompatActivity {
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
         getSupportActionBar().setDisplayShowHomeEnabled(true);
 
         toolbarContainer = findViewById(R.id.toolbarContainer);
@@ -168,7 +171,7 @@ public class TagListActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_tag_list, menu);
+        MdiIcons.inflateMenu(this, getMenuInflater(), R.menu.menu_tag_list, menu);
         return true;
     }
 

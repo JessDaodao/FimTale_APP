@@ -8,10 +8,10 @@
     android:padding="12dp"
     android:background="?attr/selectableItemBackground">
 
-    <ImageView
+    <com.fimtale.ui.icons.MdiImageView
         android:layout_width="20dp"
         android:layout_height="20dp"
-        android:src="@drawable/ic_history"
+        app:mdiIcon="history"
         app:tint="?android:attr/textColorSecondary" />
 
     <TextView
@@ -23,11 +23,11 @@
         android:textSize="14sp"
         android:textColor="?android:attr/textColorPrimary" />
 
-    <ImageView
+    <com.fimtale.ui.icons.MdiImageView
         android:id="@+id/iv_delete"
         android:layout_width="20dp"
         android:layout_height="20dp"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        app:mdiIcon="close"
         app:tint="?android:attr/textColorSecondary"
         android:padding="2dp"
         android:clickable="true"
