@@ -4,6 +4,9 @@
         android:id="@+id/nav_home"
         android:title="@string/nav_home" />
     <item
+        android:id="@+id/nav_timeline"
+        android:title="@string/nav_timeline" />
+    <item
         android:id="@+id/nav_article"
         android:title="@string/nav_article" />
     <item

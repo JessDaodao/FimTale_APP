@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import com.fimtale.ui.ArticleFragment;
 import com.fimtale.ui.HomeFragment;
+import com.fimtale.ui.TimelineFragment;
 import com.fimtale.ui.ProfileFragment;
 import com.fimtale.utils.MdiIcons;
 import com.fimtale.utils.UpdateChecker;
@@ -27,9 +28,12 @@ public class MainActivity extends AppCompatActivity {
 
     private int currentItemId = 0;
     private HomeFragment homeFragment;
+    private TimelineFragment timelineFragment;
     private ArticleFragment articleFragment;
     private ProfileFragment profileFragment;
     private Fragment currentFragment;
+    private retrofit2.Call<Integer> unreadCall;
+    private int unreadRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,10 +77,12 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             currentItemId = savedInstanceState.getInt("currentItemId", R.id.nav_home);
             homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag("HOME");
+            timelineFragment = (TimelineFragment) getSupportFragmentManager().findFragmentByTag("TIMELINE");
             articleFragment = (ArticleFragment) getSupportFragmentManager().findFragmentByTag("ARTICLE");
             profileFragment = (ProfileFragment) getSupportFragmentManager().findFragmentByTag("PROFILE");
 
             if (currentItemId == R.id.nav_home) currentFragment = homeFragment;
+            else if (currentItemId == R.id.nav_timeline) currentFragment = timelineFragment;
             else if (currentItemId == R.id.nav_article) currentFragment = articleFragment;
             else if (currentItemId == R.id.nav_profile) currentFragment = profileFragment;
         }
@@ -98,6 +104,10 @@ public class MainActivity extends AppCompatActivity {
                 if (homeFragment == null) homeFragment = new HomeFragment();
                 targetFragment = homeFragment;
                 tag = "HOME";
+            } else if (newItemId == R.id.nav_timeline) {
+                if (timelineFragment == null) timelineFragment = new TimelineFragment();
+                targetFragment = timelineFragment;
+                tag = "TIMELINE";
             } else if (newItemId == R.id.nav_article) {
                 if (articleFragment == null) articleFragment = new ArticleFragment();
                 targetFragment = articleFragment;
@@ -113,8 +123,9 @@ public class MainActivity extends AppCompatActivity {
 
                 Map<Integer, Integer> menuOrder = new HashMap<>();
                 menuOrder.put(R.id.nav_home, 0);
-                menuOrder.put(R.id.nav_article, 1);
-                menuOrder.put(R.id.nav_profile, 2);
+                menuOrder.put(R.id.nav_timeline, 1);
+                menuOrder.put(R.id.nav_article, 2);
+                menuOrder.put(R.id.nav_profile, 3);
 
                 Integer currentOrder = menuOrder.get(currentItemId);
                 Integer newOrder = menuOrder.get(newItemId);
@@ -153,6 +164,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             bottomNav.setSelectedItemId(R.id.nav_home);
+        } else {
+            bottomNav.setSelectedItemId(currentItemId);
         }
 
         UpdateChecker.checkUpdate(this, false);
@@ -167,6 +180,9 @@ public class MainActivity extends AppCompatActivity {
         if (itemId == R.id.nav_home) {
             toolbarTitle.setText("FimTale");
             toolbarIcon.setImageDrawable(MdiIcons.drawable(this, "home"));
+        } else if (itemId == R.id.nav_timeline) {
+            toolbarTitle.setText(R.string.nav_timeline);
+            toolbarIcon.setImageDrawable(MdiIcons.drawable(this, "rss"));
         } else if (itemId == R.id.nav_article) {
             toolbarTitle.setText("文章列表");
             toolbarIcon.setImageDrawable(
@@ -182,5 +198,44 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt("currentItemId", currentItemId);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        refreshTimelineCount();
+    }
+
+    private void refreshTimelineCount() {
+        final int request = ++unreadRequest;
+        if (unreadCall != null) unreadCall.cancel();
+        final String token = UserPreferences.getToken(this);
+        if (token.isEmpty()) { setTimelineCount(0); return; }
+        unreadCall = com.fimtale.network.RetrofitClient.getInstance().getTimelineUpdateCount(token);
+        unreadCall.enqueue(new retrofit2.Callback<Integer>() {
+            @Override public void onResponse(retrofit2.Call<Integer> call, retrofit2.Response<Integer> response) {
+                if (isDestroyed() || request != unreadRequest || !token.equals(UserPreferences.getToken(MainActivity.this))) return;
+                if (response.isSuccessful() && response.body() != null) setTimelineCount(response.body());
+            }
+            @Override public void onFailure(retrofit2.Call<Integer> call, Throwable error) {}
+        });
+    }
+
+    public void onTimelineRead() {
+        unreadRequest++;
+        if (unreadCall != null) unreadCall.cancel();
+        setTimelineCount(0);
+    }
+
+    private void setTimelineCount(int count) {
+        BottomNavigationView navigation = findViewById(R.id.bottom_navigation);
+        // A text count remains visible without an icon to anchor a Material badge to.
+        navigation.getMenu().findItem(R.id.nav_timeline).setTitle(count > 0
+                ? "动态 · " + (count > 99 ? "99+" : count) : getString(R.string.nav_timeline));
+    }
+
+    @Override protected void onDestroy() {
+        unreadRequest++;
+        if (unreadCall != null) unreadCall.cancel();
+        super.onDestroy();
     }
 }

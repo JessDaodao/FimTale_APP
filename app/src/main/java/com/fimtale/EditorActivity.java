@@ -43,6 +43,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 public class EditorActivity extends AppCompatActivity implements EditorFormatDialog.Host {
     public static final String EXTRA_WORK_ID = "editor_work_id", EXTRA_CHAPTER_ID = "editor_chapter_id";
     public static final String EXTRA_DRAFT_ID = "editor_draft_id";
+    private static final String EXTRA_INITIAL_TYPE = "editor_initial_type";
     private EditorViewModel model;
     private MaterialToolbar toolbar;
     private EditText title, intro, cover, originLink, prequel;
@@ -76,6 +77,9 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         Intent intent = new Intent(context, EditorActivity.class).putExtra(EXTRA_WORK_ID, workId).putExtra(EXTRA_CHAPTER_ID, chapterId);
         if (chapterId == 0) intent.putExtra(EXTRA_DRAFT_ID, java.util.UUID.randomUUID().toString());
         return intent;
+    }
+    public static Intent postIntent(Context context) {
+        return workIntent(context, 0).putExtra(EXTRA_INITIAL_TYPE, 3);
     }
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -174,7 +178,8 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         if (workId < 0 || chapterId < -1 || (chapterId >= 0 && workId == 0)) { finish(); return; }
         if (!getIntent().hasExtra(EXTRA_DRAFT_ID) && (workId == 0 || chapterId == 0))
             getIntent().putExtra(EXTRA_DRAFT_ID, java.util.UUID.randomUUID().toString());
-        model.initialize(workId, chapterId, getIntent().getStringExtra(EXTRA_DRAFT_ID));
+        model.initialize(workId, chapterId, getIntent().getStringExtra(EXTRA_DRAFT_ID),
+                getIntent().getIntExtra(EXTRA_INITIAL_TYPE, 1));
     }
     private void options(Spinner spinner, String... labels) {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labels);

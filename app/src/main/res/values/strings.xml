@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">FimTale</string>
     <string name="nav_home">主页</string>
+    <string name="nav_timeline">动态</string>
     <string name="nav_article">文章</string>
     <string name="nav_profile">我的</string>
 </resources>

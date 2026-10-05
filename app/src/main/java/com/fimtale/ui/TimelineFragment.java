@@ -1,0 +1,296 @@
+package com.fimtale.ui;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ConcatAdapter;
+import androidx.recyclerview.widget.RecyclerView;
+import com.fimtale.EditorActivity;
+import com.fimtale.LoginActivity;
+import com.fimtale.MainActivity;
+import com.fimtale.R;
+import com.fimtale.adapter.TimelineAdapter;
+import com.fimtale.editor.EditorChanges;
+import com.fimtale.model.TimelineFeed;
+import com.fimtale.model.TimelineItem;
+import com.fimtale.model.UserAuth;
+import com.fimtale.network.ApiErrors;
+import com.fimtale.network.RetrofitClient;
+import com.fimtale.utils.UserPreferences;
+import com.google.android.material.button.MaterialButton;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+/** Native equivalent of ft-front's TimelineFeed, scoped to the active login session. */
+public final class TimelineFragment extends Fragment {
+    private final TimelineFeed feed = new TimelineFeed();
+    private final Set<Call<?>> calls = new HashSet<>();
+    private final Set<String> reposting = new HashSet<>();
+    private String session, error;
+    private int generation;
+    private boolean loading, failedReset, activating, loadingAuth, needsRead, reading;
+    private long editorVersion = EditorChanges.version();
+    private UserAuth auth;
+    private RecyclerView list;
+    private SkeletonRefreshLayout refresh;
+    private ShimmerSkeletonView skeleton;
+    private View state, composeCard;
+    private TextView stateTitle, composeHint, footerText;
+    private MaterialButton stateAction, composeAction, loadMore;
+    private TimelineAdapter adapter;
+
+    @Nullable @Override public View onCreateView(@NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_timeline, container, false);
+    }
+
+    @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        list = view.findViewById(R.id.timelineList);
+        refresh = view.findViewById(R.id.timelineRefresh);
+        skeleton = view.findViewById(R.id.timelineSkeleton);
+        skeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.COMMENTS);
+        state = view.findViewById(R.id.timelineState);
+        stateTitle = view.findViewById(R.id.timelineStateTitle);
+        stateAction = view.findViewById(R.id.timelineStateAction);
+        View header = getLayoutInflater().inflate(R.layout.item_timeline_header, list, false);
+        View footer = getLayoutInflater().inflate(R.layout.item_timeline_footer, list, false);
+        composeCard = header.findViewById(R.id.timelineComposeCard);
+        composeHint = header.findViewById(R.id.timelineComposeHint);
+        composeAction = header.findViewById(R.id.timelineComposeAction);
+        footerText = footer.findViewById(R.id.timelineFooterText);
+        loadMore = footer.findViewById(R.id.timelineLoadMore);
+        adapter = new TimelineAdapter(requireContext(), feed.items, reposting, this::repost);
+        list.setAdapter(new ConcatAdapter(new Row(header), adapter, new Row(footer)));
+        list.setItemAnimator(null);
+        refresh.setOnChildScrollUpCallback((parent, child) -> loading || list.canScrollVertically(-1));
+        refresh.setOnRefreshListener(() -> {
+            refresh.setRefreshing(false);
+            load(true);
+            loadAuth();
+        });
+        stateAction.setOnClickListener(v -> {
+            if (UserPreferences.isLoggedIn(requireContext())) { load(true); loadAuth(); }
+            else startActivity(new Intent(requireContext(), LoginActivity.class));
+        });
+        loadMore.setOnClickListener(v -> load(error != null && failedReset));
+        composeAction.setOnClickListener(v -> compose());
+        composeCard.setOnClickListener(v -> compose());
+        render();
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        if (syncSession()) return;
+        if (session == null || session.isEmpty()) return;
+        if (editorVersion != EditorChanges.version()) {
+            editorVersion = EditorChanges.version(); load(true);
+        } else if (feed.page == 0 && error == null) load(true);
+        if (auth == null) loadAuth();
+        markRead();
+    }
+
+    /** Drop cached private data before rendering a different account (including logout). */
+    private boolean syncSession() {
+        String token = UserPreferences.getToken(requireContext());
+        if (token.equals(session)) return false;
+        cancelCalls();
+        session = token; feed.clear(); auth = null; error = null;
+        needsRead = false; reposting.clear();
+        editorVersion = EditorChanges.version();
+        adapter.notifyDataSetChanged(); render();
+        if (!token.isEmpty()) { load(true); loadAuth(); }
+        return true;
+    }
+    private boolean accepts(int request) {
+        return isAdded() && getView() != null && generation == request
+                && session != null && session.equals(UserPreferences.getToken(requireContext()));
+    }
+    private void cancelCalls() {
+        generation++;
+        for (Call<?> call : calls) call.cancel();
+        calls.clear(); loading = loadingAuth = activating = reading = false;
+    }
+
+    private void load(boolean reset) {
+        if (syncSession() || loading || session.isEmpty() || (!reset && feed.finished)) return;
+        final int page = reset ? 1 : feed.page + 1;
+        final int request = generation;
+        loading = true; error = null; failedReset = reset;
+        render();
+        Call<List<TimelineItem>> call = RetrofitClient.getInstance().getTimeline(session, page, TimelineFeed.PAGE_SIZE);
+        calls.add(call);
+        call.enqueue(new Callback<List<TimelineItem>>() {
+            @Override public void onResponse(Call<List<TimelineItem>> call, Response<List<TimelineItem>> response) {
+                calls.remove(call);
+                if (!accepts(request)) { reconcileExpiredSession(request); return; }
+                loading = false;
+                if (!response.isSuccessful()) { failLoad(ApiErrors.message(response)); return; }
+                feed.accept(page, response.body());
+                adapter.notifyDataSetChanged();
+                if (reset) { list.scrollToPosition(0); needsRead = true; }
+                render(); markRead();
+            }
+            @Override public void onFailure(Call<List<TimelineItem>> call, Throwable cause) {
+                calls.remove(call);
+                if (!accepts(request)) { reconcileExpiredSession(request); return; }
+                loading = false; failLoad("动态加载失败，请检查网络后重试");
+            }
+        });
+    }
+    private void reconcileExpiredSession(int request) {
+        if (isAdded() && getView() != null && request == generation) syncSession();
+    }
+    private void failLoad(String message) { error = message; render(); }
+
+    private void loadAuth() {
+        if (loadingAuth || session == null || session.isEmpty()) return;
+        loadingAuth = true;
+        int request = generation;
+        Call<UserAuth> call = RetrofitClient.getInstance().getUserAuth(session);
+        calls.add(call);
+        call.enqueue(new Callback<UserAuth>() {
+            @Override public void onResponse(Call<UserAuth> call, Response<UserAuth> response) {
+                calls.remove(call);
+                if (!accepts(request)) { reconcileExpiredSession(request); return; }
+                loadingAuth = false;
+                if (response.isSuccessful()) auth = response.body();
+                render();
+            }
+            @Override public void onFailure(Call<UserAuth> call, Throwable cause) {
+                calls.remove(call);
+                if (!accepts(request)) return;
+                loadingAuth = false;
+            }
+        });
+    }
+
+    private void compose() {
+        if (syncSession() || auth == null || activating) return;
+        if (auth.canPost()) startActivity(EditorActivity.postIntent(requireContext()));
+        else if (auth.needsSpace()) {
+            activating = true; render();
+            int request = generation;
+            Call<Void> call = RetrofitClient.getInstance().activateUserSpace(session);
+            calls.add(call);
+            call.enqueue(new Callback<Void>() {
+                @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                    calls.remove(call);
+                    if (!accepts(request)) { reconcileExpiredSession(request); return; }
+                    activating = false;
+                    if (response.isSuccessful()) { toast("空间已开通"); loadAuth(); }
+                    else toast(ApiErrors.message(response));
+                    render();
+                }
+                @Override public void onFailure(Call<Void> call, Throwable cause) {
+                    calls.remove(call);
+                    if (!accepts(request)) return;
+                    activating = false; toast("暂时无法确认开通结果，请下拉刷新后重试"); render();
+                }
+            });
+        }
+    }
+
+    private void markRead() {
+        if (!needsRead || reading || !isResumed() || session == null || session.isEmpty()) return;
+        reading = true;
+        int request = generation;
+        Call<Void> call = RetrofitClient.getInstance().readTimeline(session);
+        calls.add(call);
+        call.enqueue(new Callback<Void>() {
+            @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                calls.remove(call);
+                if (!accepts(request)) return;
+                reading = false;
+                if (response.isSuccessful()) {
+                    needsRead = false;
+                    if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).onTimelineRead();
+                }
+            }
+            @Override public void onFailure(Call<Void> call, Throwable cause) {
+                calls.remove(call);
+                if (accepts(request)) reading = false;
+            }
+        });
+    }
+
+    private void repost(TimelineItem item) {
+        if (syncSession() || !item.canHighlight() || !reposting.add(item.key())) return;
+        int request = generation;
+        adapter.notifyDataSetChanged();
+        TimelineItem.Highlight body = new TimelineItem.Highlight(item.entity.id);
+        Call<Void> call = item.type == TimelineItem.CHANNEL_COMMENT
+                ? RetrofitClient.getInstance().highlightChannelComment(session, body)
+                : RetrofitClient.getInstance().highlightWorkComment(session, body);
+        calls.add(call);
+        call.enqueue(new Callback<Void>() {
+            @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                calls.remove(call);
+                if (!accepts(request)) { reconcileExpiredSession(request); return; }
+                reposting.remove(item.key()); adapter.notifyDataSetChanged();
+                toast(response.isSuccessful() ? "已转发" : ApiErrors.message(response));
+            }
+            @Override public void onFailure(Call<Void> call, Throwable cause) {
+                calls.remove(call);
+                if (!accepts(request)) return;
+                reposting.remove(item.key()); adapter.notifyDataSetChanged();
+                toast("未能确认转发结果，请稍后查看动态");
+            }
+        });
+    }
+
+    private void render() {
+        if (list == null) return;
+        boolean guest = session == null || session.isEmpty();
+        boolean initialError = !guest && error != null && feed.items.isEmpty();
+        boolean replacing = !guest && loading && failedReset;
+        refresh.setEnabled(!guest);
+        skeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
+        list.setVisibility(guest || initialError || replacing ? View.INVISIBLE : View.VISIBLE);
+        state.setVisibility(guest || initialError ? View.VISIBLE : View.GONE);
+        stateTitle.setText(guest ? "登录后查看关注动态" : error);
+        stateAction.setText(guest ? "登录" : "重试");
+        boolean canPost = !guest && auth != null && auth.canPost();
+        boolean needsSpace = !guest && auth != null && auth.needsSpace();
+        composeCard.setVisibility(canPost || needsSpace ? View.VISIBLE : View.GONE);
+        composeHint.setText(canPost ? "发个帖子，分享此刻……" : "开通空间后即可发帖");
+        composeAction.setText(canPost ? "发帖" : activating ? "开通中…" : "开通空间");
+        composeAction.setEnabled(!activating && !loadingAuth);
+        composeCard.setEnabled(!activating && !loadingAuth);
+        footerText.setText(error != null ? error : loading ? "正在加载…"
+                : feed.items.isEmpty() ? "暂无动态\n关注更多用户/频道，最新动态不错过"
+                : feed.finished ? "到底了" : "");
+        footerText.setVisibility(footerText.length() > 0 ? View.VISIBLE : View.GONE);
+        loadMore.setVisibility(!guest && (error != null || !feed.finished) ? View.VISIBLE : View.GONE);
+        loadMore.setEnabled(!loading);
+        loadMore.setText(error != null ? "重试" : loading ? "加载中…" : "加载更多");
+    }
+    private void toast(String message) { Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show(); }
+
+    @Override public void onDestroyView() {
+        cancelCalls(); reposting.clear();
+        if (list != null) list.setAdapter(null);
+        list = null; adapter = null; refresh = null; skeleton = null; state = null; composeCard = null;
+        stateTitle = composeHint = footerText = null; stateAction = composeAction = loadMore = null;
+        super.onDestroyView();
+    }
+    private static final class Row extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+        private final View view;
+        Row(View view) { this.view = view; }
+        @NonNull @Override public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int type) {
+            return new RecyclerView.ViewHolder(view) {};
+        }
+        @Override public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {}
+        @Override public int getItemCount() { return 1; }
+    }
+}

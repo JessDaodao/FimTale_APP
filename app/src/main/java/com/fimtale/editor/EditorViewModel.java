@@ -38,6 +38,7 @@ public class EditorViewModel extends AndroidViewModel {
     public boolean dirty, finished, allowAnnouncement;
     private boolean cleared, loading;
     private int ownerId;
+    private int initialWorkType = 1;
     private EditorDraftStore drafts;
     private DraftSync draftSync;
     public boolean syncConflict;
@@ -65,7 +66,11 @@ public class EditorViewModel extends AndroidViewModel {
         initialize(workId, chapterId, null);
     }
     public void initialize(int workId, int chapterId, String draftId) {
+        initialize(workId, chapterId, draftId, 1);
+    }
+    public void initialize(int workId, int chapterId, String draftId, int initialWorkType) {
         if (initialized) return;
+        this.initialWorkType = initialWorkType == 3 ? 3 : 1;
         initialized = true; this.workId = workId; this.chapterId = chapterId;
         userId = UserPreferences.getUserId(getApplication());
         drafts = new EditorDraftStore(new File(getApplication().getNoBackupFilesDir(), "editor_drafts"),
@@ -92,7 +97,14 @@ public class EditorViewModel extends AndroidViewModel {
     private void loadRemote() {
         if (!sameAccount()) { needsLogin = true; fail("请登录原账号后继续，草稿已保留"); return; }
         if (workId == 0) {
-            if (document == null) { document = new EditorDocument(); documentVersion++; }
+            if (document == null) {
+                document = new EditorDocument();
+                if (initialWorkType == 3) {
+                    document.work.type = 3;
+                    document.work.length = document.work.rating = document.work.origin = document.work.publish = 0;
+                }
+                documentVersion++;
+            }
             loaded(); return;
         }
         request(api.getWorkForEdit(workId, true), result -> {

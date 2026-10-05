@@ -10,6 +10,15 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
+    @GET("user/get_timeline") Call<List<TimelineItem>> getTimeline(@Header("Token") String token,
+            @Query("page") int page, @Query("per_page") int perPage);
+    @GET("user/get_timeline_update_count") Call<Integer> getTimelineUpdateCount(@Header("Token") String token);
+    @POST("user/read_timeline") Call<Void> readTimeline(@Header("Token") String token);
+    @POST("user/activate_user_space") Call<Void> activateUserSpace(@Header("Token") String token);
+    @POST("work/highlight_timeline_comment") Call<Void> highlightWorkComment(@Header("Token") String token,
+            @Body TimelineItem.Highlight request);
+    @POST("channel/highlight_timeline_comment") Call<Void> highlightChannelComment(@Header("Token") String token,
+            @Body TimelineItem.Highlight request);
     @POST("report/create_report") Call<com.fimtale.report.ReportRequest.Result> createReport(
             @Header("Token") String token, @Body com.fimtale.report.ReportRequest report);
     @GET("work/get_review_entries") Call<List<ReviewEntry>> getReviewEntries(@Header("Token") String token);

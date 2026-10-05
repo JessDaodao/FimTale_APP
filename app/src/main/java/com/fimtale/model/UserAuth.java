@@ -9,6 +9,8 @@ public class UserAuth {
     @SerializedName("space_status") public int spaceStatus;
     public boolean canEdit(int ownerId) { return userId > 0 && (roleId >= 4 || ownerId == userId); }
     public boolean canPublish() { return userId > 0 && qualifyStatus >= 2; }
+    public boolean canPost() { return canPublish() && spaceStatus == 1; }
+    public boolean needsSpace() { return canPublish() && spaceStatus != 1 && spaceStatus != 3; }
     public boolean canReview() { return userId > 0 && roleId >= 2; }
     public boolean canManageReviews() { return userId > 0 && roleId >= 4; }
 }

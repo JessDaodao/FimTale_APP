@@ -16,6 +16,39 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import static org.junit.Assert.*;
 
 public class CurrentApiTest {
+    @Test public void timelineUsesAuthenticatedPaginationAndDiscriminatedEntities() throws Exception {
+        List<TimelineItem> items = api("[{\"type\":7,\"entity_id\":101,\"created_at\":\"2026-10-05T01:00:00Z\","
+                + "\"from_user\":{\"username\":\"作者\"},\"entity\":{\"id\":101,\"work_id\":42,"
+                + "\"title\":\"新章节\",\"content\":\"[b]正文[/b]\",\"count_character\":2000}}]")
+                .getTimeline("session-token", 2, 12).execute().body();
+        assertEquals("GET", request.get().method());
+        assertEquals("/api/user/get_timeline", request.get().url().encodedPath());
+        assertEquals("session-token", request.get().header("Token"));
+        assertEquals("2", request.get().url().queryParameter("page"));
+        assertEquals("12", request.get().url().queryParameter("per_page"));
+        assertEquals("作者", items.get(0).fromUser.getUserName());
+        assertEquals("/work/42/chapter/101", items.get(0).path());
+        assertEquals("[b]正文[/b]", items.get(0).body());
+        assertNull(api("null").getTimeline("session-token", 1, 12).execute().body());
+    }
+
+    @Test public void timelineReadCountsSpaceAndForwardingMatchWebsiteRoutes() throws Exception {
+        assertEquals(Integer.valueOf(7), api("7").getTimelineUpdateCount("session-token").execute().body());
+        assertEquals("/api/user/get_timeline_update_count", request.get().url().encodedPath());
+        api("null").readTimeline("session-token").execute();
+        assertEquals("POST", request.get().method());
+        assertEquals("/api/user/read_timeline", request.get().url().encodedPath());
+        api("null").activateUserSpace("session-token").execute();
+        assertEquals("/api/user/activate_user_space", request.get().url().encodedPath());
+        api("null").highlightWorkComment("session-token", new TimelineItem.Highlight(91)).execute();
+        assertEquals("/api/work/highlight_timeline_comment", request.get().url().encodedPath());
+        assertEquals("session-token", request.get().header("Token"));
+        Buffer body = new Buffer(); request.get().body().writeTo(body);
+        assertEquals(91, new JsonParser().parse(body.readUtf8()).getAsJsonObject().get("comment_id").getAsInt());
+        api("null").highlightChannelComment("session-token", new TimelineItem.Highlight(92)).execute();
+        assertEquals("POST", request.get().method());
+        assertEquals("/api/channel/highlight_timeline_comment", request.get().url().encodedPath());
+    }
     private final AtomicReference<Request> request = new AtomicReference<>();
     private FimTaleApiService api(String data) {
         OkHttpClient client = new OkHttpClient.Builder().addInterceptor(chain -> {
