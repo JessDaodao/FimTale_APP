@@ -159,6 +159,8 @@ public class SearchActivity extends AppCompatActivity {
                 .setNegativeButton("取消", null)
                 .show());
         loadingStatus.setOnClickListener(v -> submitSearch());
+        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> isLoading
+                || (recyclerView.getVisibility() == View.VISIBLE && recyclerView.canScrollVertically(-1)));
         swipeRefreshLayout.setOnRefreshListener(() -> {
             swipeRefreshLayout.setRefreshing(false);
             if (!searchInput.getText().toString().trim().isEmpty()) loadTopics(1);

@@ -159,7 +159,7 @@ public class ReviewQueueTest {
         launch(); long now = System.currentTimeMillis();
         assertEquals(Section.READY, ReviewQueueViewModel.section(model.reviews.get(0), now));
         assertEquals(Section.READY, ReviewQueueViewModel.section(model.reviews.get(1), now));
-        assertEquals(Section.WAITING, ReviewQueueViewModel.section(model.reviews.get(2), now));
+        assertEquals(Section.READY, ReviewQueueViewModel.section(model.reviews.get(2), now));
         assertEquals(Section.PENDING, ReviewQueueViewModel.section(model.reviews.get(3), now));
         assertEquals(Section.COMPLETED, ReviewQueueViewModel.section(model.reviews.get(4), now));
         assertFalse(model.canSubmit(model.reviews.get(2))); assertFalse(model.canSubmit(model.reviews.get(3)));

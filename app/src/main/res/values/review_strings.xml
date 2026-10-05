@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="review_queue_title">我的审核</string>
+    <string name="review_summary">%1$d 个作品</string>
     <string name="review_ready">可提交</string>
     <string name="review_pending">审核中</string>
     <string name="review_waiting">等待重新提交</string>

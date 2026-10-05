@@ -74,6 +74,8 @@ public class AccountSessionsActivity extends AppCompatActivity {
         tokenView = new TextInputState(findViewById(R.id.accountTokenLayout), findViewById(R.id.accountToken),
                 findViewById(R.id.accountCopyToken));
         findViewById(R.id.accountRefresh).setOnClickListener(v -> loadSessions());
+        com.fimtale.ui.PullToRefresh.attach(scroll, this::loadSessions,
+                () -> !closed && sessionsCall == null && logoutCall == null && createTokenCall == null);
         findViewById(R.id.accountCreateToken).setOnClickListener(v -> createApiToken());
         tokenView.copy.setOnClickListener(v -> copyToken());
         if (!UserPreferences.isLoggedIn(this)) {

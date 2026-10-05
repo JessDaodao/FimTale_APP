@@ -75,7 +75,8 @@ public class MdiLayoutTest {
                         count++;
                     }
                 }
-                assertTrue(context.getResources().getResourceEntryName(resource), count > 0);
+                if (resource == R.menu.bottom_nav_menu) assertEquals(0, count);
+                else assertTrue(context.getResources().getResourceEntryName(resource), count > 0);
             }
             for (int percent = 0; percent <= 100; percent++) {
                 assertGlyph(MdiIcons.battery(context, percent, false));

@@ -119,6 +119,10 @@ public class UserDetailActivity extends AppCompatActivity {
         moreMenu = new com.fimtale.ui.BottomSheetMenu(this, R.menu.user_more_menu, this::onOptionsItemSelected);
 
         initView();
+        com.fimtale.ui.PullToRefresh.attach(scrollView, () -> {
+            loadData(currentUsername);
+            loadUserTopics(currentUsername, 1);
+        }, () -> !isLoading && loadingSkeleton.getVisibility() != View.VISIBLE);
         loadData(username);
         loadUserTopics(username, 1);
     }

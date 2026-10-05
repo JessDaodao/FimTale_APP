@@ -7,6 +7,7 @@
     tools:context=".ui.ProfileFragment">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/profileScroll"
         android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
     <LinearLayout
         android:id="@+id/contentLayout"

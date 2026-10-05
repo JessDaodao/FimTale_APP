@@ -110,6 +110,10 @@ public class TagArticlesActivity extends AppCompatActivity {
         topicAdapter = new TopicAdapter(topicViewItemList);
         recyclerView.setAdapter(new ConcatAdapter(topicAdapter, loadingFooter));
         recyclerView.setItemAnimator(null);
+        com.fimtale.ui.PullToRefresh.attach(recyclerView, () -> {
+            tagInfo = null;
+            fetchTagTopics(1);
+        }, () -> !isLoading);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {

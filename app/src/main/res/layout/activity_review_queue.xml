@@ -6,15 +6,28 @@
     android:orientation="vertical"
     android:background="?android:attr/colorBackground">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/reviewList"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/reviewPager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.fimtale.ui.ShimmerSkeletonView
+        android:id="@+id/reviewSkeleton"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingStart="8dp"
-        android:paddingTop="88dp"
-        android:paddingEnd="8dp"
-        android:paddingBottom="8dp" />
+        android:layout_marginTop="148dp"
+        android:background="?android:attr/colorBackground"
+        android:visibility="gone" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/reviewTabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="88dp"
+        android:background="?android:attr/colorBackground"
+        app:tabMode="fixed"
+        app:tabGravity="fill"
+        app:tabIndicatorFullWidth="false" />
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"

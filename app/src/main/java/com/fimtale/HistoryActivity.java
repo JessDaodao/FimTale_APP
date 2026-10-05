@@ -108,6 +108,7 @@ public class HistoryActivity extends AppCompatActivity {
         });
         recyclerView.setAdapter(new ConcatAdapter(adapter, loadingFooter));
         recyclerView.setItemAnimator(null);
+        com.fimtale.ui.PullToRefresh.attach(recyclerView, () -> loadHistory(1), () -> !isLoading);
 
         loadHistory(1);
     }

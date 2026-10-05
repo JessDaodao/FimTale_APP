@@ -203,6 +203,10 @@ public class TopicDetailActivity extends AppCompatActivity {
         }
 
         setupClickListeners();
+        com.fimtale.ui.PullToRefresh.attach(scrollView, () -> {
+            fetchTopicDetail(currentTopicId);
+            commentsSection.refresh();
+        }, () -> loadingSkeleton.getVisibility() != View.VISIBLE && commentCall == null);
     }
 
     private void setupViews() {

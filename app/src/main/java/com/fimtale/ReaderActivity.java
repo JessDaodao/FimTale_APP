@@ -193,6 +193,8 @@ public class ReaderActivity extends AppCompatActivity {
     private ChapterListAdapter chapterListAdapter;
     
     private boolean isLoadingChapter = false;
+    private Call<TopicDetailResponse> refreshWorkCall;
+    private Call<com.fimtale.model.ChapterResponse> refreshChapterCall;
     private boolean canTriggerChapterChange = false;
     private GestureDetector gestureDetector;
 
@@ -271,6 +273,9 @@ public class ReaderActivity extends AppCompatActivity {
 
         viewPager = findViewById(R.id.viewPager);
         recyclerView = findViewById(R.id.recyclerView);
+        com.fimtale.ui.PullToRefresh.attach(findViewById(R.id.readerContent), this::refreshReading,
+                () -> !isLoadingChapter && !isMenuVisible && refreshWorkCall == null && refreshChapterCall == null,
+                this::readerCanScrollUp);
         menuOverlay = findViewById(R.id.menuOverlay);
         dimLayer = findViewById(R.id.dimLayer);
         topToolbar = findViewById(R.id.topToolbar);
@@ -700,6 +705,72 @@ public class ReaderActivity extends AppCompatActivity {
     private void fetchChapterContent(int topicId) {
         fetchChapterContent(topicId, false);
     }
+
+    private boolean readerCanScrollUp() {
+        if (recyclerView.getVisibility() == View.VISIBLE) return recyclerView.canScrollVertically(-1);
+        RecyclerView pagesView = (RecyclerView) viewPager.getChildAt(0);
+        RecyclerView.ViewHolder page = pagesView.findViewHolderForAdapterPosition(viewPager.getCurrentItem());
+        return page != null && page.itemView.canScrollVertically(-1);
+    }
+
+    private void refreshReading() {
+        final int chapterId = currentTopicId;
+        Toast.makeText(this, "正在刷新章节", Toast.LENGTH_SHORT).show();
+        refreshWorkCall = RetrofitClient.getInstance().getWork(rootTopicId);
+        refreshWorkCall.enqueue(new Callback<TopicDetailResponse>() {
+            @Override public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
+                if (isDestroyed() || isFinishing() || call != refreshWorkCall) return;
+                refreshWorkCall = null;
+                TopicDetailResponse data = response.body();
+                if (!response.isSuccessful() || data == null || data.getTopicInfo() == null) { refreshReadingFailed(); return; }
+                applyNavigation(data);
+                CacheManager.getInstance(ReaderActivity.this).cacheChapterMenu(rootTopicId, data);
+                if (chapterId == 0) {
+                    TopicInfo work = data.getTopicInfo();
+                    replaceRefreshedChapter(createLoadedChapter(0, work.getTitle(), work.getContent()));
+                    return;
+                }
+                refreshChapterCall = RetrofitClient.getInstance().getChapter(chapterId);
+                refreshChapterCall.enqueue(new Callback<com.fimtale.model.ChapterResponse>() {
+                    @Override public void onResponse(Call<com.fimtale.model.ChapterResponse> chapterCall, Response<com.fimtale.model.ChapterResponse> response) {
+                        if (isDestroyed() || isFinishing() || chapterCall != refreshChapterCall) return;
+                        refreshChapterCall = null;
+                        com.fimtale.model.ChapterResponse data = response.body();
+                        if (!response.isSuccessful() || data == null || data.chapter == null || data.chapter.workId != rootTopicId) {
+                            refreshReadingFailed(); return;
+                        }
+                        CacheManager.getInstance(ReaderActivity.this).cacheChapter(data.chapter.id, rootTopicId,
+                                data.chapter.id, data.chapter.title, data.chapter.content, null);
+                        replaceRefreshedChapter(createLoadedChapter(data.chapter.id, data.chapter.title, data.chapter.content));
+                    }
+                    @Override public void onFailure(Call<com.fimtale.model.ChapterResponse> call, Throwable error) {
+                        if (isDestroyed() || isFinishing() || call != refreshChapterCall) return;
+                        refreshChapterCall = null; refreshReadingFailed();
+                    }
+                });
+            }
+            @Override public void onFailure(Call<TopicDetailResponse> call, Throwable error) {
+                if (isDestroyed() || isFinishing() || call != refreshWorkCall) return;
+                refreshWorkCall = null; refreshReadingFailed();
+            }
+        });
+    }
+
+    private void replaceRefreshedChapter(LoadedChapter chapter) {
+        int position = indexOfLoadedChapter(chapter.id);
+        if (position < 0) return; // The reader may have navigated to a different branch during the request.
+        loadedChapters.set(position, chapter);
+        if (chapter.id == currentTopicId) {
+            contentReady = true;
+            chapterTitle = chapter.title; fullChapterContent = chapter.content; parsedSegments = chapter.segments;
+            topToolbar.setTitle(chapterTitle); tvChapterTitle.setText(chapterTitle);
+        }
+        rebuildReaderContent(true);
+    }
+
+    private void refreshReadingFailed() {
+        Toast.makeText(this, "刷新失败，已保留当前阅读内容", Toast.LENGTH_SHORT).show();
+    }
     
     private TopicDetailResponse workData;
     private final com.fimtale.editor.AuthoringAccess editorAccess = new com.fimtale.editor.AuthoringAccess(this);
@@ -1004,6 +1075,8 @@ public class ReaderActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (refreshWorkCall != null) { refreshWorkCall.cancel(); refreshWorkCall = null; }
+        if (refreshChapterCall != null) { refreshChapterCall.cancel(); refreshChapterCall = null; }
         if (moreMenu != null) moreMenu.dismiss();
         if (readerCommentsSheetPanel != null) readerCommentsSheetPanel.close();
         if (readerCommentsSheet != null) readerCommentsSheet.dismiss();

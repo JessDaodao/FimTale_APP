@@ -126,6 +126,8 @@ public class ContentFiltersActivity extends AppCompatActivity {
         findViewById(R.id.filterNone).setOnClickListener(v -> saveFilter(new ContentFilterDef(0, null), filterPresets, "已关闭内容过滤"));
         findViewById(R.id.filterApply).setOnClickListener(v -> saveFilter(editorDefinition(), filterPresets, "过滤设置已应用"));
         findViewById(R.id.filterSavePreset).setOnClickListener(v -> showSavePresetDialog());
+        com.fimtale.ui.PullToRefresh.attach(scroll, () -> load(true),
+                () -> !closed && userCall == null && defaultCall == null && blockCall == null && saveCall == null);
         if (!UserPreferences.isLoggedIn(this)) {
             startActivity(new Intent(this, LoginActivity.class)); finish(); return;
         }
@@ -133,6 +135,10 @@ public class ContentFiltersActivity extends AppCompatActivity {
     }
 
     private void load() {
+        load(false);
+    }
+
+    private void load(boolean preserveEditor) {
         if (closed) return;
         setLoading(true);
         String token = UserPreferences.getToken(this);
@@ -146,9 +152,9 @@ public class ContentFiltersActivity extends AppCompatActivity {
                 UserMaterial material = user.material == null ? new UserMaterial() : user.material;
                 activeFilter = material.contentFilter == null ? null : material.contentFilter.copy();
                 filterPresets.clear(); filterPresets.addAll(material.presets());
-                seedEditor(activeFilter);
+                if (!preserveEditor) seedEditor(activeFilter);
                 renderAll();
-                loadDefault(token);
+                loadDefault(token, preserveEditor);
                 loadBlocked(token);
             }
             @Override public void onFailure(@NonNull Call<CurrentUser> call, @NonNull Throwable error) {
@@ -158,13 +164,13 @@ public class ContentFiltersActivity extends AppCompatActivity {
         });
     }
 
-    private void loadDefault(String token) {
+    private void loadDefault(String token, boolean preserveEditor) {
         defaultCall = RetrofitClient.getInstance().getDefaultContentFilter(token);
         defaultCall.enqueue(new Callback<ContentFilterDef>() {
             @Override public void onResponse(@NonNull Call<ContentFilterDef> call, @NonNull Response<ContentFilterDef> response) {
                 if (!valid(call, defaultCall)) return;
                 defaultCall = null; if (response.isSuccessful()) defaultFilter = response.body();
-                if (activeFilter == null && defaultFilter != null) { seedEditor(defaultFilter); renderAll(); }
+                if (!preserveEditor && activeFilter == null && defaultFilter != null) { seedEditor(defaultFilter); renderAll(); }
                 setLoading(false);
             }
             @Override public void onFailure(@NonNull Call<ContentFilterDef> call, @NonNull Throwable error) {

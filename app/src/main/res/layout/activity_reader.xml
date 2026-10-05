@@ -7,6 +7,8 @@
     android:background="?android:attr/colorBackground"
     tools:context=".ReaderActivity">
 
+    <FrameLayout android:id="@+id/readerContent"
+        android:layout_width="match_parent" android:layout_height="match_parent">
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/viewPager"
             android:layout_width="match_parent"
@@ -19,6 +21,7 @@
             android:visibility="gone"
             android:clipToPadding="false"
             android:scrollbars="none" />
+    </FrameLayout>
 
         <LinearLayout
             android:id="@+id/readerHeader"

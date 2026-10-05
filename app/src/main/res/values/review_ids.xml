@@ -1,1 +1,5 @@
-<resources><item name="action_review_refresh" type="id" /></resources>
+<resources>
+    <item name="reviewList" type="id" />
+    <item name="reviewPendingList" type="id" />
+    <item name="reviewCompletedList" type="id" />
+</resources>

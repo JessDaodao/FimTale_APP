@@ -84,6 +84,7 @@ public class ArticleListFragment extends Fragment {
         loadingFooter = new LoadingCardAdapter();
         recyclerView.setAdapter(new ConcatAdapter(topicAdapter, loadingFooter));
         recyclerView.setItemAnimator(null);
+        PullToRefresh.attach(recyclerView, () -> { currentPage = 1; loadTopics(); }, () -> !isLoading);
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override

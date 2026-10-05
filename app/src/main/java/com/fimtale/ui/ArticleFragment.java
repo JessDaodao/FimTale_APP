@@ -168,7 +168,7 @@ public class ArticleFragment extends Fragment {
     }
 
     private void setupSwipeRefresh() {
-        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> recyclerView.canScrollVertically(-1));
+        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> isLoading || recyclerView.canScrollVertically(-1));
         swipeRefreshLayout.setOnRefreshListener(() -> {
             swipeRefreshLayout.setRefreshing(false);
             currentPage = 1;

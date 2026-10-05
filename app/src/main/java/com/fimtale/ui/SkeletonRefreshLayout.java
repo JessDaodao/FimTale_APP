@@ -15,6 +15,11 @@ public final class SkeletonRefreshLayout extends SwipeRefreshLayout {
         refreshIndicator = getChildAt(0);
     }
     @Override protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-        return child != refreshIndicator && super.drawChild(canvas, child, drawingTime);
+        if (child != refreshIndicator) return super.drawChild(canvas, child, drawingTime);
+        // SwipeRefreshLayout delivers onRefresh when the indicator's animation ends.
+        // Keep drawing it transparently so that animation can advance and finish.
+        int saved = canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0);
+        try { return super.drawChild(canvas, child, drawingTime); }
+        finally { canvas.restoreToCount(saved); }
     }
 }

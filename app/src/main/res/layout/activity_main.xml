@@ -44,10 +44,10 @@
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
+        style="@style/Widget.Fimtale.TextBottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:menu="@menu/bottom_nav_menu"
-        app:itemIconSize="@dimen/mdi_icon_size"
         android:background="@android:color/transparent" />
 
 </LinearLayout>

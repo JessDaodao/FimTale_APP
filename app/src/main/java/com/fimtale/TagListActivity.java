@@ -71,6 +71,7 @@ public class TagListActivity extends AppCompatActivity {
         adapter = new TagAdapter(tagList, this);
         recyclerView.setAdapter(new ConcatAdapter(adapter, loadingFooter));
         recyclerView.setItemAnimator(null);
+        com.fimtale.ui.PullToRefresh.attach(recyclerView, () -> loadTags(1), () -> !isLoading);
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {

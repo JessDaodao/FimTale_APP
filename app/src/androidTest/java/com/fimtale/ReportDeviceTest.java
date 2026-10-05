@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import okhttp3.*;
 import okio.Buffer;
@@ -49,6 +50,9 @@ public class ReportDeviceTest {
     private Object originalApi;
     private int originalNight;
     private volatile int status = 200;
+    private volatile int workStatus = 200;
+    private volatile String preface = "用于检查原生举报弹窗。";
+    private final AtomicInteger workReads = new AtomicInteger(), userReads = new AtomicInteger();
     @Before public void setup() throws Exception {
         session = instrumentation.getTargetContext().getSharedPreferences("fimtale_session", 0); originalSession = session.getAll();
         session.edit().clear().putString("token", "report-device-fixture").putString("user_id", "9").commit();
@@ -58,13 +62,13 @@ public class ReportDeviceTest {
         OkHttpClient client = new OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor(chain -> {
             Request request = chain.request(); String path = request.url().encodedPath(), data; int code = 200;
             if (path.endsWith("report/create_report")) { submissions.add(request); data = "{\"id\":123}"; code = status; }
-            else if (path.endsWith("get_user_page_header")) data = "{\"user_id\":456,\"username\":\"测试用户\",\"intro\":\"用户举报入口测试\"}";
+            else if (path.endsWith("get_user_page_header")) { userReads.incrementAndGet(); data = "{\"user_id\":456,\"username\":\"测试用户\",\"intro\":\"用户举报入口测试\"}"; }
             else if (path.endsWith("get_user_page_tab")) data = "{\"content\":{\"items\":[],\"total\":0}}";
             else if (path.endsWith("get_user_auth")) data = "{\"user_id\":9}";
             else if (path.endsWith("get_comments")) data = "{\"items\":[],\"total\":0}";
             else if (path.endsWith("update_read_progress")) data = "{}";
-            else if (path.endsWith("get_work")) data = "{\"work\":{\"id\":71323,\"title\":\"举报测试文章\",\"intro\":\"文章举报入口测试\","
-                    + "\"preface\":\"用于检查原生举报弹窗。\",\"user\":{\"user_id\":456,\"username\":\"测试用户\"}},\"chapters\":[],\"viewer\":{}}";
+            else if (path.endsWith("get_work")) { workReads.incrementAndGet(); code = workStatus; data = "{\"work\":{\"id\":71323,\"title\":\"举报测试文章\",\"intro\":\"文章举报入口测试\","
+                    + "\"preface\":\"" + preface + "\",\"user\":{\"user_id\":456,\"username\":\"测试用户\"}},\"chapters\":[],\"viewer\":{}}"; }
             else throw new AssertionError("Unexpected endpoint " + path);
             return new Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(code).message("Fixture")
                     .body(ResponseBody.create(MediaType.get("application/json"), "{\"data\":" + data + ",\"msg\":\"请稍后再试\"}")).build();
@@ -103,6 +107,49 @@ public class ReportDeviceTest {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
         }
         bitmap.recycle();
+    }
+    private <T extends AppCompatActivity> void pull(ActivityScenario<T> scenario, int contentId) {
+        float[] gesture = new float[4];
+        scenario.onActivity(activity -> {
+            android.view.View view = activity.findViewById(contentId);
+            int[] location = new int[2]; view.getLocationOnScreen(location);
+            gesture[0] = gesture[2] = location[0] + view.getWidth() * .85f;
+            gesture[1] = location[1] + view.getHeight() * .3f;
+            gesture[3] = location[1] + view.getHeight() * .8f;
+        });
+        DeviceGestures.swipe(instrumentation, gesture[0], gesture[1], gesture[2], gesture[3]);
+    }
+    private Object field(Object instance, String name) {
+        try { Field field = instance.getClass().getDeclaredField(name); field.setAccessible(true); return field.get(instance); }
+        catch (ReflectiveOperationException error) { throw new AssertionError(error); }
+    }
+    @Test public void detailPagesAndReaderSupportPullRefreshAndKeepTextOnFailure() throws Exception {
+        Intent work = new Intent(instrumentation.getTargetContext(), TopicDetailActivity.class).putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, 71323);
+        try (ActivityScenario<TopicDetailActivity> scenario = ActivityScenario.launch(work)) {
+            await(scenario, activity -> "举报测试文章".contentEquals(activity.getSupportActionBar().getTitle()));
+            int before = workReads.get(); pull(scenario, R.id.scrollView);
+            await(scenario, activity -> workReads.get() > before && activity.findViewById(R.id.scrollView).isShown());
+        }
+        Intent user = new Intent(instrumentation.getTargetContext(), UserDetailActivity.class).putExtra(UserDetailActivity.EXTRA_USERNAME, "测试用户");
+        try (ActivityScenario<UserDetailActivity> scenario = ActivityScenario.launch(user)) {
+            await(scenario, activity -> "测试用户".contentEquals(((TextView) activity.findViewById(R.id.tvUsername)).getText()));
+            int before = userReads.get(); pull(scenario, R.id.scrollView);
+            await(scenario, activity -> userReads.get() > before && activity.findViewById(R.id.scrollView).isShown());
+        }
+        Intent reader = new Intent(instrumentation.getTargetContext(), ReaderActivity.class)
+                .putExtra(ReaderActivity.EXTRA_WORK_ID, 71323).putExtra(ReaderActivity.EXTRA_CHAPTER_ID, 0);
+        try (ActivityScenario<ReaderActivity> scenario = ActivityScenario.launch(reader)) {
+            await(scenario, activity -> Boolean.TRUE.equals(field(activity, "contentReady")));
+            scenario.onActivity(activity -> activity.findViewById(R.id.guideOverlay).setVisibility(android.view.View.GONE));
+            preface = "刷新后的章节内容";
+            pull(scenario, R.id.readerContent);
+            await(scenario, activity -> String.valueOf(field(activity, "fullChapterContent")).contains(preface));
+            int before = workReads.get(); workStatus = 503;
+            pull(scenario, R.id.readerContent);
+            await(scenario, activity -> workReads.get() > before && field(activity, "refreshWorkCall") == null);
+            scenario.onActivity(activity -> assertTrue(String.valueOf(field(activity, "fullChapterContent")).contains(preface)));
+        }
+        assertTrue(submissions.isEmpty());
     }
     private AccessibilityNodeInfo findLabel(AccessibilityNodeInfo node, String label) {
         if (node == null) return null;

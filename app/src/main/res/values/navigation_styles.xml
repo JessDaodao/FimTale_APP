@@ -1,0 +1,17 @@
+<resources>
+    <style name="Widget.Fimtale.TextBottomNavigation" parent="Widget.Material3.BottomNavigationView">
+        <item name="android:minHeight">56dp</item>
+        <item name="itemIconSize">0dp</item>
+        <item name="itemActiveIndicatorStyle">@null</item>
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="itemHorizontalTranslationEnabled">false</item>
+        <item name="itemPaddingTop">0dp</item>
+        <item name="itemPaddingBottom">0dp</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.Fimtale.BottomNavigation</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.Fimtale.BottomNavigation</item>
+        <item name="itemTextColor">@color/bottom_navigation_text</item>
+    </style>
+    <style name="TextAppearance.Fimtale.BottomNavigation" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textSize">16sp</item>
+    </style>
+</resources>

@@ -19,7 +19,7 @@ import retrofit2.Response;
 
 /** My reviews: the authenticated author endpoint determines ownership, without an editor-role gate. */
 public class ReviewQueueViewModel extends AndroidViewModel {
-    public enum Section { READY, PENDING, WAITING, COMPLETED }
+    public enum Section { READY, PENDING, COMPLETED }
     public final MutableLiveData<Integer> changes = new MutableLiveData<>(0);
     public final List<ReviewEntry> reviews = new ArrayList<>();
     public boolean loading, mutating, uncertain, needsLogin, loaded;
@@ -34,10 +34,10 @@ public class ReviewQueueViewModel extends AndroidViewModel {
 
     public ReviewQueueViewModel(@NonNull Application application) { super(application); }
     public static Section section(ReviewEntry entry, long now) {
-        if (entry.canSubmit(now)) return Section.READY;
         if (entry.status == ReviewEntry.PENDING) return Section.PENDING;
         if (entry.status == ReviewEntry.PASSED) return Section.COMPLETED;
-        return Section.WAITING;
+        // Rejected works stay with submissions while their resubmission deadline is pending.
+        return Section.READY;
     }
     private boolean current() { return !session.isEmpty() && session.equals(UserPreferences.getToken(getApplication())); }
     private void changed() { changes.setValue(changes.getValue() + 1); }

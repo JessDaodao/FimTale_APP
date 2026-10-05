@@ -105,6 +105,7 @@ public class FavoritesActivity extends AppCompatActivity {
         adapter = new TopicAdapter(topics);
         recyclerView.setAdapter(new ConcatAdapter(adapter, loadingFooter));
         recyclerView.setItemAnimator(null);
+        com.fimtale.ui.PullToRefresh.attach(recyclerView, () -> loadFavorites(1), () -> !isLoading);
 
         loadFavorites(1);
     }

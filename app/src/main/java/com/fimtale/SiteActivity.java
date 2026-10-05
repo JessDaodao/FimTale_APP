@@ -58,6 +58,7 @@ public class SiteActivity extends AppCompatActivity {
         startPath = path;
         toolbar.setTitle("FimTale");
         webView = findViewById(R.id.site_webview);
+        com.fimtale.ui.PullToRefresh.attach(webView, webView::reload, () -> !loginOpening);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setAllowFileAccess(false);

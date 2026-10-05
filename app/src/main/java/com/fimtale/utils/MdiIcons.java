@@ -47,10 +47,7 @@ public final class MdiIcons {
             MenuItem item = menu.getItem(i);
             int id = item.getItemId();
             String name = null;
-            if (id == R.id.nav_home) name = "home";
-            else if (id == R.id.nav_article) name = "book-open-page-variant";
-            else if (id == R.id.nav_profile) name = "account";
-            else if (id == R.id.action_filter) name = menuRes == R.menu.menu_tag_list ? "magnify" : "filter-variant";
+            if (id == R.id.action_filter) name = menuRes == R.menu.menu_tag_list ? "magnify" : "filter-variant";
             else if (id == R.id.action_search) name = "magnify";
             else if (id == R.id.action_publish || id == R.id.action_edit_work) name = "pencil";
             else if (id == R.id.action_editor_metadata || id == R.id.action_settings) name = "cog";

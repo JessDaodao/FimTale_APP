@@ -1,5 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="20dp" android:paddingVertical="16dp">
     <TextView android:id="@+id/reviewMessage" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:padding="16dp" android:gravity="center" android:accessibilityLiveRegion="polite" android:textColor="?attr/colorOnSurfaceVariant" />
     <com.google.android.material.button.MaterialButton android:id="@+id/reviewRetry" style="@style/Widget.Material3.Button.TextButton"

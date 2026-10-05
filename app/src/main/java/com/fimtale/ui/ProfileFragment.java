@@ -82,6 +82,7 @@ public class ProfileFragment extends Fragment {
 
         setupButtons();
         setupEmptyState();
+        PullToRefresh.attach(view.findViewById(R.id.profileScroll), this::loadContent, () -> isAdded());
 
         requireActivity().addMenuProvider(new MenuProvider() {
             @Override

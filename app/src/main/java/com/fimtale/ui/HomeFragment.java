@@ -164,6 +164,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupSwipeRefresh() {
+        swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> pendingHomeRequests > 0 || homeList.canScrollVertically(-1));
         swipeRefreshLayout.setOnRefreshListener(() -> {
             swipeRefreshLayout.setRefreshing(false);
             fetchHomePageData();

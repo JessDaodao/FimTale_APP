@@ -13,6 +13,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -24,6 +25,7 @@ import com.fimtale.review.ReviewActionDialog;
 import com.fimtale.review.ReviewQueueViewModel;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.tabs.TabLayout;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
@@ -50,6 +52,7 @@ public class ReviewQueueDeviceTest {
     private SharedPreferences session;
     private Map<String, ?> originalSession;
     private final AtomicInteger writes = new AtomicInteger();
+    private final AtomicInteger reads = new AtomicInteger();
 
     @Before public void setup() throws Exception {
         session = instrumentation.getTargetContext().getSharedPreferences("fimtale_session", 0); originalSession = session.getAll();
@@ -61,6 +64,7 @@ public class ReviewQueueDeviceTest {
             String path = chain.request().url().encodedPath();
             if (!"GET".equals(chain.request().method())) { writes.incrementAndGet(); throw new AssertionError("Unexpected write in visual fixture"); }
             if (!path.endsWith("get_review_entries")) throw new AssertionError("Unexpected endpoint " + path);
+            reads.incrementAndGet();
             StringBuilder rows = new StringBuilder("[");
             for (int i = 0; i < 20; i++) {
                 if (i > 0) rows.append(',');
@@ -112,7 +116,7 @@ public class ReviewQueueDeviceTest {
         if (view instanceof TextView) assertFalse(((TextView) view).getText().toString().contains("审核员"));
         if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) checkNoReviewer(((ViewGroup) view).getChildAt(i));
     }
-    @Test public void authorCardsAreFilledWithoutReviewerChipsAndHeaderStaysFixed() throws Exception {
+    @Test public void authorRowsHaveDividersWithoutReviewerChipsAndHeaderStaysFixed() throws Exception {
         try (ActivityScenario<ReviewQueueActivity> scenario = ActivityScenario.launch(ReviewQueueActivity.class)) {
             loaded(scenario); int[] before = new int[2];
             scenario.onActivity(activity -> {
@@ -120,27 +124,71 @@ public class ReviewQueueDeviceTest {
                 float dp = activity.getResources().getDisplayMetrics().density;
                 assertEquals(16 * dp, header.getRadius(), 1); assertEquals(0, header.getCardElevation(), 0.1);
                 assertEquals(16 * dp, header.getLeft(), 1);
-                View refresh = activity.findViewById(R.id.action_review_refresh);
-                assertNotNull("Refresh action should be displayed in the floating header", refresh);
-                assertTrue(refresh.isShown());
-                assertTrue(refresh.getGlobalVisibleRect(new android.graphics.Rect()));
+                assertEquals(0, ((com.google.android.material.appbar.MaterialToolbar) activity.findViewById(R.id.toolbar)).getMenu().size());
+                TabLayout tabs = activity.findViewById(R.id.reviewTabs);
+                assertEquals(3, tabs.getTabCount());
+                assertEquals("可提交", tabs.getTabAt(0).getText());
+                assertEquals("审核中", tabs.getTabAt(1).getText());
+                assertEquals("已完成", tabs.getTabAt(2).getText());
                 Chip status = activity.findViewById(R.id.reviewStatus);
                 assertEquals(0, status.getChipStrokeWidth(), 0.1);
                 assertEquals("待提交", status.getText().toString());
-                MaterialCardView card = (MaterialCardView) status.getParent().getParent();
-                assertEquals(0, card.getStrokeWidth()); assertEquals(255, android.graphics.Color.alpha(card.getCardBackgroundColor().getDefaultColor()));
+                RecyclerView list = activity.findViewById(R.id.reviewList);
+                assertEquals(5, list.getAdapter().getItemCount()); // Three works plus summary and footer.
+                View row = list.findContainingItemView(status);
+                assertNotNull(row); assertFalse(row instanceof MaterialCardView);
+                assertTrue(row.findViewById(R.id.reviewDivider).isShown());
+                assertEquals(View.GONE, activity.findViewById(R.id.reviewSkeleton).getVisibility());
                 assertTrue(activity.findViewById(R.id.reviewSubmit).isEnabled());
                 checkNoReviewer(activity.findViewById(R.id.reviewList));
             });
             capture("my-reviews");
-            scenario.onActivity(activity -> ((RecyclerView) activity.findViewById(R.id.reviewList)).scrollBy(0, 650));
+            int requestsBeforePull = reads.get();
+            float[] gesture = new float[4];
+            scenario.onActivity(activity -> {
+                View tabs = activity.findViewById(R.id.reviewTabs);
+                int[] point = new int[2]; tabs.getLocationOnScreen(point);
+                gesture[0] = gesture[2] = point[0] + tabs.getWidth() / 2f;
+                gesture[1] = point[1] + tabs.getHeight() + 32;
+                gesture[3] = gesture[1] + 300 * activity.getResources().getDisplayMetrics().density;
+            });
+            DeviceGestures.swipe(instrumentation, gesture[0], gesture[1], gesture[2], gesture[3]);
+            long deadline = SystemClock.uptimeMillis() + 8000;
+            while (reads.get() == requestsBeforePull && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(30);
+            loaded(scenario);
+            assertEquals(requestsBeforePull + 1, reads.get());
+            scenario.onActivity(activity -> ((ViewPager2) activity.findViewById(R.id.reviewPager)).setCurrentItem(2, false));
+            instrumentation.waitForIdleSync();
+            scenario.recreate(); loaded(scenario);
+            scenario.onActivity(activity -> {
+                assertEquals(2, ((ViewPager2) activity.findViewById(R.id.reviewPager)).getCurrentItem());
+                assertEquals(2, ((TabLayout) activity.findViewById(R.id.reviewTabs)).getSelectedTabPosition());
+                RecyclerView list = activity.findViewById(R.id.reviewCompletedList);
+                assertEquals(3, list.getAdapter().getItemCount());
+                assertEquals("已通过", ((Chip) list.findViewById(R.id.reviewStatus)).getText());
+            });
+            capture("my-reviews-completed");
+            scenario.onActivity(activity -> ((ViewPager2) activity.findViewById(R.id.reviewPager)).setCurrentItem(1, false));
+            instrumentation.waitForIdleSync();
+            scenario.onActivity(activity -> {
+                RecyclerView list = activity.findViewById(R.id.reviewPendingList);
+                assertEquals(18, list.getAdapter().getItemCount());
+                list.scrollBy(0, 650);
+            });
             SystemClock.sleep(350); instrumentation.waitForIdleSync();
             scenario.onActivity(activity -> {
                 MaterialCardView header = activity.findViewById(R.id.toolbarContainer); int[] after = new int[2]; header.getLocationOnScreen(after);
                 assertArrayEquals(before, after); assertEquals(4 * activity.getResources().getDisplayMetrics().density, header.getCardElevation(), 0.1);
-                checkNoReviewer(activity.findViewById(R.id.reviewList));
+                assertFalse("Tabs should scroll out of view with the list",
+                        activity.findViewById(R.id.reviewTabs).getGlobalVisibleRect(new android.graphics.Rect()));
+                checkNoReviewer(activity.findViewById(R.id.reviewPendingList));
             });
-            capture("my-reviews-scrolled"); assertEquals(0, writes.get());
+            capture("my-reviews-scrolled");
+            scenario.onActivity(activity -> ((ViewPager2) activity.findViewById(R.id.reviewPager)).setCurrentItem(2, false));
+            instrumentation.waitForIdleSync();
+            scenario.onActivity(activity -> assertTrue("Tabs should return on an unscrolled page",
+                    activity.findViewById(R.id.reviewTabs).getGlobalVisibleRect(new android.graphics.Rect())));
+            assertEquals(0, writes.get());
         }
     }
     @Test public void nativeSubmissionConfirmationSurvivesRecreationInNightTheme() throws Exception {

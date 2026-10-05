@@ -11,9 +11,11 @@ import com.fimtale.ui.ProfileFragment;
 import com.fimtale.utils.MdiIcons;
 import com.fimtale.utils.UpdateChecker;
 import com.fimtale.utils.UserPreferences;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.graphics.Rect;
+import android.view.Gravity;
 import android.view.View;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -41,7 +43,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-        MdiIcons.applyMenu(this, bottomNav.getMenu(), R.menu.bottom_nav_menu);
+        // Material positions labels by their baseline at the bottom for icon-and-text items.
+        // Center the label group itself for text-only navigation, independently of font size.
+        for (int i = 0; i < bottomNav.getMenu().size(); i++) {
+            View item = bottomNav.findViewById(bottomNav.getMenu().getItem(i).getItemId());
+            View labels = item.findViewById(
+                    com.google.android.material.R.id.navigation_bar_item_labels_group);
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) labels.getLayoutParams();
+            params.gravity = Gravity.CENTER;
+            labels.setLayoutParams(params);
+        }
 
         final View rootView = findViewById(android.R.id.content);
         rootView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {

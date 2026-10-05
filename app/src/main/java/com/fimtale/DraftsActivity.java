@@ -82,6 +82,7 @@ public class DraftsActivity extends AppCompatActivity {
         summaryText = getString(R.string.drafts_local_hint);
         list.setLayoutManager(new LinearLayoutManager(this)); list.setAdapter(new ConcatAdapter(summaryAdapter, adapter));
         list.setItemAnimator(null);
+        com.fimtale.ui.PullToRefresh.attach(list, this::refresh, () -> !loading);
         View titleCard = findViewById(R.id.toolbarContainer);
         // The list scrolls behind the fixed card, including its summary row.
         titleCard.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
