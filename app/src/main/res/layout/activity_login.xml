@@ -2,10 +2,105 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical" android:background="?android:attr/colorBackground">
     <com.fimtale.ui.icons.MdiToolbar
         android:id="@+id/toolbar" android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize" app:mdiNavigationIcon="arrow-left" />
-    <WebView android:id="@+id/login_webview" android:layout_width="match_parent"
-        android:layout_height="0dp" android:layout_weight="1" />
+        android:layout_height="?attr/actionBarSize" app:title="@string/login_title"
+        app:mdiNavigationIcon="arrow-left" app:navigationContentDescription="@string/login_back" />
+    <androidx.core.widget.NestedScrollView android:id="@+id/loginScroll"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:clipToPadding="false" android:paddingHorizontal="24dp" android:paddingBottom="24dp">
+        <LinearLayout android:id="@+id/loginForm" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+            android:orientation="vertical">
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="24dp" android:text="@string/login_welcome"
+                android:textAppearance="?attr/textAppearanceHeadlineMedium" />
+            <com.google.android.material.tabs.TabLayout android:id="@+id/loginTabs"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="24dp" android:layout_marginBottom="16dp"
+                android:background="@android:color/transparent" app:tabMode="fixed" app:tabGravity="fill" />
+            <com.google.android.material.textview.MaterialTextView android:id="@+id/loginExplanation"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginVertical="12dp" android:visibility="gone"
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:textColor="?attr/colorOnSurfaceVariant" />
+            <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/loginAccountLayout"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:hint="@string/login_account"
+                android:visibility="visible">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/loginAccount"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="text" android:maxLines="1" android:singleLine="true"
+                    android:saveEnabled="false" android:imeOptions="actionNext" android:autofillHints="username" />
+            </com.fimtale.ui.icons.MdiTextInputLayout>
+            <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/loginEmailLayout"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:hint="@string/login_email"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/loginEmail"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress" android:maxLines="1" android:singleLine="true"
+                    android:saveEnabled="false" android:imeOptions="actionNext" android:autofillHints="emailAddress" />
+            </com.fimtale.ui.icons.MdiTextInputLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/loginSendEmail"
+                style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_gravity="end"
+                android:text="@string/login_send_email" android:visibility="gone" />
+            <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/loginEmailConfirmationLayout"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:hint="@string/login_email_confirmation"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/loginEmailConfirmation"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress" android:maxLines="1" android:singleLine="true"
+                    android:saveEnabled="false" android:imeOptions="actionNext" android:importantForAutofill="no" />
+            </com.fimtale.ui.icons.MdiTextInputLayout>
+            <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/loginPasswordLayout"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:hint="@string/login_password"
+                android:visibility="visible" app:endIconMode="password_toggle">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/loginPassword"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textPassword" android:maxLines="1" android:singleLine="true"
+                    android:saveEnabled="false" android:imeOptions="actionDone" android:autofillHints="password" />
+            </com.fimtale.ui.icons.MdiTextInputLayout>
+            <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/loginPasswordConfirmationLayout"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:hint="@string/login_password_confirmation"
+                android:visibility="gone" app:endIconMode="password_toggle">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/loginPasswordConfirmation"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textPassword" android:maxLines="1" android:singleLine="true"
+                    android:saveEnabled="false" android:imeOptions="actionDone" android:autofillHints="newPassword" />
+            </com.fimtale.ui.icons.MdiTextInputLayout>
+            <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/loginCodeLayout"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" android:hint="@string/login_code"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/loginCode"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textVisiblePassword" android:maxLines="1" android:singleLine="true"
+                    android:saveEnabled="false" android:imeOptions="actionDone" android:importantForAutofill="no" />
+            </com.fimtale.ui.icons.MdiTextInputLayout>
+            <com.google.android.material.textview.MaterialTextView android:id="@+id/loginMessage"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:accessibilityLiveRegion="polite"
+                android:textAppearance="?attr/textAppearanceBodyMedium" android:visibility="gone" />
+            <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/loginProgress"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:indeterminate="true" android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/loginSubmit"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:minHeight="52dp" android:text="@string/login_action" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/loginForgot"
+                style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+                android:text="@string/login_forgot" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/loginReturn"
+                style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+                android:text="@string/login_return" android:visibility="gone" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_title">登录 FimTale</string>
+    <string name="login_back">返回</string>
+    <string name="login_welcome">欢迎来到 FimTale</string>
+    <string name="login_password_tab">账号密码</string>
+    <string name="login_email_tab">邮箱登录</string>
+    <string name="login_register_tab">注册</string>
+    <string name="login_account">用户名或邮箱</string>
+    <string name="login_username">用户名</string>
+    <string name="login_email">邮箱</string>
+    <string name="login_email_confirmation">确认邮箱</string>
+    <string name="login_password">密码</string>
+    <string name="login_password_confirmation">确认密码</string>
+    <string name="login_code">邮件中的登录口令</string>
+    <string name="login_action">登录</string>
+    <string name="login_send_email">发送登录邮件</string>
+    <string name="login_send_reset">发送重置密码邮件</string>
+    <string name="login_forgot">忘记密码</string>
+    <string name="login_return">返回登录</string>
+    <string name="login_email_explanation">发送邮件后，将邮件中的一次性登录口令粘贴到下方即可登录。</string>
+    <string name="login_register_explanation">用户名可使用中文、英文、数字和下划线。密码长度为 6–100 位。</string>
+    <string name="login_reset_explanation">输入账号绑定的邮箱，我们会发送重置密码邮件。重置完成后，所有设备的登录状态与 API 密钥都将失效，需要重新登录。</string>
+    <string name="login_account_required">请输入用户名或邮箱</string>
+    <string name="login_username_required">请输入用户名</string>
+    <string name="login_password_required">请输入密码</string>
+    <string name="login_code_required">请输入邮件中的登录口令</string>
+    <string name="login_email_invalid">请输入有效的邮箱地址</string>
+    <string name="login_email_mismatch">两次输入的邮箱不一致</string>
+    <string name="login_password_length">密码长度应为 6–100 位</string>
+    <string name="login_password_mismatch">两次输入的密码不一致</string>
+    <string name="login_captcha_invalid">验证结果无效，请重试</string>
+    <string name="login_invalid_response">未能确认登录状态，请重试</string>
+    <string name="login_network_error">请求未能完成，请检查网络后重试；若已请求邮件，请先检查收件箱。</string>
+    <string name="login_email_sent">登录邮件已发送，请检查收件箱并复制登录口令。</string>
+    <string name="login_reset_sent">重置密码邮件已发送，请按邮件中的提示操作。</string>
+    <string name="login_registration_done">注册成功，请使用用户名和密码登录，并查收邮件验证邮箱。</string>
+    <string name="login_success">登录成功</string>
+</resources>

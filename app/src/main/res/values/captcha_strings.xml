@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="captcha_title">请完成验证码</string>
+    <string name="captcha_close">取消</string>
+    <string name="captcha_loading">正在加载验证，请稍候…</string>
+    <string name="captcha_switch">换一种验证方式</string>
+    <string name="captcha_retry">重试</string>
+    <string name="captcha_slow">验证似乎遇到问题或耗时较长，可继续等待，或更换验证方式。</string>
+    <string name="captcha_unsupported">当前环境不支持该验证方式。</string>
+    <string name="captcha_load_error">无法加载验证窗口，请重试。</string>
+</resources>

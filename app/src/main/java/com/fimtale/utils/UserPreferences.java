@@ -25,6 +25,12 @@ public class UserPreferences {
     private static SharedPreferences session(Context context) {
         return context.getSharedPreferences("fimtale_session", Context.MODE_PRIVATE);
     }
+    /** Publish a complete, verified session in one preferences transaction. */
+    public static void saveSession(Context context, String token, com.fimtale.model.CurrentUser user) {
+        session(context).edit().putString("token", token)
+                .putString(KEY_USER_ID, String.valueOf(user.id)).putString(KEY_USER_NAME, user.username)
+                .putString("avatar", user.getAvatar()).apply();
+    }
     public static void saveToken(Context context, String token) {
         session(context).edit().putString("token", token).apply();
     }

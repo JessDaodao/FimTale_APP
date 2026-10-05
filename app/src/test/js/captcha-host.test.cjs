@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const html = fs.readFileSync(path.resolve(__dirname, '../../main/assets/editor_captcha.html'), 'utf8');
+const html = fs.readFileSync(path.resolve(__dirname, '../../main/assets/captcha.html'), 'utf8');
 const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 
 function host(provider = 'turnstile') {

@@ -11,6 +11,11 @@ public class MdiTextInputLayout extends TextInputLayout {
         setErrorIconDrawable(MdiIcons.drawable(getContext(), "alert-circle"));
         if (getEndIconMode() == END_ICON_CLEAR_TEXT) {
             setEndIconDrawable(MdiIcons.drawable(getContext(), "close-circle"));
+        } else if (getEndIconMode() == END_ICON_PASSWORD_TOGGLE) {
+            android.graphics.drawable.StateListDrawable visibility = new android.graphics.drawable.StateListDrawable();
+            visibility.addState(new int[]{android.R.attr.state_checked}, MdiIcons.drawable(getContext(), "eye"));
+            visibility.addState(new int[]{}, MdiIcons.drawable(getContext(), "eye-off"));
+            setEndIconDrawable(visibility);
         }
     }
 }

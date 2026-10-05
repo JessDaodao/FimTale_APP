@@ -1,4 +1,4 @@
-package com.fimtale.editor;
+package com.fimtale.ui.captcha;
 
 import android.app.Instrumentation;
 import android.content.SharedPreferences;

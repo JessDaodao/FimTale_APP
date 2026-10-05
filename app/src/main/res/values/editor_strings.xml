@@ -12,14 +12,6 @@
     <string name="editor_done_metadata">完成</string>
     <string name="editor_submit_action">发表</string>
     <string name="editor_save_action">保存</string>
-    <string name="captcha_title">请完成验证码</string>
-    <string name="captcha_close">取消</string>
-    <string name="captcha_loading">正在加载验证，请稍候…</string>
-    <string name="captcha_switch">换一种验证方式</string>
-    <string name="captcha_retry">重试</string>
-    <string name="captcha_slow">验证似乎遇到问题或耗时较长，可继续等待，或更换验证方式。</string>
-    <string name="captcha_unsupported">当前环境不支持该验证方式。</string>
-    <string name="captcha_load_error">无法加载验证窗口，请重试。</string>
     <string name="editor_show_source">源码</string>
     <string name="editor_hide_source">收起源码</string>
     <string name="editor_show_source_description">显示全部 BBCode 标签</string>

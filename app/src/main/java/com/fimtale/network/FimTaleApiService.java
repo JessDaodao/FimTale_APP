@@ -1,6 +1,7 @@
 package com.fimtale.network;
 import com.fimtale.model.*;
 import com.fimtale.editor.*;
+import com.fimtale.auth.AuthRequests;
 import java.util.List;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -8,6 +9,16 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
+    // Explicit empty Token keeps guest requests independent of any previously saved session.
+    @Headers("Token: ") @POST("user/login") Call<String> login(@Body AuthRequests.PasswordLogin login,
+            @Query("captcha_response") String captcha, @Query("captcha_type") String provider);
+    @Headers("Token: ") @POST("user/request_email_login") Call<Void> requestEmailLogin(@Body AuthRequests.Email email,
+            @Query("captcha_response") String captcha, @Query("captcha_type") String provider);
+    @Headers("Token: ") @GET("user/verify_email_login") Call<String> verifyEmailLogin(@Query("token") String code);
+    @Headers("Token: ") @POST("user/register") Call<Void> register(@Body AuthRequests.Registration registration,
+            @Query("captcha_response") String captcha, @Query("captcha_type") String provider);
+    @Headers("Token: ") @POST("user/request_reset_password") Call<Void> requestResetPassword(@Body AuthRequests.Email email,
+            @Query("captcha_response") String captcha, @Query("captcha_type") String provider);
     @GET("work/get_drafts") Call<List<OnlineDraft.Summary>> getDrafts(@Header("Token") String token, @Query("prefix") List<String> prefixes);
     @GET("work/get_draft") Call<OnlineDraft> getDraft(@Header("Token") String token, @Query("draft_key") String key);
     @POST("work/save_draft") Call<OnlineDraft> saveDraft(@Header("Token") String token, @Body OnlineDraft.Save draft);

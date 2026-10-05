@@ -37,7 +37,7 @@ public class MdiLayoutTest {
             R.layout.activity_about, R.layout.activity_account_sessions,
             R.layout.activity_content_filters, R.layout.activity_drafts, R.layout.activity_editor,
             R.layout.activity_favorites, R.layout.activity_history, R.layout.activity_login,
-            R.layout.activity_main, R.layout.activity_reader, R.layout.activity_search,
+            R.layout.activity_main, R.layout.activity_reader, R.layout.activity_search, R.layout.activity_site,
             R.layout.activity_settings, R.layout.activity_tag_articles, R.layout.activity_tag_list,
             R.layout.activity_topic_detail, R.layout.activity_user_detail,
             R.layout.dialog_editor_metadata, R.layout.editor_metadata, R.layout.fragment_profile,
@@ -80,7 +80,8 @@ public class MdiLayoutTest {
                 assertGlyph(MdiIcons.battery(context, percent, false));
                 assertGlyph(MdiIcons.battery(context, percent, true));
             }
-            assertTrue(MdiIcons.drawable(context, "arrow-left").isAutoMirrored());
+            // Iconics uses its own flag when drawing; Drawable's base getter always returns false.
+            assertTrue(MdiIcons.drawable(context, "arrow-left").getAutoMirroredCompat());
         });
     }
 
@@ -116,6 +117,12 @@ public class MdiLayoutTest {
             assertGlyph(input.getErrorIconDrawable());
             if (input.getEndIconMode() == TextInputLayout.END_ICON_CLEAR_TEXT) {
                 assertGlyph(input.getEndIconDrawable());
+            } else if (input.getEndIconMode() == TextInputLayout.END_ICON_PASSWORD_TOGGLE) {
+                Drawable toggle = input.getEndIconDrawable();
+                toggle.setState(new int[]{android.R.attr.state_checked});
+                assertGlyph(toggle.getCurrent());
+                toggle.setState(new int[]{});
+                assertGlyph(toggle.getCurrent());
             }
             count++;
         }

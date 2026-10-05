@@ -1,4 +1,4 @@
-package com.fimtale.editor;
+package com.fimtale.ui.captcha;
 
 import android.app.Application;
 import android.os.Bundle;
@@ -116,6 +116,25 @@ public class CaptchaDialogTest {
         shadowOf(Looper.getMainLooper()).idle();
         assertEquals(1, completed.get());
         assertEquals("turnstile", CaptchaProviders.preferred(activity, available));
+    }
+
+    @Test public void callerResultChannelSurvivesRecreationAndDoesNotNotifyAnotherCaller() {
+        AtomicInteger login = new AtomicInteger(), editor = new AtomicInteger();
+        activity.getSupportFragmentManager().setFragmentResultListener("login", activity, (key, result) -> login.incrementAndGet());
+        activity.getSupportFragmentManager().setFragmentResultListener(CaptchaDialogFragment.RESULT_KEY, activity,
+                (key, result) -> editor.incrementAndGet());
+        CaptchaDialogFragment original = CaptchaDialogFragment.newInstance("login");
+        original.showNow(activity.getSupportFragmentManager(), "login_dialog");
+        android.content.res.Configuration rotated = new android.content.res.Configuration(activity.getResources().getConfiguration());
+        rotated.orientation = android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+        controller.configurationChange(rotated); activity = controller.get();
+        activity.getSupportFragmentManager().setFragmentResultListener("login", activity, (key, result) -> login.incrementAndGet());
+        activity.getSupportFragmentManager().setFragmentResultListener(CaptchaDialogFragment.RESULT_KEY, activity,
+                (key, result) -> editor.incrementAndGet());
+        CaptchaDialogFragment restored = (CaptchaDialogFragment) activity.getSupportFragmentManager().findFragmentByTag("login_dialog");
+        Map<String, Object> success = state(restored); success.put("token", "fixture-token");
+        send(restored, success); shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(1, login.get()); assertEquals(0, editor.get());
     }
 
     @Test public void nativeMaterialControlsShowProgressAndErrorsAndSwitchWithoutDismissing() {

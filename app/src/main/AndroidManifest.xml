@@ -75,6 +75,11 @@
         <activity
             android:name=".LoginActivity"
             android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Fimtale.FullTransparent" />
+        <activity
+            android:name=".SiteActivity"
+            android:exported="false"
             android:theme="@style/Theme.Fimtale.FullTransparent" />
 
         <!-- 用户详情页 -->

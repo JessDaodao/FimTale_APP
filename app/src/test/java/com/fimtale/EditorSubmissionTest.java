@@ -13,7 +13,7 @@ import android.widget.TextView;
 import androidx.lifecycle.ViewModelProvider;
 import com.fimtale.editor.EditorDraftStore;
 import com.fimtale.editor.EditorViewModel;
-import com.fimtale.editor.CaptchaDialogFragment;
+import com.fimtale.ui.captcha.CaptchaDialogFragment;
 import com.fimtale.editor.OnlineDraft;
 import com.fimtale.network.ApiDataConverter;
 import com.fimtale.network.FimTaleApiService;

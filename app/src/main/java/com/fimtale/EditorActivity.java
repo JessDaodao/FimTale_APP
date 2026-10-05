@@ -22,7 +22,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.fimtale.editor.EditorDocument;
 import com.fimtale.editor.BbCodeEditText;
 import com.fimtale.editor.EditorViewModel;
-import com.fimtale.editor.CaptchaDialogFragment;
+import com.fimtale.ui.captcha.CaptchaDialogFragment;
+import com.fimtale.ui.captcha.CaptchaDialogHost;
 import com.fimtale.editor.TagPickerDialog;
 import com.fimtale.editor.WorkInput;
 import com.fimtale.ui.FtemojiPicker;
@@ -36,7 +37,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
-/** Native authoring. WebView is used only for login and the captcha challenge. */
+/** Native authoring with the shared captcha dialog. */
 public class EditorActivity extends AppCompatActivity {
     public static final String EXTRA_WORK_ID = "editor_work_id", EXTRA_CHAPTER_ID = "editor_chapter_id";
     public static final String EXTRA_DRAFT_ID = "editor_draft_id";
@@ -51,7 +52,7 @@ public class EditorActivity extends AppCompatActivity {
     private TagPickerDialog tagPicker;
     private BottomSheetDialog metadataSheet;
     private View metadataSheetView;
-    private boolean captchaShowPending;
+    private CaptchaDialogHost captcha;
     private final ActivityResultLauncher<Intent> login = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (UserPreferences.isLoggedIn(this)) {
@@ -78,9 +79,8 @@ public class EditorActivity extends AppCompatActivity {
         setContentView(R.layout.activity_editor);
         com.fimtale.utils.EditorWindowStyle.apply(this);
         model = new ViewModelProvider(this).get(EditorViewModel.class);
-        getSupportFragmentManager().setFragmentResultListener(CaptchaDialogFragment.RESULT_KEY, this,
-                (key, result) -> model.captchaResult(result.getString(CaptchaDialogFragment.TOKEN),
-                        result.getString(CaptchaDialogFragment.PROVIDER)));
+        captcha = new CaptchaDialogHost(this, CaptchaDialogFragment.RESULT_KEY,
+                () -> model.captchaRequested, model::captchaResult);
         metadataVisible = state != null && state.getBoolean("metadata_visible");
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> leave());
@@ -217,23 +217,11 @@ public class EditorActivity extends AppCompatActivity {
         findViewById(R.id.editorWritingPanel).setVisibility(metadataVisible ? View.GONE : View.VISIBLE);
         findViewById(R.id.editorMetadataPanel).setVisibility(metadataVisible ? View.VISIBLE : View.GONE);
         renderMetadataSheetState();
-        syncCaptchaDialog();
-    }
-    private void syncCaptchaDialog() {
-        androidx.fragment.app.FragmentManager fragments = getSupportFragmentManager();
-        if (isFinishing() || isDestroyed() || fragments.isStateSaved()) return;
-        androidx.fragment.app.Fragment existing = fragments.findFragmentByTag(CaptchaDialogFragment.TAG);
-        if (model.captchaRequested && existing == null && !captchaShowPending) {
-            captchaShowPending = true;
-            new CaptchaDialogFragment().show(fragments.beginTransaction()
-                    .runOnCommit(() -> captchaShowPending = false), CaptchaDialogFragment.TAG);
-        } else if (!model.captchaRequested && existing instanceof CaptchaDialogFragment) {
-            ((CaptchaDialogFragment) existing).dismiss();
-        }
+        captcha.sync();
     }
     @Override protected void onPostResume() {
         super.onPostResume();
-        syncCaptchaDialog();
+        captcha.sync();
     }
     private void enableClassification() {
         if (model.document == null) return;

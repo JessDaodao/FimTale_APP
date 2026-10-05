@@ -1,4 +1,4 @@
-package com.fimtale.editor;
+package com.fimtale.ui.captcha;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
@@ -31,8 +31,18 @@ import java.util.UUID;
 
 /** A real vendor challenge inside a native dialog; no JavaScript-to-native bridge. */
 public class CaptchaDialogFragment extends DialogFragment {
-    public static final String TAG = "editor_captcha", RESULT_KEY = "editor_captcha_result";
+    public static final String TAG = "captcha_dialog", RESULT_KEY = "captcha_result";
     public static final String TOKEN = "token", PROVIDER = "provider";
+    private static final String REQUEST_KEY = "request_key";
+
+    /** Each caller owns its result channel, which also survives fragment recreation. */
+    public static CaptchaDialogFragment newInstance(String requestKey) {
+        CaptchaDialogFragment dialog = new CaptchaDialogFragment();
+        Bundle args = new Bundle();
+        args.putString(REQUEST_KEY, requestKey);
+        dialog.setArguments(args);
+        return dialog;
+    }
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Gson gson = new Gson();
     private final Map<String, String> keys = CaptchaProviders.configured();
@@ -118,7 +128,7 @@ public class CaptchaDialogFragment extends DialogFragment {
         attempt = UUID.randomUUID().toString();
         escapeOffered = false; escapeReason = null; loaded = false; interactive = false; widgetHeight = 100;
         renderState();
-        try (InputStream in = requireContext().getAssets().open("editor_captcha.html")) {
+        try (InputStream in = requireContext().getAssets().open("captcha.html")) {
             java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
             byte[] bytes = new byte[4096]; int count;
             while ((count = in.read(bytes)) != -1) buffer.write(bytes, 0, count);
@@ -186,7 +196,8 @@ public class CaptchaDialogFragment extends DialogFragment {
         settled = true;
         Bundle result = new Bundle();
         result.putString(TOKEN, token); result.putString(PROVIDER, token == null ? null : provider);
-        getParentFragmentManager().setFragmentResult(RESULT_KEY, result);
+        String requestKey = getArguments() == null ? RESULT_KEY : getArguments().getString(REQUEST_KEY, RESULT_KEY);
+        getParentFragmentManager().setFragmentResult(requestKey, result);
         dismissAllowingStateLoss();
     }
 
