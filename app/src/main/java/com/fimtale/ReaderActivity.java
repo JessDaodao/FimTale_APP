@@ -1,6 +1,13 @@
 package com.fimtale;
 
 import com.fimtale.utils.MdiIcons;
+import com.fimtale.utils.BbCodeRendering;
+import com.fimtale.utils.BbCodeText;
+import com.fimtale.utils.ReaderPagination;
+import android.widget.ScrollView;
+import android.text.SpannableStringBuilder;
+import android.text.SpannedString;
+import android.text.style.ClickableSpan;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,11 +18,8 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Html;
 import android.text.Layout;
 import android.text.SpannableString;
-import android.text.StaticLayout;
-import android.text.TextPaint;
 import android.text.Spanned;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
@@ -72,7 +76,6 @@ import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import io.noties.markwon.Markwon;
 import io.noties.markwon.ext.tables.TablePlugin;
-import io.noties.markwon.html.HtmlPlugin;
 import io.noties.markwon.image.glide.GlideImagesPlugin;
 import okhttp3.ResponseBody;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -85,8 +88,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -175,6 +176,9 @@ public class ReaderActivity extends AppCompatActivity {
     private boolean initialProgressApplied = false;
     private int lastWidth = 0;
     private int lastHeight = 0;
+    private int pagedViewportWidth;
+    private int pagedViewportHeight;
+    private boolean pageReflowPending;
     
     private float currentFontSize = 20f;
     private SharedPreferences prefs;
@@ -215,8 +219,8 @@ public class ReaderActivity extends AppCompatActivity {
 
     private static class ContentSegment {
         int type;
-        String content;
-        ContentSegment(int type, String content) {
+        CharSequence content;
+        ContentSegment(int type, CharSequence content) {
             this.type = type;
             this.content = content;
         }
@@ -230,17 +234,18 @@ public class ReaderActivity extends AppCompatActivity {
         static final int TYPE_PREV_CHAPTER_TRIGGER = 4;
         static final int TYPE_IMAGE = 5;
         static final int TYPE_TITLE = 6;
+        static final int TYPE_SCROLL_TEXT = 7;
         
         int type;
-        String content;
+        CharSequence content;
         int chapterId;
         int titleLength;
         
-        ReaderPage(int type, String content, int chapterId) {
+        ReaderPage(int type, CharSequence content, int chapterId) {
             this(type, content, chapterId, 0);
         }
 
-        ReaderPage(int type, String content, int chapterId, int titleLength) {
+        ReaderPage(int type, CharSequence content, int chapterId, int titleLength) {
             this.type = type;
             this.content = content;
             this.chapterId = chapterId;
@@ -295,7 +300,7 @@ public class ReaderActivity extends AppCompatActivity {
         tabThemeMode = findViewById(R.id.tabThemeMode);
 
         markwon = Markwon.builder(this)
-                .usePlugin(HtmlPlugin.create())
+                .usePlugin(BbCodeRendering.htmlPlugin(this))
                 .usePlugin(TablePlugin.create(this))
                 .usePlugin(GlideImagesPlugin.create(this))
                 .build();
@@ -536,6 +541,12 @@ public class ReaderActivity extends AppCompatActivity {
                 
                 loadWorkNavigation();
             }
+        });
+        viewPager.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            int width = viewPager.getWidth() - viewPager.getPaddingLeft() - viewPager.getPaddingRight();
+            int height = viewPager.getHeight() - viewPager.getPaddingTop() - viewPager.getPaddingBottom();
+            if (width > 0 && height > 0 && (width != pagedViewportWidth || height != pagedViewportHeight))
+                requestPageReflow();
         });
 
         hideSystemUI();
@@ -1073,22 +1084,6 @@ public class ReaderActivity extends AppCompatActivity {
         });
     }
 
-    private String indentLine(String line) {
-        if (line == null || line.isEmpty()) return line;
-        return line.startsWith("\u3000\u3000") ? line : "\u3000\u3000" + line;
-    }
-
-    private String indentLines(String content) {
-        if (content == null || content.isEmpty()) return content;
-        String[] lines = content.split("\\n", -1);
-        StringBuilder result = new StringBuilder(content.length() + lines.length * 2);
-        for (int i = 0; i < lines.length; i++) {
-            if (i > 0) result.append('\n');
-            result.append(indentLine(lines[i]));
-        }
-        return result.toString();
-    }
-
     private void updateCurrentChapterFromPage(int pageIndex) {
         if (pageIndex < 0 || pageIndex >= pages.size()) return;
         ReaderPage page = pages.get(pageIndex);
@@ -1155,43 +1150,12 @@ public class ReaderActivity extends AppCompatActivity {
         prefs.edit().putFloat("reader_font_size", currentFontSize).apply();
     }
 
-    private void parseContent(String content) {
-        parsedSegments = parseSegments(content);
-    }
-
-    private List<ContentSegment> parseSegments(String content) {
+    private List<ContentSegment> parseSegments(String html) {
+        Spanned rendered = BbCodeText.normalizeTables(markwon.toMarkdown(html));
         List<ContentSegment> segments = new ArrayList<>();
-        if (content == null) content = "";
-        Pattern imgPattern = Pattern.compile("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>|!\\[([^\\]]*)\\]\\((.*?)\\)");
-        Matcher matcher = imgPattern.matcher(content);
-        int lastEnd = 0;
-        
-        while (matcher.find()) {
-            String textPart = content.substring(lastEnd, matcher.start());
-            if (!textPart.trim().isEmpty()) segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, textPart));
-            
-            String imgSrc = matcher.group(1);
-            String markdownAlt = matcher.group(2);
-            if (imgSrc == null && markdownAlt != null && markdownAlt.matches("ftemoji_[a-zA-Z0-9_]+")) {
-                String inlineEmoji = content.substring(matcher.start(), matcher.end());
-                if (!inlineEmoji.trim().isEmpty()) segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, inlineEmoji));
-                lastEnd = matcher.end();
-                continue;
-            }
-            if (imgSrc == null) imgSrc = matcher.group(3);
-            
-            if (imgSrc != null && !imgSrc.isEmpty()) {
-                segments.add(new ContentSegment(ReaderPage.TYPE_IMAGE, imgSrc));
-            }
-            
-            lastEnd = matcher.end();
-        }
-        
-        String tail = content.substring(lastEnd);
-        if (!tail.trim().isEmpty()) segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, tail));
-        
-        if (segments.isEmpty() && !content.isEmpty()) {
-            segments.add(new ContentSegment(ReaderPage.TYPE_TEXT, content));
+        for (BbCodeText.Segment segment : BbCodeText.segments(rendered)) {
+            segments.add(new ContentSegment(segment.image == null ? ReaderPage.TYPE_TEXT : ReaderPage.TYPE_IMAGE,
+                    segment.image == null ? segment.text : segment.image));
         }
         return segments;
     }
@@ -1221,13 +1185,10 @@ public class ReaderActivity extends AppCompatActivity {
 
             for (ContentSegment segment : chapter.segments) {
                 if (segment.type == ReaderPage.TYPE_TEXT) {
-                    String[] paragraphs = segment.content.split("\\n");
-                    for (String paragraph : paragraphs) {
-                        if (!paragraph.trim().isEmpty()) {
-                            verticalPages.add(new ReaderPage(ReaderPage.TYPE_TEXT, indentLine(paragraph.trim()), chapter.id));
-                            paragraphStartOffsets.add(currentOffset);
-                            currentOffset += paragraph.length() + 1;
-                        }
+                    for (CharSequence paragraph : BbCodeText.verticalChunks(segment.content)) {
+                        verticalPages.add(new ReaderPage(ReaderPage.TYPE_TEXT, paragraph, chapter.id));
+                        paragraphStartOffsets.add(currentOffset);
+                        currentOffset += paragraph.length();
                     }
                 } else if (segment.type == ReaderPage.TYPE_IMAGE) {
                     verticalPages.add(new ReaderPage(ReaderPage.TYPE_IMAGE, segment.content, chapter.id));
@@ -1390,11 +1351,16 @@ public class ReaderActivity extends AppCompatActivity {
             lastHeight = height;
         }
         
-        int padding = (int) (24 * getResources().getDisplayMetrics().density);
-        int contentWidth = width - padding * 2;
-        int contentHeight = height - viewPager.getPaddingTop() - viewPager.getPaddingBottom() - padding * 2;
+        TextView prototype = LayoutInflater.from(this).inflate(R.layout.item_reader_page, null, false)
+                .findViewById(R.id.pageContentTextView);
+        int viewportWidth = width - viewPager.getPaddingLeft() - viewPager.getPaddingRight();
+        int viewportHeight = height - viewPager.getPaddingTop() - viewPager.getPaddingBottom();
+        int contentWidth = viewportWidth - prototype.getCompoundPaddingLeft() - prototype.getCompoundPaddingRight();
+        int contentHeight = viewportHeight - prototype.getCompoundPaddingTop() - prototype.getCompoundPaddingBottom();
 
         if (contentWidth <= 0 || contentHeight <= 0) return;
+        pagedViewportWidth = viewportWidth;
+        pagedViewportHeight = viewportHeight;
 
         pages.clear();
         chapterStartPageIndices.clear();
@@ -1405,15 +1371,15 @@ public class ReaderActivity extends AppCompatActivity {
         for (LoadedChapter chapter : loadedChapters) {
             chapterStartPageIndices.add(pages.size());
             int segmentStart = 0;
-            StringBuilder firstBlock = new StringBuilder(chapter.title == null ? "" : chapter.title)
+            SpannableStringBuilder firstBlock = new SpannableStringBuilder(chapter.title == null ? "" : chapter.title)
                     .append("\n\n");
             while (segmentStart < chapter.segments.size()
                     && chapter.segments.get(segmentStart).type == ReaderPage.TYPE_TEXT) {
-                String text = chapter.segments.get(segmentStart).content;
-                firstBlock.append(segmentStart == 0 ? indentLines(text) : text);
+                CharSequence text = chapter.segments.get(segmentStart).content;
+                firstBlock.append(text);
                 segmentStart++;
             }
-            SpannableString titleBlock = new SpannableString(firstBlock.toString());
+            SpannableString titleBlock = new SpannableString(firstBlock);
             int titleLength = Math.min(chapter.title == null ? 0 : chapter.title.length(), titleBlock.length());
             if (titleLength > 0) {
                 titleBlock.setSpan(new StyleSpan(Typeface.BOLD), 0, titleLength,
@@ -1434,15 +1400,15 @@ public class ReaderActivity extends AppCompatActivity {
                     continue;
                 }
 
-                StringBuilder textBlock = new StringBuilder();
+                SpannableStringBuilder textBlock = new SpannableStringBuilder();
                 int next = i;
                 while (next < chapter.segments.size()
                         && chapter.segments.get(next).type == ReaderPage.TYPE_TEXT) {
-                    String text = chapter.segments.get(next).content;
-                    textBlock.append(next == i ? indentLines(text) : text);
+                    CharSequence text = chapter.segments.get(next).content;
+                    textBlock.append(text);
                     next++;
                 }
-                String formattedContent = textBlock.toString();
+                CharSequence formattedContent = textBlock;
                 addPagedText(formattedContent, chapter.id, ReaderPage.TYPE_TEXT, 0,
                         contentWidth, contentHeight, lineSpacingMultiplier, globalOffset);
                 globalOffset += formattedContent.length();
@@ -1462,36 +1428,50 @@ public class ReaderActivity extends AppCompatActivity {
     private void addPagedText(CharSequence content, int chapterId, int pageType, int titleLength,
                               int contentWidth, int contentHeight, float lineSpacingMultiplier,
                               int globalOffset) {
-        CharSequence formattedContent = content == null ? "" : content;
-        TextPaint paint = new TextPaint();
-        paint.setTextSize(currentFontSize * getResources().getDisplayMetrics().scaledDensity);
-        paint.setAntiAlias(true);
-        paint.setColor(getResources().getColor(android.R.color.primary_text_dark, getTheme()));
-        StaticLayout layout = StaticLayout.Builder.obtain(formattedContent, 0, formattedContent.length(), paint, contentWidth)
-                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                .setLineSpacing(0f, lineSpacingMultiplier)
-                .setIncludePad(false)
-                .build();
-        int startLine = 0;
-        while (startLine < layout.getLineCount()) {
-            int lineTop = layout.getLineTop(startLine);
-            int endLine = layout.getLineForVertical(lineTop + contentHeight);
-            if (layout.getLineBottom(endLine) > lineTop + contentHeight) endLine--;
-            if (endLine < startLine) endLine = startLine;
-
-            int startOffset = layout.getLineStart(startLine);
-            int endOffset = layout.getLineEnd(endLine);
-            if (endOffset > startOffset) {
-                String pageContent = formattedContent.subSequence(startOffset, endOffset).toString();
-                boolean isLastPage = endLine >= layout.getLineCount() - 1;
-                if (!isLastPage || !pageContent.trim().isEmpty()) {
-                    int pageTitleLength = Math.max(0, Math.min(titleLength, endOffset) - startOffset);
-                    pages.add(new ReaderPage(pageType, pageContent, chapterId, pageTitleLength));
-                    pageStartOffsets.add(globalOffset + startOffset);
-                }
-            }
-            startLine = endLine + 1;
+        TextView prototype = LayoutInflater.from(this).inflate(R.layout.item_reader_page, null, false)
+                .findViewById(R.id.pageContentTextView);
+        ReaderPagination.configure(prototype, currentFontSize, lineSpacingMultiplier, false);
+        for (ReaderPagination.Page page : ReaderPagination.paginate(content, prototype, contentWidth, contentHeight)) {
+            int pageTitleLength = Math.max(0, Math.min(titleLength, page.end) - page.start);
+            pages.add(new ReaderPage(page.scrollable ? ReaderPage.TYPE_SCROLL_TEXT : pageType,
+                    page.text, chapterId, pageTitleLength));
+            pageStartOffsets.add(globalOffset + page.start);
         }
+    }
+
+    /** Reflow after insets/viewport changes or asynchronous image metrics, retaining the visible text. */
+    private void requestPageReflow() {
+        if (pageReflowPending || viewPager == null || viewPager.getVisibility() != View.VISIBLE || loadedChapters.isEmpty()) return;
+        pageReflowPending = true;
+        viewPager.post(() -> {
+            pageReflowPending = false;
+            if (isFinishing() || isDestroyed() || pages.isEmpty()) return;
+            int oldIndex = Math.min(viewPager.getCurrentItem(), pages.size() - 1);
+            int chapterId = pages.get(oldIndex).chapterId;
+            int chapterStart = chapterStartIndex(pages, chapterId);
+            int relativeOffset = oldIndex < pageStartOffsets.size() && chapterStart < pageStartOffsets.size()
+                    ? pageStartOffsets.get(oldIndex) - pageStartOffsets.get(chapterStart) : 0;
+            calculatePages();
+            int target = chapterStartIndex(pages, chapterId);
+            if (target >= pageStartOffsets.size()) return;
+            int offset = pageStartOffsets.get(target) + relativeOffset;
+            while (target + 1 < pages.size() && pages.get(target + 1).chapterId == chapterId
+                    && pageStartOffsets.get(target + 1) <= offset) target++;
+            viewPager.setCurrentItem(target, false);
+            updateCurrentChapterFromPage(target);
+        });
+    }
+
+    private static boolean touchesLink(TextView view, MotionEvent event) {
+        if (!(view.getText() instanceof Spanned) || view.getLayout() == null) return false;
+        Layout layout = view.getLayout();
+        float x = event.getX() - view.getTotalPaddingLeft() + view.getScrollX();
+        int y = (int) event.getY() - view.getTotalPaddingTop() + view.getScrollY();
+        if (y < 0 || y > layout.getHeight()) return false;
+        int line = layout.getLineForVertical(y);
+        if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) return false;
+        int offset = layout.getOffsetForHorizontal(line, x);
+        return ((Spanned) view.getText()).getSpans(offset, offset, ClickableSpan.class).length > 0;
     }
 
     private void toggleMenu() {
@@ -1691,6 +1671,16 @@ public class ReaderActivity extends AppCompatActivity {
                     textView.setPadding(horizontalPadding, 0, horizontalPadding, bottomPadding);
                 }
                 
+                if (viewType == ReaderPage.TYPE_SCROLL_TEXT) {
+                    TextView textView = view.findViewById(R.id.pageContentTextView);
+                    textView.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    ScrollView scroll = new ScrollView(parent.getContext());
+                    scroll.setLayoutParams(new RecyclerView.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                    scroll.addView(view, new ScrollView.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    view = scroll;
+                }
                 return new TextViewHolder(view);
             }
         }
@@ -1700,10 +1690,15 @@ public class ReaderActivity extends AppCompatActivity {
             ReaderPage page = data.get(position);
             
             View.OnTouchListener touchListener = (v, event) -> {
-                if (gestureDetector != null) {
-                    return gestureDetector.onTouchEvent(event);
+                if (v instanceof TextView) {
+                    TextView textView = (TextView) v;
+                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                        textView.setTag(R.id.reader_link_touch, touchesLink(textView, event));
+                    }
+                    if (Boolean.TRUE.equals(textView.getTag(R.id.reader_link_touch))) return false;
                 }
-                return false;
+                boolean handled = gestureDetector != null && gestureDetector.onTouchEvent(event);
+                return page.type != ReaderPage.TYPE_SCROLL_TEXT && handled;
             };
             
             if (holder instanceof CommentViewHolder) {
@@ -1712,12 +1707,10 @@ public class ReaderActivity extends AppCompatActivity {
             } else if (holder instanceof TextViewHolder) {
                 TextViewHolder textHolder = (TextViewHolder) holder;
                 boolean isChapterTitle = page.type == ReaderPage.TYPE_TITLE;
-                textHolder.textView.setTextSize(TypedValue.COMPLEX_UNIT_SP,
-                        isChapterTitle ? readerTitleFontSize() : currentFontSize);
-                textHolder.textView.setTypeface(isChapterTitle ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
                 float lineSpacing = UserPreferences.getLineSpacing(ReaderActivity.this);
-                textHolder.textView.setLineSpacing(0, lineSpacing);
-                
+                ReaderPagination.configure(textHolder.textView,
+                        isChapterTitle ? readerTitleFontSize() : currentFontSize, lineSpacing, isChapterTitle);
+
                 int theme = UserPreferences.getReaderTheme(ReaderActivity.this);
                 if (theme >= 1 && theme <= 3) {
                     textHolder.textView.setTextColor(Color.BLACK);
@@ -1732,27 +1725,16 @@ public class ReaderActivity extends AppCompatActivity {
                     textHolder.textView.setPadding(horizontalPadding, 0, horizontalPadding, spacingPx);
                 } else {
                     ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) textHolder.textView.getLayoutParams();
-                    lp.bottomMargin = spacingPx;
+                    lp.bottomMargin = 0;
                     textHolder.textView.setLayoutParams(lp);
                 }
 
-                if (markwon != null) {
-                    markwon.setMarkdown(textHolder.textView, page.content);
-                } else {
-                    textHolder.textView.setText(page.content);
-                }
-                if (page.titleLength > 0) {
-                    CharSequence rendered = textHolder.textView.getText();
-                    SpannableString styled = new SpannableString(rendered == null ? "" : rendered);
-                    int titleEnd = Math.min(page.titleLength, styled.length());
-                    if (titleEnd > 0) {
-                        styled.setSpan(new StyleSpan(Typeface.BOLD), 0, titleEnd,
-                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        styled.setSpan(new RelativeSizeSpan(1.25f), 0, titleEnd,
-                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    }
-                    textHolder.textView.setText(styled, TextView.BufferType.SPANNABLE);
-                }
+                Spanned rendered = page.content instanceof Spanned ? (Spanned) page.content : new SpannedString(page.content);
+                int textWidth = textHolder.textView.getWidth() - textHolder.textView.getPaddingLeft() - textHolder.textView.getPaddingRight();
+                if (textWidth <= 0) textWidth = getResources().getDisplayMetrics().widthPixels - (int) (48 * getResources().getDisplayMetrics().density);
+                BbCodeText.prepare(rendered, textHolder.textView.getPaint(), textWidth);
+                markwon.setParsedMarkdown(textHolder.textView, rendered);
+                if (textHolder.itemView instanceof ScrollView) textHolder.itemView.scrollTo(0, 0);
                 textHolder.textView.setOnTouchListener(touchListener);
                 textHolder.itemView.setOnTouchListener(touchListener);
             } else if (holder instanceof ImageViewHolder) {
@@ -1762,7 +1744,7 @@ public class ReaderActivity extends AppCompatActivity {
                 
                 try {
                     Glide.with(imageHolder.imageView.getContext())
-                            .load(page.content)
+                            .load(page.content.toString())
                             .apply(RequestOptions.bitmapTransform(new RoundedCorners(cornerRadius)))
                             .placeholder(MdiIcons.drawable(ReaderActivity.this, "image-outline"))
                             .error(MdiIcons.drawable(ReaderActivity.this, "image-broken-variant"))
@@ -1869,6 +1851,15 @@ public class ReaderActivity extends AppCompatActivity {
             TextViewHolder(View itemView) {
                 super(itemView);
                 textView = itemView.findViewById(R.id.pageContentTextView);
+                textView.getViewTreeObserver().addOnPreDrawListener(() -> {
+                    int position = getBindingAdapterPosition();
+                    if (!isVerticalMode && position != RecyclerView.NO_POSITION && position < data.size()
+                            && data.get(position).type == ReaderPage.TYPE_TEXT && textView.getLayout() != null) {
+                        int available = textView.getHeight() - textView.getCompoundPaddingTop() - textView.getCompoundPaddingBottom();
+                        if (available > 0 && textView.getLayout().getHeight() > available) requestPageReflow();
+                    }
+                    return true;
+                });
             }
         }
 

@@ -16,10 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fimtale.R;
 import com.fimtale.model.Comment;
 import com.fimtale.UserDetailActivity;
-import com.fimtale.utils.BbCode;
+import com.fimtale.utils.BbCodeRendering;
 import io.noties.markwon.Markwon;
-import io.noties.markwon.html.HtmlPlugin;
-import io.noties.markwon.image.glide.GlideImagesPlugin;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 
@@ -32,8 +30,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
     public CommentAdapter(List<Comment> commentList, Context context) {
         this.commentList = commentList;
-        markwon = Markwon.builder(context).usePlugin(HtmlPlugin.create())
-                .usePlugin(GlideImagesPlugin.create(context.getApplicationContext())).build();
+        markwon = BbCodeRendering.create(context);
     }
 
     @NonNull
@@ -48,7 +45,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         Comment comment = commentList.get(position);
         holder.tvUserName.setText((comment.pinned ? "置顶 · " : "") + comment.getUserName());
         holder.tvTime.setText(comment.getTime());
-        markwon.setMarkdown(holder.tvContent, BbCode.toMarkdown(comment.getContent()));
+        BbCodeRendering.setText(markwon, holder.tvContent, comment.getContent());
         holder.tvChapter.setText("#" + comment.id + " · 评于：" + comment.getChapterTitle()
                 + (comment.replyCommentId > 0 ? " · 回复 #" + comment.replyCommentId : ""));
         View.OnClickListener openUser = v -> {

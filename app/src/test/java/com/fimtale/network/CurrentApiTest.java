@@ -135,9 +135,9 @@ public class CurrentApiTest {
     @Test public void bbCodeImagesAndLiteralBlocksSurviveConversion() {
         String text = BbCode.toMarkdown("[b]粗体[/b]\n[img width=100]/img/a.png[/img]\n[markdown]**正文** [b]字面[/b][/markdown]\n[code][img]literal[/img][/code]");
         assertTrue(text.contains("<b>粗体</b>"));
-        assertTrue(text.contains("![](" + SiteUrls.SITE + "/img/a.png)"));
-        assertTrue(text.contains("**正文** [b]字面[/b]"));
-        assertTrue(text.contains("```\n[img]literal[/img]\n```"));
+        assertTrue(text.contains("src=\"" + SiteUrls.SITE + "/img/a.png\""));
+        assertTrue(text.contains("<strong>正文</strong> [b]字面[/b]"));
+        assertTrue(text.contains("<pre><code>[img]literal[/img]</code></pre>"));
         assertFalse(BbCode.toMarkdown("[spoiler]秘密[/spoiler]").contains("秘密"));
     }
     @Test public void originsAndClassificationAreExplicit() {
@@ -148,6 +148,14 @@ public class CurrentApiTest {
         assertNull(SiteUrls.media("javascript:alert(1)"));
         assertNull(SiteUrls.media("http://img.example/avatar.png"));
         assertEquals("type:2", new JsonParser().parse(SearchQuery.type(2)).getAsJsonObject().get("filter").getAsString());
+    }
+    @Test public void bbCodeCommentReferencesResolveTheirWorkAndChapter() throws Exception {
+        CommentResponse data = api("{\"comment\":{\"id\":8,\"work_id\":42,\"chapter_id\":9,\"content\":\"quoted\"}}")
+                .getComment(8).execute().body();
+        assertEquals("/api/work/get_comment", request.get().url().encodedPath());
+        assertEquals("8", request.get().url().queryParameter("comment_id"));
+        assertEquals(42, data.comment.workId);
+        assertEquals(9, data.comment.chapterId);
     }
     @Test public void workViewerReadsVotesAndAllFavoriteFolders() throws Exception {
         TopicDetailResponse result = api("{\"work\":{\"id\":42,\"count_like\":12},\"viewer\":{"
@@ -221,7 +229,7 @@ public class CurrentApiTest {
         Comment comment = result.getItems().get(0);
         assertEquals("读者", comment.getUserName()); assertEquals(89, comment.replyCommentId);
         assertEquals("第一章", comment.getChapterTitle());
-        assertEquals("<b>评论</b>", BbCode.toMarkdown(comment.getContent()));
+        assertEquals("<div><b>评论</b></div>", BbCode.toMarkdown(comment.getContent()));
         comment.statusDel = 1;
         assertEquals("该评论已删除", comment.getContent());
         WorkCommentsResponse empty = api("{\"items\":null,\"total\":0}").getWorkComments(42, 1, 16, "created_at", "desc").execute().body();

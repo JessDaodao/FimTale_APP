@@ -39,6 +39,7 @@ public interface FimTaleApiService {
     @POST("work/create_update_comment") Call<Void> createUpdateComment(@Header("Token") String token,
             @Body WorkCommentRequest comment);
     @GET("work/get_chapter") Call<ChapterResponse> getChapter(@Query("chapter_id") int chapterId);
+    @GET("work/get_comment") Call<CommentResponse> getComment(@Query("comment_id") int commentId);
     @GET("user/get_user_auth") Call<UserAuth> getUserAuth(@Header("Token") String token);
     @GET("work/get_work") Call<WorkEditResponse> getWorkForEdit(@Query("work_id") int workId, @Query("for_edit") boolean forEdit);
     @GET("work/get_chapter") Call<ChapterResponse> getChapterForEdit(@Query("chapter_id") int chapterId, @Query("for_edit") boolean forEdit);

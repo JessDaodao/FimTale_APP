@@ -8,6 +8,7 @@ public class Comment {
     public AuthorInfo user;
     public String content;
     public String title;
+    @SerializedName("work_id") public int workId;
     @SerializedName("chapter_id") public int chapterId;
     @SerializedName("reply_comment_id") public int replyCommentId;
     @SerializedName("created_at") public String createdAt;

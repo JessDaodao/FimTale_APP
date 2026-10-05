@@ -11,7 +11,6 @@ import android.text.TextUtils;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -85,11 +84,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import io.noties.markwon.Markwon;
-import io.noties.markwon.html.HtmlPlugin;
+import com.fimtale.utils.BbCodeRendering;
+import io.noties.markwon.ext.tables.TablePlugin;
 import io.noties.markwon.image.AsyncDrawable;
 import io.noties.markwon.image.glide.GlideImagesPlugin;
 import retrofit2.Call;
@@ -167,7 +165,8 @@ public class TopicDetailActivity extends AppCompatActivity {
         int verticalPadding = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 12, getResources().getDisplayMetrics());
 
         markwon = Markwon.builder(this)
-                .usePlugin(HtmlPlugin.create())
+                .usePlugin(BbCodeRendering.htmlPlugin(this))
+                .usePlugin(TablePlugin.create(this))
                 .usePlugin(GlideImagesPlugin.create(new GlideImagesPlugin.GlideStore() {
                     @NonNull
                     @Override
@@ -178,7 +177,8 @@ public class TopicDetailActivity extends AppCompatActivity {
                         } else {
                             builder = Glide.with(TopicDetailActivity.this).load(drawable.getDestination());
                         }
-                        return builder.transform(new RoundedCorners(cornerRadius), new VerticalPaddingTransformation(verticalPadding));
+                        return drawable.getDestination().contains("/img/ftemoji/") ? builder
+                                : builder.transform(new RoundedCorners(cornerRadius), new VerticalPaddingTransformation(verticalPadding));
                     }
 
                     @Override
@@ -614,12 +614,8 @@ public class TopicDetailActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle(topic.getTitle());
         updateInteractionCounts(topic);
 
-        Pair<String, String> processedContent = preprocessHtmlContent(topic.getContent());
-        String cleanedHtml = processedContent.first;
-        String extractedImageUrl = processedContent.second;
-
         boolean isIntroPage = true;
-        String finalCoverUrl = extractedImageUrl;
+        String finalCoverUrl = null;
         if (finalCoverUrl == null && !TextUtils.isEmpty(topic.getBackground())) {
             finalCoverUrl = topic.getBackground();
         }
@@ -685,20 +681,12 @@ public class TopicDetailActivity extends AppCompatActivity {
         }
 
         String intro = topic.getIntro();
-        if (TextUtils.isEmpty(intro)) {
-            if (cleanedHtml.length() > 100) {
-                intro = cleanedHtml.substring(0, 100) + "...";
-            } else {
-                intro = cleanedHtml;
-            }
-        }
-        if (intro != null) {
-            intro = intro.replaceAll("(!\\[.*?\\]\\(.*?\\))", "\n\n$1\n\n");
-        }
-        currentTopicIntro = intro;
-        markwon.setMarkdown(contentTextView, com.fimtale.utils.BbCode.toMarkdown(
-                (intro == null ? "" : intro) + "\n\n" + (topic.getContent() == null ? "" : topic.getContent())));
-        
+        currentTopicIntro = intro == null ? "" : intro;
+        String body = topic.getContent() == null ? "" : topic.getContent();
+        // Never truncate raw BBCode to manufacture a summary: it can split a tag or reveal a spoiler.
+        BbCodeRendering.setText(markwon, contentTextView,
+                TextUtils.isEmpty(intro) ? body : intro + "\n\n" + body);
+
         // Preface belongs to the work; every directory entry is a real chapter.
         java.util.List<TopicDetailResponse.ChapterEdge> roots = com.fimtale.model.ChapterNavigation.choices(data, 0);
         firstChapterId = roots.size() == 1 && roots.get(0).to != null ? roots.get(0).to : 0;
@@ -861,20 +849,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         });
         
         tagChipGroup.addView(chip);
-    }
-
-    private Pair<String, String> preprocessHtmlContent(String html) {
-        if (html == null) return new Pair<>("", null);
-        String imageUrl = null;
-        String cleanedHtml = html;
-        Pattern imgPattern = Pattern.compile("<img[^>]+src\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
-        Matcher imgMatcher = imgPattern.matcher(cleanedHtml);
-        if (imgMatcher.find()) {
-            imageUrl = imgMatcher.group(1);
-            cleanedHtml = imgMatcher.replaceFirst("");
-        }
-        cleanedHtml = cleanedHtml.replaceAll("(?i)<h[1-6][^>]*>.*?</h[1-6]>", "");
-        return new Pair<>(cleanedHtml.trim(), imageUrl);
     }
 
     private static class VerticalPaddingTransformation extends BitmapTransformation {
