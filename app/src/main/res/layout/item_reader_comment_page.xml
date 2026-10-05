@@ -127,8 +127,7 @@
                 android:imeOptions="actionSend"
                 android:inputType="textMultiLine|textCapSentences"
                 android:maxLines="3"
-                android:minLines="1"
-                android:paddingVertical="10dp" />
+                android:minLines="1" />
         </com.fimtale.ui.icons.MdiTextInputLayout>
 
         <com.fimtale.ui.icons.MdiButton

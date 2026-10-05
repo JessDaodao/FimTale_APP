@@ -10,6 +10,8 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
+    @POST("report/create_report") Call<com.fimtale.report.ReportRequest.Result> createReport(
+            @Header("Token") String token, @Body com.fimtale.report.ReportRequest report);
     @GET("work/get_review_entries") Call<List<ReviewEntry>> getReviewEntries(@Header("Token") String token);
     @POST("work/submit_review") Call<ReviewEntry> submitReview(@Header("Token") String token, @Body ReviewEntry.Submit submission);
     @GET("user/get_username_by_id") Call<String> getUsernameById(@Header("Token") String token, @Query("user_id") int userId);

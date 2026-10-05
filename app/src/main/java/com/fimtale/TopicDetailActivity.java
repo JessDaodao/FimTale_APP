@@ -361,6 +361,14 @@ public class TopicDetailActivity extends AppCompatActivity {
             bottomSheetDialog.dismiss();
             generateAndSaveShareImage();
         });
+
+        TextView report = view.findViewById(R.id.btnReportWork);
+        report.setEnabled(currentTopicId > 0);
+        report.setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            com.fimtale.report.ReportDialog.show(this, com.fimtale.report.ReportRequest.WORK, currentTopicId,
+                    getString(R.string.report_work_target, TextUtils.isEmpty(currentTopicTitle) ? String.valueOf(currentTopicId) : currentTopicTitle));
+        });
         
         bottomSheetDialog.setContentView(view);
         

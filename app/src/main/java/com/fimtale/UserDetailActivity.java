@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.graphics.drawable.Drawable;
 import android.view.MenuItem;
+import android.view.Menu;
 import android.view.View;
 import android.widget.ImageView;
 import com.fimtale.ui.ShimmerSkeletonView;
@@ -91,6 +92,8 @@ public class UserDetailActivity extends AppCompatActivity {
     private int totalPages = 1;
     private boolean isLoading = false;
     private String currentUsername;
+    private int currentUserId;
+    private String reportUsername;
     private long editorVersion = com.fimtale.editor.EditorChanges.version();
 
     @Override protected void onResume() {
@@ -243,6 +246,9 @@ public class UserDetailActivity extends AppCompatActivity {
 
     private void bindData(UserDetailResponse data) {
         UserDetailResponse info = data;
+        currentUserId = info.getId();
+        reportUsername = TextUtils.isEmpty(info.getUserName()) ? currentUsername : info.getUserName();
+        invalidateOptionsMenu();
 
         tvUsername.setText(info.getUserName());
         tvUserRole.setText("LV." + info.getLevel());
@@ -443,8 +449,23 @@ public class UserDetailActivity extends AppCompatActivity {
         return typedValue.data;
     }
 
+    @Override public boolean onCreateOptionsMenu(Menu menu) {
+        MdiIcons.inflateMenu(this, getMenuInflater(), R.menu.menu_user_detail, menu);
+        return true;
+    }
+
+    @Override public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_report_user).setEnabled(currentUserId > 0);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_report_user) {
+            com.fimtale.report.ReportDialog.show(this, com.fimtale.report.ReportRequest.USER, currentUserId,
+                    getString(R.string.report_user_target, reportUsername));
+            return true;
+        }
         if (item.getItemId() == android.R.id.home) {
             finish();
             return true;

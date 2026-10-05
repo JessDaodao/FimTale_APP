@@ -1,6 +1,8 @@
 package com.fimtale.editor;
 
 import com.fimtale.utils.MdiIcons;
+import com.fimtale.ui.icons.MdiTextInputLayout;
+import com.google.android.material.textfield.TextInputEditText;
 
 import android.content.Context;
 import android.view.View;
@@ -47,10 +49,11 @@ public final class TagPickerDialog {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"题材", "读者注意", "历史标签", "角色", "其他标签"});
         category.setAdapter(adapter); layout.addView(category, new LinearLayout.LayoutParams(-1, 48 * pad / 20));
-        search = new EditText(context); search.setSingleLine(true); search.setHint("输入名称搜索");
-        search.setBackgroundResource(com.fimtale.R.drawable.bg_input_rounded);
-        search.setPadding(pad, search.getPaddingTop(), pad, search.getPaddingBottom());
-        layout.addView(search);
+        MdiTextInputLayout searchLayout = new MdiTextInputLayout(context, null);
+        searchLayout.setHint("输入名称搜索");
+        search = new TextInputEditText(searchLayout.getContext()); search.setSingleLine(true);
+        searchLayout.addView(search, new LinearLayout.LayoutParams(-1, -2));
+        layout.addView(searchLayout, new LinearLayout.LayoutParams(-1, -2));
         MaterialButton find = new MaterialButton(context); find.setText("搜索"); layout.addView(find);
         status = new TextView(context); layout.addView(status);
         android.widget.ScrollView scroll = new android.widget.ScrollView(context);

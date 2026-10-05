@@ -268,8 +268,12 @@ public class ContentFiltersActivity extends AppCompatActivity {
     }
 
     private void showSavePresetDialog() {
-        EditText input = new EditText(this); input.setSingleLine(true); input.setHint("预设名称");
-        new MaterialAlertDialogBuilder(this).setTitle("保存为预设").setView(input)
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        android.view.View content = android.view.LayoutInflater.from(builder.getContext()).inflate(R.layout.dialog_text_input, null);
+        com.google.android.material.textfield.TextInputLayout field = content.findViewById(R.id.dialogTextInputLayout);
+        field.setHint("预设名称");
+        EditText input = content.findViewById(R.id.dialogTextInput);
+        builder.setTitle("保存为预设").setView(content)
                 .setNegativeButton("取消", null).setPositiveButton("保存", (dialog, which) -> {
                     String name = input.getText().toString().trim(); if (name.isEmpty()) { showError("请输入预设名称"); return; }
                     List<NamedContentFilter> next = new ArrayList<>(); for (NamedContentFilter item : filterPresets) if (!name.equals(item.name)) next.add(item);

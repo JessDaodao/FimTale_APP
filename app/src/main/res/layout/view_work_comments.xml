@@ -40,8 +40,7 @@
                 android:id="@+id/commentComposerInput"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:maxLines="3" android:minLines="1" android:gravity="top|start"
-                android:inputType="textMultiLine|textCapSentences" android:imeOptions="actionSend"
-                android:paddingVertical="10dp" />
+                android:inputType="textMultiLine|textCapSentences" android:imeOptions="actionSend" />
         </com.fimtale.ui.icons.MdiTextInputLayout>
         <com.fimtale.ui.icons.MdiButton
             android:id="@+id/commentComposerEmoji" style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"

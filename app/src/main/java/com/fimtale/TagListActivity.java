@@ -176,12 +176,13 @@ public class TagListActivity extends AppCompatActivity {
     }
 
     private void showFilterDialog() {
-        android.widget.EditText input = new android.widget.EditText(this);
-        input.setSingleLine(true); input.setText(keyword); input.setHint("标签名称");
-        input.setBackgroundResource(R.drawable.bg_input_rounded);
-        int inputPadding = (int) (16 * getResources().getDisplayMetrics().density);
-        input.setPadding(inputPadding, input.getPaddingTop(), inputPadding, input.getPaddingBottom());
-        new MaterialAlertDialogBuilder(this).setTitle("搜索标签").setView(input)
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        View content = android.view.LayoutInflater.from(builder.getContext()).inflate(R.layout.dialog_text_input, null);
+        com.google.android.material.textfield.TextInputLayout field = content.findViewById(R.id.dialogTextInputLayout);
+        field.setHint("标签名称");
+        android.widget.EditText input = content.findViewById(R.id.dialogTextInput);
+        input.setText(keyword);
+        builder.setTitle("搜索标签").setView(content)
                 .setPositiveButton("搜索", (dialog, which) -> {
                     keyword = input.getText().toString().trim(); currentPage = 1; totalPages = 1;
                     tagList.clear(); adapter.notifyDataSetChanged(); loadTags(1);
