@@ -20,6 +20,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.fimtale.editor.EditorDocument;
+import com.fimtale.editor.BbCodeInsertion;
+import com.fimtale.editor.EditorFormatDialog;
 import com.fimtale.editor.BbCodeEditText;
 import com.fimtale.editor.EditorViewModel;
 import com.fimtale.ui.captcha.CaptchaDialogFragment;
@@ -38,7 +40,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 /** Native authoring with the shared captcha dialog. */
-public class EditorActivity extends AppCompatActivity {
+public class EditorActivity extends AppCompatActivity implements EditorFormatDialog.Host {
     public static final String EXTRA_WORK_ID = "editor_work_id", EXTRA_CHAPTER_ID = "editor_chapter_id";
     public static final String EXTRA_DRAFT_ID = "editor_draft_id";
     private EditorViewModel model;
@@ -140,6 +142,11 @@ public class EditorActivity extends AppCompatActivity {
         findViewById(R.id.editorUploadCover).setOnClickListener(v -> coverPicker.launch("image/*"));
         findViewById(R.id.editorSource).setOnClickListener(v -> {
             body.setSourceVisible(!body.isSourceVisible()); updateSourceButton();
+        });
+        findViewById(R.id.editorMoreFormats).setOnClickListener(v -> {
+            if (canInsertFormat() && !getSupportFragmentManager().isStateSaved()
+                    && getSupportFragmentManager().findFragmentByTag(EditorFormatDialog.TAG) == null)
+                EditorFormatDialog.create(this).showNow(getSupportFragmentManager(), EditorFormatDialog.TAG);
         });
         findViewById(R.id.editorAddTags).setOnClickListener(v -> {
             tagPicker = new TagPickerDialog(this, model.document.tags, model.document.tagGroups, () -> { model.changed(); renderTags(); });
@@ -445,10 +452,21 @@ public class EditorActivity extends AppCompatActivity {
                 .putExtra(UserDetailActivity.EXTRA_USERNAME, UserPreferences.getUserName(this)));
     }
     private void wrap(String tag) {
-        int start = Math.max(0, body.getSelectionStart()), end = Math.max(start, body.getSelectionEnd());
+        int start = Math.max(0, Math.min(body.getSelectionStart(), body.getSelectionEnd()));
+        int end = Math.max(start, Math.max(body.getSelectionStart(), body.getSelectionEnd()));
         String selected = body.getText().subSequence(start, end).toString();
-        body.getText().replace(start, end, "[" + tag + "]" + selected + "[/" + tag + "]");
-        body.requestFocus(); body.setSelection(start + tag.length() + 2, start + tag.length() + 2 + selected.length());
+        applyFormat(BbCodeInsertion.at(body.getText().toString(), start, end, BbCodeInsertion.wrap(tag, selected, tag.equals("quote"))));
+    }
+    @Override public BbCodeEditText formatBody() { return body; }
+    @Override public int formatVersion() { return model.documentVersion; }
+    @Override public boolean canInsertFormat() { return model.ready && !model.busy; }
+    @Override public void applyFormat(BbCodeInsertion.Edit edit) {
+        if (!canInsertFormat()) return;
+        body.beginBatchEdit();
+        try {
+            body.getText().replace(edit.start, edit.end, edit.replacement);
+            body.requestFocus(); body.setSelection(edit.selectionStart, edit.selectionEnd);
+        } finally { body.endBatchEdit(); }
     }
     private void insertAtCaret(EditText field, String value) {
         int start = Math.max(0, field.getSelectionStart());

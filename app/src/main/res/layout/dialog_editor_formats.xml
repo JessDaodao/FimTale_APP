@@ -1,0 +1,21 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+        <com.fimtale.ui.icons.MdiImageButton android:id="@+id/editorFormatBack" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" app:mdiIcon="arrow-left" android:contentDescription="@string/editor_format_back" />
+        <TextView android:id="@+id/editorFormatTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/editor_more_formats" android:textAppearance="?attr/textAppearanceTitleLarge" android:accessibilityHeading="true" />
+        <com.fimtale.ui.icons.MdiImageButton android:id="@+id/editorFormatClose" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" app:mdiIcon="close" android:contentDescription="@string/editor_format_close" />
+    </LinearLayout>
+    <androidx.core.widget.NestedScrollView android:id="@+id/editorFormatScroll" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:fillViewport="false">
+        <LinearLayout android:id="@+id/editorFormatContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+    </androidx.core.widget.NestedScrollView>
+    <TextView android:id="@+id/editorFormatError" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textColor="?attr/colorError" android:accessibilityLiveRegion="polite" android:visibility="gone" android:paddingVertical="8dp" />
+    <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/editorFormatProgress"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:indeterminate="true" android:visibility="gone" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/editorFormatInsert" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="@string/editor_format_insert" android:visibility="gone" />
+</LinearLayout>

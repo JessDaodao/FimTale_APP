@@ -1,8 +1,8 @@
 <resources>
     <style name="Widget.Fimtale.EditorFormatButton" parent="Widget.Material3.Button.IconButton">
-        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_width">48dp</item>
         <item name="android:layout_height">48dp</item>
-        <item name="android:layout_weight">1</item>
+        <item name="android:layout_weight">0</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:minHeight">48dp</item>
         <item name="android:paddingHorizontal">0dp</item>

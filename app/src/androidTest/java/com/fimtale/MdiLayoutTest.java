@@ -41,7 +41,7 @@ public class MdiLayoutTest {
             R.layout.activity_review_queue, R.layout.item_review,
             R.layout.activity_settings, R.layout.activity_tag_articles, R.layout.activity_tag_list,
             R.layout.activity_topic_detail, R.layout.activity_user_detail,
-            R.layout.dialog_editor_metadata, R.layout.editor_metadata, R.layout.fragment_profile,
+            R.layout.dialog_editor_metadata, R.layout.dialog_editor_formats, R.layout.editor_metadata, R.layout.fragment_profile,
             R.layout.grid_item_topic, R.layout.item_editor_draft, R.layout.item_home_header,
             R.layout.item_reader_comment_page, R.layout.item_search_history,
             R.layout.layout_share_image, R.layout.view_work_comments

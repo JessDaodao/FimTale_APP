@@ -88,6 +88,7 @@ public class EditorActivityTest {
                 else cloud.remove(key);
                 data = "null";
             } else if (path.endsWith("get_user_auth")) data = "{\"user_id\":9,\"role_id\":1,\"qualify_status\":2,\"space_status\":1}";
+            else if (path.endsWith("get_user_page_header")) data = "{\"user_id\":17,\"username\":\"彩虹小马\"}";
             else if (path.endsWith("get_work")) data = "{\"work\":{\"id\":42,\"title\":\"原始标题\",\"preface\":\"[b]原始序言[/b]\",\"intro\":\"简介\","
                     + "\"type\":1,\"length\":3,\"rating\":2,\"origin\":2,\"publish\":1,\"cover\":\"/cover.png\",\"prequel_id\":3,"
                     + "\"origin_link\":\"https://source.example/original\",\"user\":{\"user_id\":" + owner + "},"
@@ -242,6 +243,69 @@ public class EditorActivityTest {
             EditorViewModel model = ready(scenario); assertTrue(model.error);
             scenario.onActivity(a -> a.findViewById(R.id.editorSubmit).performClick());
             waitFor(() -> !model.busy && model.error); assertEquals(0, writes.get());
+        }
+    }
+    private com.fimtale.editor.EditorFormatDialog formatDialog(EditorActivity activity) {
+        activity.getSupportFragmentManager().executePendingTransactions();
+        return (com.fimtale.editor.EditorFormatDialog) activity.getSupportFragmentManager()
+                .findFragmentByTag(com.fimtale.editor.EditorFormatDialog.TAG);
+    }
+    private void captureFormats(String name) throws Exception {
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync(); SystemClock.sleep(300);
+        android.graphics.Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(new File(context.getFilesDir(), name + ".png"))) {
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output);
+        }
+        bitmap.recycle();
+    }
+    @Test public void moreFormatsPreserveSelectionAndLinkDraftAcrossRecreation() throws Exception {
+        try (ActivityScenario<EditorActivity> scenario = ActivityScenario.launch(EditorActivity.workIntent(context, 42))) {
+            EditorViewModel model = ready(scenario);
+            scenario.onActivity(activity -> {
+                EditText body = activity.findViewById(R.id.editorBody); body.setText("前正文🐴后"); body.setSelection(1, 5);
+                activity.findViewById(R.id.editorMoreFormats).performClick();
+                android.view.View palette = formatDialog(activity).requireDialog().findViewById(R.id.editorFormatContent);
+                for (com.fimtale.editor.EditorFormat format : com.fimtale.editor.EditorFormat.values()) {
+                    android.widget.TextView button = palette.findViewWithTag(format.name()); assertNotNull(button);
+                    assertNotNull(button.getCompoundDrawables()[1]);
+                }
+            });
+            captureFormats("editor-format-palette");
+            scenario.onActivity(activity -> {
+                formatDialog(activity).requireDialog().findViewById(R.id.editorFormatContent).findViewWithTag("UNDERLINE").performClick();
+                EditText body = activity.findViewById(R.id.editorBody);
+                assertEquals("前[u]正文🐴[/u]后", body.getText().toString());
+                activity.getSupportFragmentManager().executePendingTransactions();
+                activity.findViewById(R.id.editorMoreFormats).performClick();
+                formatDialog(activity).requireDialog().findViewById(R.id.editorFormatContent).findViewWithTag("LINK").performClick();
+                ((EditText) formatDialog(activity).requireDialog().findViewById(R.id.editorFormatInput0)).setText("https://example.org/");
+            });
+            scenario.recreate();
+            scenario.onActivity(activity -> {
+                android.app.Dialog dialog = formatDialog(activity).requireDialog();
+                assertEquals("https://example.org/", ((EditText) dialog.findViewById(R.id.editorFormatInput0)).getText().toString());
+                assertEquals("正文🐴", ((EditText) dialog.findViewById(R.id.editorFormatInput1)).getText().toString());
+                dialog.findViewById(R.id.editorFormatInsert).performClick();
+                assertEquals("前[u][url=\"https://example.org/\"]正文🐴[/url][/u]后", ((EditText) activity.findViewById(R.id.editorBody)).getText().toString());
+            });
+            save(scenario, model);
+        }
+    }
+    @Test public void mentionLooksUpTheUserBeforeInsertingAnIdBasedTag() throws Exception {
+        try (ActivityScenario<EditorActivity> scenario = ActivityScenario.launch(EditorActivity.workIntent(context, 42))) {
+            EditorViewModel model = ready(scenario);
+            scenario.onActivity(activity -> {
+                EditText body = activity.findViewById(R.id.editorBody); body.setText("你好，"); body.setSelection(body.length());
+                activity.findViewById(R.id.editorMoreFormats).performClick();
+                android.app.Dialog dialog = formatDialog(activity).requireDialog();
+                dialog.findViewById(R.id.editorFormatContent).findViewWithTag("MENTION").performClick();
+                ((EditText) dialog.findViewById(R.id.editorFormatInput0)).setText("彩虹小马");
+                dialog.findViewById(R.id.editorFormatInsert).performClick();
+            });
+            waitFor(() -> model.document.work.preface.contains("[mention=17]彩虹小马[/mention]"));
+            scenario.onActivity(activity -> assertEquals("你好，[mention=17]彩虹小马[/mention]",
+                    ((EditText) activity.findViewById(R.id.editorBody)).getText().toString()));
+            save(scenario, model);
         }
     }
 }
