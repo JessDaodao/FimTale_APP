@@ -62,8 +62,8 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
 
         Glide.with(holder.itemView.getContext())
                 .load(topic.getBackground())
-                .placeholder(MdiIcons.drawable(holder.itemView.getContext(), "file-document-outline"))
-                .error(MdiIcons.drawable(holder.itemView.getContext(), "file-document-outline"))
+                .placeholder(MdiIcons.coverPlaceholder(holder.itemView.getContext()))
+                .error(MdiIcons.coverPlaceholder(holder.itemView.getContext()))
                 .into(holder.imageView);
     }
 

@@ -124,8 +124,8 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
             Glide.with(topicHolder.itemView.getContext())
                     .load(topic.getBackground())
-                    .placeholder(MdiIcons.drawable(topicHolder.itemView.getContext(), "file-document-outline"))
-                    .error(MdiIcons.drawable(topicHolder.itemView.getContext(), "file-document-outline"))
+                    .placeholder(MdiIcons.coverPlaceholder(topicHolder.itemView.getContext()))
+                    .error(MdiIcons.coverPlaceholder(topicHolder.itemView.getContext()))
                     .listener(new RequestListener<Drawable>() {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {

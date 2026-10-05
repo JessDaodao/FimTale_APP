@@ -3,6 +3,9 @@ package com.fimtale.utils;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.DrawableWrapper;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -39,6 +42,29 @@ public final class MdiIcons {
     public static void inflateMenu(Context context, MenuInflater inflater, int menuRes, Menu menu) {
         inflater.inflate(menuRes, menu);
         applyMenu(context, menu, menuRes);
+    }
+
+    /** A centered cover placeholder whose glyph is not enlarged by ImageView's centerCrop. */
+    @NonNull
+    public static Drawable coverPlaceholder(@NonNull Context context) {
+        IconicsDrawable icon = drawable(context, "file-document-outline");
+        icon.setColorList(ColorStateList.valueOf(MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorOnSurfaceVariant, Color.GRAY)));
+        icon.setAlpha(Math.round(255 * 0.3f));
+        int sizePx = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                32, context.getResources().getDisplayMetrics()));
+        return new DrawableWrapper(icon) {
+            // With no intrinsic image size, ImageView gives us the viewport bounds without scaling.
+            @Override public int getIntrinsicWidth() { return -1; }
+            @Override public int getIntrinsicHeight() { return -1; }
+            @Override public ConstantState getConstantState() { return null; }
+            @Override protected void onBoundsChange(Rect bounds) {
+                int size = Math.min(sizePx, Math.min(bounds.width(), bounds.height()));
+                int left = bounds.left + (bounds.width() - size) / 2;
+                int top = bounds.top + (bounds.height() - size) / 2;
+                icon.setBounds(left, top, left + size, top + size);
+            }
+        };
     }
 
     /** Menu XML declares actions; their font icons are assigned here after inflation. */

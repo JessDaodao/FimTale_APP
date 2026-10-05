@@ -638,11 +638,11 @@ public class TopicDetailActivity extends AppCompatActivity {
             if (finalCoverUrl != null) {
                 Glide.with(this)
                         .load(finalCoverUrl)
-                        .placeholder(MdiIcons.drawable(this, "file-document-outline"))
-                        .error(MdiIcons.drawable(this, "file-document-outline"))
+                        .placeholder(MdiIcons.coverPlaceholder(this))
+                        .error(MdiIcons.coverPlaceholder(this))
                         .into(coverImageView);
             } else {
-                coverImageView.setImageDrawable(MdiIcons.drawable(this, "file-document-outline"));
+                coverImageView.setImageDrawable(MdiIcons.coverPlaceholder(this));
             }
         } else {
             imageContainer.setVisibility(View.GONE);

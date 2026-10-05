@@ -283,18 +283,8 @@ public class UserDetailActivity extends AppCompatActivity {
             imageContainer.setVisibility(View.VISIBLE);
             Glide.with(this)
                  .load(info.getBackground())
-                 .listener(new RequestListener<Drawable>() {
-                     @Override
-                     public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                         imageContainer.setVisibility(View.GONE);
-                         return false;
-                     }
-
-                     @Override
-                     public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                         return false;
-                     }
-                 })
+                 .placeholder(MdiIcons.coverPlaceholder(this))
+                 .error(MdiIcons.coverPlaceholder(this))
                  .into(ivBackground);
         }
 
