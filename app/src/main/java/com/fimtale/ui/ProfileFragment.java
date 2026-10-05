@@ -46,7 +46,6 @@ public class ProfileFragment extends Fragment {
     private View btnFavorites, btnHistory;
     private View btnReviewQueue;
     private Call<com.fimtale.model.CurrentUser> userCall;
-    private Call<com.fimtale.model.UserAuth> authCall;
     private boolean isLoggedIn = false;
 
     private View contentLayout;
@@ -115,14 +114,13 @@ public class ProfileFragment extends Fragment {
 
     private void loadContent() {
         if (userCall != null) userCall.cancel();
-        if (authCall != null) authCall.cancel();
         btnReviewQueue.setVisibility(View.GONE);
         if (UserPreferences.isLoggedIn(requireContext())) {
             emptyStateLayout.setVisibility(View.GONE);
             contentLayout.setVisibility(View.VISIBLE);
             loadCachedUserInfo();
             checkLoginStatus();
-            checkReviewPermission();
+            btnReviewQueue.setVisibility(View.VISIBLE);
         } else {
             isLoggedIn = false;
             emptyStateLayout.setVisibility(View.VISIBLE);
@@ -197,24 +195,9 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    private void checkReviewPermission() {
-        String token = UserPreferences.getToken(requireContext());
-        authCall = RetrofitClient.getInstance().getUserAuth(token);
-        authCall.enqueue(new Callback<com.fimtale.model.UserAuth>() {
-            @Override public void onResponse(Call<com.fimtale.model.UserAuth> call, Response<com.fimtale.model.UserAuth> response) {
-                if (!isAdded() || getView() == null || call != authCall || call.isCanceled()
-                        || !token.equals(UserPreferences.getToken(requireContext()))) return;
-                com.fimtale.model.UserAuth auth = response.body();
-                btnReviewQueue.setVisibility(response.isSuccessful() && auth != null && auth.canReview() ? View.VISIBLE : View.GONE);
-            }
-            @Override public void onFailure(Call<com.fimtale.model.UserAuth> call, Throwable t) {}
-        });
-    }
-
     @Override public void onDestroyView() {
         if (userCall != null) userCall.cancel();
-        if (authCall != null) authCall.cancel();
-        userCall = null; authCall = null; btnReviewQueue = null;
+        userCall = null; btnReviewQueue = null;
         super.onDestroyView();
     }
 

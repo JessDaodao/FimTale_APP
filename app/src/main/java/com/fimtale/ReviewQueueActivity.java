@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.fimtale.review.ReviewActionDialog;
+import com.fimtale.review.ReviewEntry;
 import com.fimtale.review.ReviewQueueAdapter;
 import com.fimtale.review.ReviewQueueViewModel;
 import com.fimtale.utils.EditorWindowStyle;
@@ -28,25 +29,12 @@ public class ReviewQueueActivity extends AppCompatActivity {
     private MaterialCardView header;
     private ObjectAnimator elevation;
     private boolean raised, showPending;
-    private String displayedQuery;
+    private boolean highlighted;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); setContentView(R.layout.activity_review_queue); EditorWindowStyle.apply(this);
         model = new ViewModelProvider(this).get(ReviewQueueViewModel.class);
-        if (!model.initialized) {
-            if (state == null) {
-                int work = getIntent().getIntExtra(EXTRA_WORK_ID, 0), review = getIntent().getIntExtra(EXTRA_REVIEW_ID, 0);
-                model.workFilter = work > 0 ? work : null; model.reviewFilter = review > 0 ? review : null;
-                if (model.workFilter != null || model.reviewFilter != null) model.mode = ReviewQueueViewModel.Mode.HISTORY;
-            } else {
-                try { model.mode = ReviewQueueViewModel.Mode.valueOf(state.getString("mode", "ASSIGNED")); } catch (IllegalArgumentException ignored) {}
-                model.page = Math.max(1, state.getInt("page", 1));
-                model.workFilter = state.getInt("work", 0) > 0 ? state.getInt("work") : null;
-                model.reviewFilter = state.getInt("review", 0) > 0 ? state.getInt("review") : null;
-                model.statusFilter = state.getInt("status", 0) > 0 ? state.getInt("status") : null;
-            }
-            model.initialized = true;
-        }
+        highlighted = state != null && state.getBoolean("highlighted");
         toolbar = findViewById(R.id.toolbar); toolbar.setNavigationOnClickListener(v -> finish());
         toolbar.getMenu().add(Menu.NONE, R.id.action_review_refresh, Menu.NONE, R.string.review_refresh)
                 .setIcon(MdiIcons.drawable(this, "refresh")).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
@@ -74,10 +62,12 @@ public class ReviewQueueActivity extends AppCompatActivity {
     private void render() {
         if (isFinishing() || isDestroyed()) return;
         if (list.isComputingLayout()) { list.post(this::render); return; }
-        adapter.notifyDataSetChanged();
+        adapter.rebuild();
         toolbar.getMenu().findItem(R.id.action_review_refresh).setEnabled(!model.loading && !model.mutating);
-        String query = model.mode + ":" + model.statusFilter + ":" + model.workFilter + ":" + model.reviewFilter + ":" + model.page;
-        if (!query.equals(displayedQuery)) { displayedQuery = query; list.scrollToPosition(0); }
+        if (!highlighted && model.loaded) {
+            int position = adapter.highlightedPosition();
+            if (position >= 0) { ((LinearLayoutManager) list.getLayoutManager()).scrollToPositionWithOffset(position, 0); highlighted = true; }
+        }
         if (model.notice != null) { Toast.makeText(this, model.notice, Toast.LENGTH_SHORT).show(); model.notice = null; }
         syncDialog();
     }
@@ -85,21 +75,22 @@ public class ReviewQueueActivity extends AppCompatActivity {
         FragmentManager fragments = getSupportFragmentManager();
         if (isFinishing() || isDestroyed() || fragments.isStateSaved()) return;
         Fragment existing = fragments.findFragmentByTag(ReviewActionDialog.TAG);
-        if (model.action != ReviewQueueViewModel.Action.NONE && existing == null && !showPending) {
+        if (model.selected != null && existing == null && !showPending) {
             showPending = true;
             new ReviewActionDialog().show(fragments.beginTransaction().runOnCommit(() -> { showPending = false; syncDialog(); }), ReviewActionDialog.TAG);
-        } else if (model.action == ReviewQueueViewModel.Action.NONE && existing instanceof ReviewActionDialog) {
+        } else if (model.selected == null && existing instanceof ReviewActionDialog) {
             ((ReviewActionDialog) existing).dismiss();
         }
     }
     @Override protected void onResume() { super.onResume(); model.connect(); }
     @Override protected void onPostResume() { super.onPostResume(); syncDialog(); }
     @Override protected void onSaveInstanceState(@NonNull Bundle out) {
-        out.putString("mode", model.mode.name()); out.putInt("page", model.page);
-        if (model.statusFilter != null) out.putInt("status", model.statusFilter);
-        if (model.workFilter != null) out.putInt("work", model.workFilter);
-        if (model.reviewFilter != null) out.putInt("review", model.reviewFilter);
+        out.putBoolean("highlighted", highlighted);
         super.onSaveInstanceState(out);
     }
     @Override protected void onDestroy() { if (elevation != null) elevation.cancel(); super.onDestroy(); }
+    public boolean isHighlighted(ReviewEntry entry) {
+        int review = getIntent().getIntExtra(EXTRA_REVIEW_ID, 0), work = getIntent().getIntExtra(EXTRA_WORK_ID, 0);
+        return review > 0 ? entry.id == review : work > 0 && entry.workId == work;
+    }
 }

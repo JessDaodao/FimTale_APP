@@ -10,13 +10,8 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
-    @GET("work/get_reviews") Call<List<ReviewEntry>> getReviews(@Header("Token") String token,
-            @Query("page") int page, @Query("per_page") int perPage, @Query("status") Integer status,
-            @Query("assigned_user_id") Integer assignee, @Query("work_id") Integer workId, @Query("review_id") Integer reviewId);
-    @POST("work/resolve_review") Call<ReviewEntry> resolveReview(@Header("Token") String token, @Body ReviewEntry.Resolve decision);
-    @POST("work/set_review_assignments") Call<List<ReviewEntry.Assignment>> setReviewAssignments(
-            @Header("Token") String token, @Body ReviewEntry.Assign assignment);
-    @GET("user/get_team_members") Call<List<ReviewEntry.Reviewer>> getReviewers(@Header("Token") String token);
+    @GET("work/get_review_entries") Call<List<ReviewEntry>> getReviewEntries(@Header("Token") String token);
+    @POST("work/submit_review") Call<ReviewEntry> submitReview(@Header("Token") String token, @Body ReviewEntry.Submit submission);
     @GET("user/get_username_by_id") Call<String> getUsernameById(@Header("Token") String token, @Query("user_id") int userId);
     // Explicit empty Token keeps guest requests independent of any previously saved session.
     @Headers("Token: ") @POST("user/login") Call<String> login(@Body AuthRequests.PasswordLogin login,

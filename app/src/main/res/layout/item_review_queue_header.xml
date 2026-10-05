@@ -1,20 +1,5 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="8dp">
-    <com.google.android.material.tabs.TabLayout android:id="@+id/reviewTabs" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:background="@android:color/transparent" app:tabMode="fixed" app:tabGravity="fill" />
-    <com.google.android.material.chip.ChipGroup android:id="@+id/reviewStatusFilters" android:layout_width="match_parent"
-        android:layout_height="wrap_content" app:singleSelection="true" app:selectionRequired="true" android:visibility="gone">
-        <com.google.android.material.chip.Chip android:id="@+id/reviewFilterAll" style="@style/Widget.Material3.Chip.Filter"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_all" app:checkedIconVisible="false" />
-        <com.google.android.material.chip.Chip android:id="@+id/reviewFilterPassed" style="@style/Widget.Material3.Chip.Filter"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_passed" app:checkedIconVisible="false" />
-        <com.google.android.material.chip.Chip android:id="@+id/reviewFilterRejected" style="@style/Widget.Material3.Chip.Filter"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_rejected" app:checkedIconVisible="false" />
-    </com.google.android.material.chip.ChipGroup>
-    <TextView android:id="@+id/reviewFilterLabel" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:paddingTop="12dp" android:textAppearance="?attr/textAppearanceBodyMedium" android:visibility="gone" />
-    <com.google.android.material.button.MaterialButton android:id="@+id/reviewClearFilter" style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_clear_filter" android:visibility="gone" />
     <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/reviewProgress" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:layout_marginVertical="12dp" android:indeterminate="true" android:visibility="gone" />
+        android:layout_height="wrap_content" android:layout_marginVertical="4dp" android:indeterminate="true" android:visibility="invisible" />
 </LinearLayout>

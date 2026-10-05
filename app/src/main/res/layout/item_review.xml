@@ -9,27 +9,21 @@
         <TextView android:id="@+id/reviewNumber" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceLabelMedium" android:textColor="?attr/colorOnSurfaceVariant" />
         <com.google.android.material.chip.Chip android:id="@+id/reviewStatus" style="@style/Widget.Material3.Chip.Assist"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false" android:checkable="false" />
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:clickable="false" android:checkable="false"
+            app:chipStrokeWidth="0dp" />
         <TextView android:id="@+id/reviewReason" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginBottom="8dp" android:textAppearance="?attr/textAppearanceBodyMedium" android:textIsSelectable="true" />
-        <TextView android:id="@+id/reviewCreated" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
         <TextView android:id="@+id/reviewUpdated" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
         <TextView android:id="@+id/reviewResubmit" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
-        <TextView android:id="@+id/reviewUnassigned" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" android:text="@string/review_unassigned" android:textAppearance="?attr/textAppearanceBodySmall" />
-        <com.google.android.material.chip.ChipGroup android:id="@+id/reviewAssignments" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/reviewHistory" style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" />
-        <com.google.android.material.chip.ChipGroup android:id="@+id/reviewActions" android:layout_width="match_parent" android:layout_height="wrap_content">
-            <com.fimtale.ui.icons.MdiButton android:id="@+id/reviewPass" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_pass" app:mdiIcon="check" app:iconSize="@dimen/mdi_icon_size" />
-            <com.fimtale.ui.icons.MdiButton android:id="@+id/reviewReject" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_reject" app:mdiIcon="close" app:iconSize="@dimen/mdi_icon_size" />
-            <com.fimtale.ui.icons.MdiButton android:id="@+id/reviewAssign" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_assign" app:mdiIcon="account-multiple" app:iconSize="@dimen/mdi_icon_size" />
+        <com.google.android.material.chip.ChipGroup android:layout_width="match_parent" android:layout_height="wrap_content">
+            <com.fimtale.ui.icons.MdiButton android:id="@+id/reviewOpenWork" style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_open_work"
+                app:mdiIcon="open-in-new" app:iconSize="@dimen/mdi_icon_size" />
+            <com.fimtale.ui.icons.MdiButton android:id="@+id/reviewSubmit" style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_submit"
+                app:mdiIcon="send" app:iconSize="@dimen/mdi_icon_size" />
         </com.google.android.material.chip.ChipGroup>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

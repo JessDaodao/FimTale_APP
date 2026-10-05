@@ -1,0 +1,15 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+    android:paddingHorizontal="16dp" android:paddingTop="16dp" android:paddingBottom="4dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+        <TextView android:id="@+id/reviewSectionTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:accessibilityHeading="true" android:textAppearance="?attr/textAppearanceTitleMedium" android:textColor="?attr/colorOnSurface" />
+        <com.google.android.material.chip.Chip android:id="@+id/reviewSectionCount" style="@style/Widget.Material3.Chip.Assist"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:clickable="false" android:checkable="false" app:ensureMinTouchTargetSize="false"
+            app:chipStrokeWidth="0dp" app:chipBackgroundColor="?attr/colorSecondaryContainer"
+            android:textColor="?attr/colorOnSecondaryContainer" />
+    </LinearLayout>
+    <TextView android:id="@+id/reviewSectionEmpty" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceBodyMedium" android:textColor="?attr/colorOnSurfaceVariant" android:paddingVertical="8dp" />
+</LinearLayout>
