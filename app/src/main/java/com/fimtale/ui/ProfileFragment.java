@@ -44,6 +44,9 @@ public class ProfileFragment extends Fragment {
     private TextView tvUsername;
     private TextView tvBio;
     private View btnFavorites, btnHistory;
+    private View btnReviewQueue;
+    private Call<com.fimtale.model.CurrentUser> userCall;
+    private Call<com.fimtale.model.UserAuth> authCall;
     private boolean isLoggedIn = false;
 
     private View contentLayout;
@@ -71,6 +74,8 @@ public class ProfileFragment extends Fragment {
 
         btnFavorites = view.findViewById(R.id.btnFavorites);
         btnHistory = view.findViewById(R.id.btnHistory);
+        btnReviewQueue = view.findViewById(R.id.btnReviewQueue);
+        btnReviewQueue.setOnClickListener(v -> startActivity(new Intent(requireContext(), com.fimtale.ReviewQueueActivity.class)));
         view.findViewById(R.id.btnPublish).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), com.fimtale.DraftsActivity.class)));
         view.findViewById(R.id.btnMyWorks).setOnClickListener(v -> startActivity(new Intent(requireContext(), UserDetailActivity.class)
@@ -109,11 +114,15 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadContent() {
+        if (userCall != null) userCall.cancel();
+        if (authCall != null) authCall.cancel();
+        btnReviewQueue.setVisibility(View.GONE);
         if (UserPreferences.isLoggedIn(requireContext())) {
             emptyStateLayout.setVisibility(View.GONE);
             contentLayout.setVisibility(View.VISIBLE);
             loadCachedUserInfo();
             checkLoginStatus();
+            checkReviewPermission();
         } else {
             isLoggedIn = false;
             emptyStateLayout.setVisibility(View.VISIBLE);
@@ -165,9 +174,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void checkLoginStatus() {
-        RetrofitClient.getInstance().getCurrentUser(null).enqueue(new Callback<com.fimtale.model.CurrentUser>() {
+        String token = UserPreferences.getToken(requireContext());
+        userCall = RetrofitClient.getInstance().getCurrentUser(token);
+        userCall.enqueue(new Callback<com.fimtale.model.CurrentUser>() {
             @Override public void onResponse(Call<com.fimtale.model.CurrentUser> call, Response<com.fimtale.model.CurrentUser> response) {
-                if (!isAdded()) return;
+                if (!isAdded() || getView() == null || call != userCall || call.isCanceled()) return;
+                if (!token.equals(UserPreferences.getToken(requireContext()))) { loadContent(); return; }
                 com.fimtale.model.CurrentUser user = response.body();
                 if (response.isSuccessful() && user != null && user.id > 0) {
                     isLoggedIn = true;
@@ -176,12 +188,34 @@ public class ProfileFragment extends Fragment {
                     UserPreferences.saveAvatar(requireContext(), user.getAvatar());
                     updateUserInfo(user.id, user.username);
                 } else if (response.code() == 401) {
+                    UserPreferences.clearSession(requireContext());
                     isLoggedIn = false;
                     loadContent();
                 }
             }
             @Override public void onFailure(Call<com.fimtale.model.CurrentUser> call, Throwable t) {}
         });
+    }
+
+    private void checkReviewPermission() {
+        String token = UserPreferences.getToken(requireContext());
+        authCall = RetrofitClient.getInstance().getUserAuth(token);
+        authCall.enqueue(new Callback<com.fimtale.model.UserAuth>() {
+            @Override public void onResponse(Call<com.fimtale.model.UserAuth> call, Response<com.fimtale.model.UserAuth> response) {
+                if (!isAdded() || getView() == null || call != authCall || call.isCanceled()
+                        || !token.equals(UserPreferences.getToken(requireContext()))) return;
+                com.fimtale.model.UserAuth auth = response.body();
+                btnReviewQueue.setVisibility(response.isSuccessful() && auth != null && auth.canReview() ? View.VISIBLE : View.GONE);
+            }
+            @Override public void onFailure(Call<com.fimtale.model.UserAuth> call, Throwable t) {}
+        });
+    }
+
+    @Override public void onDestroyView() {
+        if (userCall != null) userCall.cancel();
+        if (authCall != null) authCall.cancel();
+        userCall = null; authCall = null; btnReviewQueue = null;
+        super.onDestroyView();
     }
 
     private void updateUserInfo(int userId, String userName) {

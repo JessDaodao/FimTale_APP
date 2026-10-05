@@ -13,13 +13,20 @@
                 android:scrollbars="vertical" android:overScrollMode="always" android:saveEnabled="false"/>
             <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorSurfaceVariant"/>
             <LinearLayout android:id="@+id/editorFormatBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="8dp">
-                <com.google.android.material.button.MaterialButton android:id="@+id/editorBold" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="粗体" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
-                <com.google.android.material.button.MaterialButton android:id="@+id/editorItalic" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="斜体" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
-                <com.google.android.material.button.MaterialButton android:id="@+id/editorQuote" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="引用" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
-                <com.google.android.material.button.MaterialButton android:id="@+id/editorSpoiler" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="黑条" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
-                <com.google.android.material.button.MaterialButton android:id="@+id/editorEmoji" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="表情" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
-                <com.google.android.material.button.MaterialButton android:id="@+id/editorImage" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="图片" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
-                <com.google.android.material.button.MaterialButton android:id="@+id/editorSource" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/editor_show_source" android:minWidth="0dp" android:paddingHorizontal="4dp"/>
+                <com.fimtale.ui.icons.MdiButton android:id="@+id/editorBold" style="@style/Widget.Fimtale.EditorFormatButton"
+                    app:mdiIcon="format-bold" android:contentDescription="@string/editor_tool_bold" android:tooltipText="@string/editor_tool_bold"/>
+                <com.fimtale.ui.icons.MdiButton android:id="@+id/editorItalic" style="@style/Widget.Fimtale.EditorFormatButton"
+                    app:mdiIcon="format-italic" android:contentDescription="@string/editor_tool_italic" android:tooltipText="@string/editor_tool_italic"/>
+                <com.fimtale.ui.icons.MdiButton android:id="@+id/editorQuote" style="@style/Widget.Fimtale.EditorFormatButton"
+                    app:mdiIcon="format-quote-close" android:contentDescription="@string/editor_tool_quote" android:tooltipText="@string/editor_tool_quote"/>
+                <com.fimtale.ui.icons.MdiButton android:id="@+id/editorSpoiler" style="@style/Widget.Fimtale.EditorFormatButton"
+                    app:mdiIcon="eye-off-outline" android:contentDescription="@string/editor_tool_spoiler" android:tooltipText="@string/editor_tool_spoiler"/>
+                <com.fimtale.ui.icons.MdiButton android:id="@+id/editorEmoji" style="@style/Widget.Fimtale.EditorFormatButton"
+                    app:mdiIcon="emoticon-happy-outline" android:contentDescription="@string/editor_tool_emoji" android:tooltipText="@string/editor_tool_emoji"/>
+                <com.fimtale.ui.icons.MdiButton android:id="@+id/editorImage" style="@style/Widget.Fimtale.EditorFormatButton"
+                    app:mdiIcon="image-outline" android:contentDescription="@string/editor_tool_image" android:tooltipText="@string/editor_tool_image"/>
+                <com.fimtale.ui.icons.MdiButton android:id="@+id/editorSource" style="@style/Widget.Fimtale.EditorFormatButton"
+                    app:mdiIcon="code-tags" android:contentDescription="@string/editor_show_source_description" android:tooltipText="@string/editor_show_source_description"/>
             </LinearLayout>
         </LinearLayout>
         <include layout="@layout/editor_metadata"/>

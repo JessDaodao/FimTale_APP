@@ -2,6 +2,7 @@ package com.fimtale.network;
 import com.fimtale.model.*;
 import com.fimtale.editor.*;
 import com.fimtale.auth.AuthRequests;
+import com.fimtale.review.ReviewEntry;
 import java.util.List;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -9,6 +10,14 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
+    @GET("work/get_reviews") Call<List<ReviewEntry>> getReviews(@Header("Token") String token,
+            @Query("page") int page, @Query("per_page") int perPage, @Query("status") Integer status,
+            @Query("assigned_user_id") Integer assignee, @Query("work_id") Integer workId, @Query("review_id") Integer reviewId);
+    @POST("work/resolve_review") Call<ReviewEntry> resolveReview(@Header("Token") String token, @Body ReviewEntry.Resolve decision);
+    @POST("work/set_review_assignments") Call<List<ReviewEntry.Assignment>> setReviewAssignments(
+            @Header("Token") String token, @Body ReviewEntry.Assign assignment);
+    @GET("user/get_team_members") Call<List<ReviewEntry.Reviewer>> getReviewers(@Header("Token") String token);
+    @GET("user/get_username_by_id") Call<String> getUsernameById(@Header("Token") String token, @Query("user_id") int userId);
     // Explicit empty Token keeps guest requests independent of any previously saved session.
     @Headers("Token: ") @POST("user/login") Call<String> login(@Body AuthRequests.PasswordLogin login,
             @Query("captcha_response") String captcha, @Query("captcha_type") String provider);

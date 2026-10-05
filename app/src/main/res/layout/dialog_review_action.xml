@@ -1,0 +1,15 @@
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:clipToPadding="false">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="24dp" android:paddingTop="8dp">
+        <TextView android:id="@+id/reviewActionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:textAppearance="?attr/textAppearanceBodyLarge" />
+        <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/reviewReasonLayout" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/review_reject_reason">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/reviewReasonInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:minLines="3" android:maxLines="6" android:gravity="top" android:inputType="textMultiLine|textCapSentences" />
+        </com.fimtale.ui.icons.MdiTextInputLayout>
+        <com.fimtale.ui.icons.MdiButton android:id="@+id/reviewChooseTime" style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/review_resubmit_time" app:mdiIcon="calendar-clock" app:iconSize="@dimen/mdi_icon_size" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/reviewClearTime" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_clear_time" />
+        <LinearLayout android:id="@+id/reviewMembers" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+        <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/reviewActionProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:indeterminate="true" android:layout_marginVertical="12dp" />
+        <TextView android:id="@+id/reviewActionError" android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityLiveRegion="polite" android:textColor="?attr/colorError" android:layout_marginTop="12dp" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/reviewRetryMembers" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_retry" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

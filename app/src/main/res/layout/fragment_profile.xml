@@ -6,10 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".ui.ProfileFragment">
 
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
     <LinearLayout
         android:id="@+id/contentLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -74,8 +76,7 @@
             android:paddingBottom="16dp"
             android:background="?attr/colorSurface"
             android:layout_marginTop="8dp"
-            android:baselineAligned="false"
-            android:weightSum="4">
+            android:baselineAligned="false">
 
             <LinearLayout android:id="@+id/btnPublish" android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
@@ -144,9 +145,19 @@
                     android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
 
+            <LinearLayout android:id="@+id/btnReviewQueue" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
+                android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp"
+                android:visibility="gone">
+                <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size"
+                    app:mdiIcon="clipboard-text-outline" app:tint="?attr/colorOnSurface"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_queue_title"
+                    android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
+    </androidx.core.widget.NestedScrollView>
     <LinearLayout
         android:id="@+id/emptyStateLayout"
         android:layout_width="wrap_content"

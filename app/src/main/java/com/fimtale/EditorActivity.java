@@ -458,9 +458,10 @@ public class EditorActivity extends AppCompatActivity {
         field.setSelection(Math.min(field.length(), start + value.length()));
     }
     private void updateSourceButton() {
-        TextView button = findViewById(R.id.editorSource);
-        button.setText(body.isSourceVisible() ? R.string.editor_hide_source : R.string.editor_show_source);
+        com.google.android.material.button.MaterialButton button = findViewById(R.id.editorSource);
+        button.setIcon(MdiIcons.drawable(this, body.isSourceVisible() ? "format-text" : "code-tags"));
         button.setContentDescription(getString(body.isSourceVisible() ? R.string.editor_hide_source_description : R.string.editor_show_source_description));
+        button.setTooltipText(button.getContentDescription());
     }
     private void leave() {
         if (model.busy) { toast("请等待当前操作完成，避免丢失提交结果"); return; }

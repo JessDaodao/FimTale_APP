@@ -203,7 +203,9 @@ public class EditorActivityTest {
             EditorViewModel model = ready(scenario); assertTrue(model.document.submissionUncertain); assertEquals(1, writes.get());
         }
     }
-    @Test public void metadataPanelAndBottomToolsPreserveTheBodyAcrossRecreation() throws Exception {
+    @Test public void metadataSheetAndBottomToolsPreserveTheBodyAcrossRecreation() throws Exception {
+        Field metadataSheet = EditorActivity.class.getDeclaredField("metadataSheet");
+        metadataSheet.setAccessible(true);
         try (ActivityScenario<EditorActivity> scenario = ActivityScenario.launch(EditorActivity.workIntent(context, 42))) {
             EditorViewModel model = ready(scenario);
             scenario.onActivity(a -> {
@@ -213,14 +215,20 @@ public class EditorActivityTest {
                 assertEquals("[b]全屏正文[/b]", body.getText().toString());
                 ((com.google.android.material.appbar.MaterialToolbar) a.findViewById(R.id.toolbar)).getMenu()
                         .performIdentifierAction(R.id.action_editor_metadata, 0);
-                assertEquals(android.view.View.VISIBLE, a.findViewById(R.id.editorMetadataPanel).getVisibility());
-                assertEquals(android.view.View.GONE, a.findViewById(R.id.editorWritingPanel).getVisibility());
-                ((EditText) a.findViewById(R.id.editorTitle)).setText("元数据标题");
+                try {
+                    com.google.android.material.bottomsheet.BottomSheetDialog sheet =
+                            (com.google.android.material.bottomsheet.BottomSheetDialog) metadataSheet.get(a);
+                    assertNotNull(sheet);
+                    assertTrue(sheet.isShowing());
+                    ((EditText) sheet.findViewById(R.id.editorTitle)).setText("元数据标题");
+                    sheet.findViewById(R.id.editorMetadataDone).performClick();
+                    assertFalse(sheet.isShowing());
+                } catch (IllegalAccessException e) {
+                    throw new AssertionError(e);
+                }
             });
             scenario.recreate();
             scenario.onActivity(a -> {
-                assertEquals(android.view.View.VISIBLE, a.findViewById(R.id.editorMetadataPanel).getVisibility());
-                a.findViewById(R.id.editorMetadataDone).performClick();
                 assertEquals(android.view.View.VISIBLE, a.findViewById(R.id.editorWritingPanel).getVisibility());
                 assertEquals("[b]全屏正文[/b]", ((EditText) a.findViewById(R.id.editorBody)).getText().toString());
                 assertEquals("元数据标题", model.document.work.title);

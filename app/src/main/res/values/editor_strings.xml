@@ -16,4 +16,10 @@
     <string name="editor_hide_source">收起源码</string>
     <string name="editor_show_source_description">显示全部 BBCode 标签</string>
     <string name="editor_hide_source_description">收起标签，显示正文格式</string>
+    <string name="editor_tool_bold">粗体</string>
+    <string name="editor_tool_italic">斜体</string>
+    <string name="editor_tool_quote">插入引用</string>
+    <string name="editor_tool_spoiler">黑条（隐藏文字）</string>
+    <string name="editor_tool_emoji">插入表情</string>
+    <string name="editor_tool_image">插入图片</string>
 </resources>
