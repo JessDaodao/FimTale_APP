@@ -37,6 +37,8 @@
                 <com.google.android.material.button.MaterialButton android:id="@+id/editorOpenHandbook" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="阅读用户手册"/>
             </LinearLayout>
         <TextView android:id="@+id/editorHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <TextView android:id="@+id/editorMetadataStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant" android:accessibilityLiveRegion="polite"/>
+        <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/editorMetadataProgress" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:indeterminate="true" android:visibility="gone"/>
         <com.google.android.material.button.MaterialButton android:id="@+id/editorSubmit" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="@string/editor_submit_action"/>
         <com.google.android.material.button.MaterialButton android:id="@+id/editorMetadataDone" style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/editor_done_metadata"/>
     </LinearLayout>

@@ -1,6 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/action_editor_submit" android:title="@string/editor_submit_action" app:showAsAction="always"/>
     <item android:id="@+id/action_editor_metadata" android:title="@string/editor_metadata" app:showAsAction="always" app:iconTint="?attr/colorOnSurface"/>
-    <item android:id="@+id/action_editor_submit" android:title="@string/editor_submit_action" app:showAsAction="ifRoom"/>
     <item android:id="@+id/action_save_draft" android:title="保存草稿" app:showAsAction="never"/>
     <item android:id="@+id/action_discard_draft" android:title="放弃草稿" app:showAsAction="never"/>
     <item android:id="@+id/action_draft_conflict" android:title="处理草稿同步冲突" android:visible="false" app:showAsAction="never"/>

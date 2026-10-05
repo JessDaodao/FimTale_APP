@@ -4,71 +4,124 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root { color-scheme: light dark; }
-    body { margin: 0; padding: 20px 8px; font: 16px system-ui, sans-serif; text-align: center; }
+    html { background: transparent; }
+    body { margin: 0; padding: 8px; text-align: center; }
+    body.dark { color-scheme: dark; }
     #widget { display: inline-block; max-width: 100%; }
-    #status { padding: 16px; line-height: 1.6; }
+    #widget.tencent { width: 304px; min-height: 240px; }
   </style>
 </head>
 <body>
   <div id="widget"></div>
-  <p id="status" role="status">正在加载验证，请稍候…</p>
   <script>
     'use strict';
     const config = /*CONFIG*/;
-    let complete = false;
-    let timer;
-    const status = document.getElementById('status');
-    function problem() {
-      if (!complete) status.textContent = '验证暂未完成，可以继续等待，或在上方重试、更换验证方式。';
+    const state = window.__ftCaptchaState = { attempt: config.attempt, provider: config.provider,
+      escape: false, loaded: false, interactive: false, height: 100 };
+    const widgetElement = document.getElementById('widget');
+    document.body.classList.toggle('dark', config.dark);
+
+    // Match CaptchaHost.vue: separate script/challenge budgets, bounded recovery, and no
+    // timeout while a person is actively solving a challenge. Offering a switch keeps it alive.
+    let timer, complete = false, loaded = false, retries = 0, widgetId, tencentWidget;
+    const RETRY_LIMIT = 3;
+    function disarm() { clearTimeout(timer); }
+    function arm(ms, callback) { disarm(); timer = setTimeout(callback, ms); }
+    function armVerify() {
+      if (!state.escape && !complete) arm(15000, () => offerEscape('challenge_stalled'));
     }
-    function interactive() { clearTimeout(timer); status.textContent = '请完成下方或弹出的验证。'; }
+    function offerEscape(reason) {
+      disarm();
+      if (complete || state.escape) return;
+      state.escape = true; state.reason = reason;
+    }
+    function interactiveStart() {
+      if (complete) return;
+      disarm(); state.interactive = true;
+    }
+    function interactiveEnd() {
+      if (complete) return;
+      state.interactive = false; armVerify();
+    }
     function success(token) {
-      if (complete || typeof token !== 'string' || !token) return;
-      complete = true;
-      clearTimeout(timer);
-      window.__ftCaptchaResult = { token: token, provider: config.provider };
-      status.textContent = '验证完成，正在返回编辑器…';
+      if (complete || typeof token !== 'string' || !token || token.length > 16384) return;
+      complete = true; disarm(); state.token = token;
     }
-    timer = setTimeout(problem, 15000);
+    function recover(code) {
+      if (complete || state.escape) return;
+      if (++retries > RETRY_LIMIT) return offerEscape('error:' + code);
+      state.interactive = false;
+      try {
+        if (config.provider === 'turnstile') turnstile.reset(widgetId);
+        else if (config.provider === 'hcaptcha') hcaptcha.reset(widgetId);
+        else { if (tencentWidget) tencentWidget.destroy(); mountTencent(); }
+        if (!state.interactive) armVerify();
+      } catch (e) { offerEscape('unsupported_browser'); }
+    }
+    function ready() {
+      loaded = true; state.loaded = true;
+      if (!state.interactive) armVerify();
+    }
+    arm(10000, () => loaded ? armVerify() : offerEscape('script_blocked'));
     const script = document.createElement('script');
-    script.onerror = problem;
-    if (config.provider === 'turnstile') {
+    script.onerror = () => offerEscape('script_blocked');
+    if (!config.key) {
+      offerEscape('unsupported_browser');
+    } else if (config.provider === 'turnstile') {
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       script.onload = function () {
         try {
-          turnstile.render('#widget', {
-            sitekey: config.key, theme: 'auto', language: 'zh-cn', callback: success,
-            'error-callback': problem, 'expired-callback': problem, 'timeout-callback': problem,
-            'unsupported-callback': problem, 'before-interactive-callback': interactive
+          ready();
+          widgetId = turnstile.render('#widget', {
+            sitekey: config.key, theme: config.dark ? 'dark' : 'light', language: 'zh-cn', callback: success,
+            'error-callback': recover, 'expired-callback': () => recover('expired'),
+            'before-interactive-callback': interactiveStart, 'after-interactive-callback': interactiveEnd,
+            'timeout-callback': () => offerEscape('interactive_timeout'),
+            'unsupported-callback': () => offerEscape('unsupported_browser')
           });
-        } catch (e) { problem(); }
+        } catch (e) { offerEscape('unsupported_browser'); }
       };
     } else if (config.provider === 'hcaptcha') {
-      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit&onload=hcaptchaReady';
-      window.hcaptchaReady = function () {
+      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit&onload=ftHCaptchaReady';
+      window.ftHCaptchaReady = function () {
         try {
-          hcaptcha.render('widget', {
-            sitekey: config.key, hl: 'zh-CN', callback: success,
-            'error-callback': problem, 'expired-callback': problem,
-            'open-callback': interactive, 'close-callback': problem
+          ready();
+          widgetId = hcaptcha.render('widget', {
+            sitekey: config.key, theme: config.dark ? 'dark' : 'light', hl: 'zh-CN', callback: success,
+            'error-callback': recover, 'expired-callback': () => recover('expired'),
+            'open-callback': interactiveStart, 'close-callback': interactiveEnd,
+            'chalexpired-callback': () => offerEscape('interactive_timeout')
           });
-        } catch (e) { problem(); }
+        } catch (e) { offerEscape('unsupported_browser'); }
       };
     } else if (config.provider === 'tencent') {
+      widgetElement.classList.add('tencent');
       script.src = 'https://ca.turing.captcha.qcloud.com/TJNCaptcha-global.js';
       script.onload = function () {
-        try {
-          const widget = new TencentCaptcha(document.getElementById('widget'), config.key, function (result) {
-            if (result.ret === 0 && result.ticket && result.randstr && !result.ticket.startsWith('trerror')) {
-              success(JSON.stringify({ ticket: result.ticket, randstr: result.randstr }));
-            } else problem();
-          }, { type: 'embed', userLanguage: 'zh-cn', ready: interactive });
-          widget.show();
-        } catch (e) { problem(); }
+        try { ready(); mountTencent(); }
+        catch (e) { offerEscape('unsupported_browser'); }
       };
     }
-    document.head.appendChild(script);
+    function mountTencent() {
+      tencentWidget = new TencentCaptcha(widgetElement, config.key, function (result) {
+        if (result.ret === 0 && result.ticket && result.randstr) {
+          if (result.ticket.startsWith('trerror')) recover('trerror');
+          else success(JSON.stringify({ ticket: result.ticket, randstr: result.randstr }));
+        } else if (result.ret === 2) interactiveEnd();
+        else recover(String(result.errorCode == null ? result.ret : result.errorCode));
+      }, { type: 'embed', enableDarkMode: config.dark, userLanguage: 'zh-cn', ready: interactiveStart });
+      tencentWidget.show();
+    }
+    if (config.key) document.head.appendChild(script);
+    function measure() {
+      state.height = Math.ceil(document.body.getBoundingClientRect().height);
+    }
+    new ResizeObserver(measure).observe(document.body);
+    measure();
+    window.addEventListener('pagehide', () => {
+      complete = true; disarm();
+      if (tencentWidget) tencentWidget.destroy();
+    });
   </script>
 </body>
 </html>

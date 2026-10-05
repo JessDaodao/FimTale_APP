@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.fimtale.editor.EditorDocument;
 import com.fimtale.editor.BbCodeEditText;
 import com.fimtale.editor.EditorViewModel;
+import com.fimtale.editor.CaptchaDialogFragment;
 import com.fimtale.editor.TagPickerDialog;
 import com.fimtale.editor.WorkInput;
 import com.fimtale.ui.FtemojiPicker;
@@ -50,18 +51,12 @@ public class EditorActivity extends AppCompatActivity {
     private TagPickerDialog tagPicker;
     private BottomSheetDialog metadataSheet;
     private View metadataSheetView;
+    private boolean captchaShowPending;
     private final ActivityResultLauncher<Intent> login = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (UserPreferences.isLoggedIn(this)) {
                     if (!model.initialized) initialize(); else { model.needsLogin = false; model.load(); }
                 } else if (!model.initialized) finish();
-            });
-    private final ActivityResultLauncher<Intent> captcha = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(), result -> {
-                Intent data = result.getData();
-                model.captchaResult(result.getResultCode() == RESULT_OK && data != null
-                        ? data.getStringExtra(CaptchaActivity.EXTRA_TOKEN) : null,
-                        data == null ? null : data.getStringExtra(CaptchaActivity.EXTRA_PROVIDER));
             });
     private final ActivityResultLauncher<String> coverPicker = registerForActivityResult(
             new ActivityResultContracts.GetContent(), uri -> { if (uri != null) model.upload(uri, true); });
@@ -83,6 +78,9 @@ public class EditorActivity extends AppCompatActivity {
         setContentView(R.layout.activity_editor);
         com.fimtale.utils.EditorWindowStyle.apply(this);
         model = new ViewModelProvider(this).get(EditorViewModel.class);
+        getSupportFragmentManager().setFragmentResultListener(CaptchaDialogFragment.RESULT_KEY, this,
+                (key, result) -> model.captchaResult(result.getString(CaptchaDialogFragment.TOKEN),
+                        result.getString(CaptchaDialogFragment.PROVIDER)));
         metadataVisible = state != null && state.getBoolean("metadata_visible");
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> leave());
@@ -218,9 +216,24 @@ public class EditorActivity extends AppCompatActivity {
         }
         findViewById(R.id.editorWritingPanel).setVisibility(metadataVisible ? View.GONE : View.VISIBLE);
         findViewById(R.id.editorMetadataPanel).setVisibility(metadataVisible ? View.VISIBLE : View.GONE);
-        if (model.captchaRequested && !model.captchaLaunched) {
-            model.captchaLaunched = true; captcha.launch(new Intent(this, CaptchaActivity.class));
+        renderMetadataSheetState();
+        syncCaptchaDialog();
+    }
+    private void syncCaptchaDialog() {
+        androidx.fragment.app.FragmentManager fragments = getSupportFragmentManager();
+        if (isFinishing() || isDestroyed() || fragments.isStateSaved()) return;
+        androidx.fragment.app.Fragment existing = fragments.findFragmentByTag(CaptchaDialogFragment.TAG);
+        if (model.captchaRequested && existing == null && !captchaShowPending) {
+            captchaShowPending = true;
+            new CaptchaDialogFragment().show(fragments.beginTransaction()
+                    .runOnCommit(() -> captchaShowPending = false), CaptchaDialogFragment.TAG);
+        } else if (!model.captchaRequested && existing instanceof CaptchaDialogFragment) {
+            ((CaptchaDialogFragment) existing).dismiss();
         }
+    }
+    @Override protected void onPostResume() {
+        super.onPostResume();
+        syncCaptchaDialog();
     }
     private void enableClassification() {
         if (model.document == null) return;
@@ -261,7 +274,9 @@ public class EditorActivity extends AppCompatActivity {
         toolbar.setTitle(metadataVisible ? (model.isChapter() ? "章节信息" : "文章信息")
                 : WorkInput.blank(name) ? (model.isChapter() ? "未命名章节" : "未命名文章") : name);
         toolbar.getMenu().findItem(R.id.action_editor_metadata).setTitle(metadataVisible ? "返回正文" : model.isChapter() ? "章节信息" : "文章信息");
-        toolbar.getMenu().findItem(R.id.action_editor_submit).setTitle((model.isChapter() ? model.chapterId > 0 : model.workId > 0) ? "保存" : "发表");
+        toolbar.getMenu().findItem(R.id.action_editor_submit).setTitle(
+                (model.isChapter() ? model.chapterId > 0 : model.workId > 0)
+                        ? R.string.editor_save_action : R.string.editor_submit_action);
     }
     private void showMetadata(boolean visible) {
         if (!visible) {
@@ -289,7 +304,7 @@ public class EditorActivity extends AppCompatActivity {
             metadataSheet = null;
             metadataSheetView = null;
             metadataVisible = false;
-            model.saveDraft(null);
+            if (!model.busy && !model.finished) model.saveDraft(null);
         });
         metadataSheet.show();
     }
@@ -344,12 +359,21 @@ public class EditorActivity extends AppCompatActivity {
         });
         sheet.findViewById(R.id.editorOpenHandbook).setOnClickListener(v -> DialogHelper.openSite(this, "/work/4"));
         sheet.findViewById(R.id.editorUploadCover).setOnClickListener(v -> coverPicker.launch("image/*"));
+        sheet.findViewById(R.id.editorSubmit).setOnClickListener(v -> submit());
         sheet.findViewById(R.id.editorMetadataDone).setOnClickListener(v -> showMetadata(false));
         renderTagsIn(sheet);
+        renderMetadataSheetState();
+    }
+
+    private void renderMetadataSheetState() {
+        if (metadataSheetView == null) return;
+        setEnabled(metadataSheetView, model.ready && !model.busy);
+        ((TextView) metadataSheetView.findViewById(R.id.editorMetadataStatus)).setText(model.message);
+        metadataSheetView.findViewById(R.id.editorMetadataProgress).setVisibility(model.busy ? View.VISIBLE : View.GONE);
     }
 
     private void copyMetadataFromSheet() {
-        if (binding || metadataSheetView == null || model.document == null) return;
+        if (binding || model.busy || model.finished || metadataSheetView == null || model.document == null) return;
         View sheet = metadataSheetView;
         EditText sheetTitle = sheet.findViewById(R.id.editorTitle);
         EditText sheetIntro = sheet.findViewById(R.id.editorIntro);
@@ -392,9 +416,14 @@ public class EditorActivity extends AppCompatActivity {
         });
     }
     private void submit() {
-        collect();
         if (!model.ready || model.busy) return;
+        copyMetadataFromSheet();
+        collect();
         title.setError(null); intro.setError(null); prequel.setError(null);
+        if (metadataSheetView != null) {
+            for (int fieldId : new int[]{R.id.editorTitle, R.id.editorIntro, R.id.editorPrequel})
+                MdiIcons.setError((EditText) metadataSheetView.findViewById(fieldId), null);
+        }
         if ((model.isChapter() || model.document.work.type != 3) && WorkInput.blank(text(title))) {
             showMetadataError(R.id.editorTitle, "请填写标题"); return;
         }

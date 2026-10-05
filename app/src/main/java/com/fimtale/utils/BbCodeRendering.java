@@ -96,7 +96,7 @@ public final class BbCodeRendering {
                 }).addHandler(new TableHandler(context)));
     }
 
-    private static String fontFamily(String value) {
+    public static String fontFamily(String value) {
         String lower = value.toLowerCase(Locale.ROOT);
         if (lower.contains("mono") || lower.contains("courier")) return "monospace";
         if (lower.contains("sans") || lower.contains("arial") || lower.contains("黑体")) return "sans-serif";
@@ -104,7 +104,7 @@ public final class BbCodeRendering {
         return value;
     }
 
-    static Integer cssColor(String value) {
+    public static Integer cssColor(String value) {
         if (value == null) return null;
         String color = value.toLowerCase(Locale.ROOT).trim();
         try {
@@ -150,7 +150,7 @@ public final class BbCodeRendering {
     public static final class IndentSpan implements LeadingMarginSpan {
         final String value; final float density;
         int firstMargin;
-        IndentSpan(String value, float density) { this.value = value; this.density = density; prepare(16 * density, 320 * (int) density); }
+        public IndentSpan(String value, float density) { this.value = value; this.density = density; prepare(16 * density, (int) (320 * density)); }
         public void prepare(float textSize, int width) {
             String unit = value.replaceAll("[0-9.]", "");
             float amount = Float.parseFloat(value.substring(0, value.length() - unit.length()));

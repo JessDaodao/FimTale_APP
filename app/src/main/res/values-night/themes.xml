@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <bool name="light_navigation_bar">false</bool>
     <!-- Base application theme for night mode. -->
     <style name="Theme.Fimtale" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="preferenceTheme">@style/Theme.Fimtale.Preference</item>
@@ -28,6 +29,11 @@
         <item name="colorOnSurfaceVariant">@color/md_theme_dark_onSurfaceVariant</item>
         <item name="colorOutline">@color/md_theme_dark_outline</item>
         <item name="textInputStyle">@style/Widget.Fimtale.TextInputLayout</item>
+        <item name="android:navigationBarColor">?android:attr/colorBackground</item>
+        <item name="android:navigationBarDividerColor">@android:color/transparent</item>
+        <item name="android:windowLightNavigationBar">@bool/light_navigation_bar</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Fimtale.BottomSheetDialog</item>
     </style>
 
     <!--

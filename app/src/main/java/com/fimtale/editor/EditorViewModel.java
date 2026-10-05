@@ -34,7 +34,7 @@ public class EditorViewModel extends AndroidViewModel {
     public EditorDocument document;
     public int workId, chapterId, documentVersion, savedId;
     public String userId, message = "正在加载…";
-    public boolean initialized, ready, busy, error, needsLogin, captchaRequested, captchaLaunched;
+    public boolean initialized, ready, busy, error, needsLogin, captchaRequested;
     public boolean dirty, finished, allowAnnouncement;
     private boolean cleared, loading;
     private int ownerId;
@@ -168,7 +168,7 @@ public class EditorViewModel extends AndroidViewModel {
         if (cleared) return;
         if (!ready || document == null || finished || draftSync == null) { if (after != null) after.run(); return; }
         EditorDocument copy = snapshot(); long version = changeVersion;
-        if (!busy) { message = "正在同步草稿…"; notifyUi(); }
+        if (!busy && !error) { message = "正在同步草稿…"; notifyUi(); }
         io.execute(() -> {
             try { draftSync.persist(copy); }
             catch (Exception e) { main.post(() -> fail("本机备份保存失败，请检查存储空间后重试")); return; }
@@ -238,14 +238,14 @@ public class EditorViewModel extends AndroidViewModel {
             if (!isChapter() && document.work.type == 3 && auth.spaceStatus != 1) { fail("发表帖子需要先在网站开通个人空间"); return; }
             if (isChapter()) submit(null, null);
             else {
-                captchaRequested = true; captchaLaunched = false; message = "请完成验证码"; notifyUi();
+                captchaRequested = true; message = "请完成验证码"; notifyUi();
             }
         });
     }
     public void captchaResult(String token, String provider) {
         // A token returned after process recreation cannot resume an unretained submission.
         if (!captchaRequested || document == null || finished) return;
-        captchaRequested = false; captchaLaunched = false;
+        captchaRequested = false;
         if (token == null || token.isEmpty()) { busy = false; message = "已取消验证，草稿已保留"; notifyUi(); return; }
         submit(token, provider);
     }
