@@ -2,6 +2,7 @@ package com.fimtale.utils;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -77,7 +78,11 @@ public final class MdiIcons {
             else if (id == R.id.action_search) name = "magnify";
             else if (id == R.id.action_publish || id == R.id.action_edit_work) name = "pencil";
             else if (id == R.id.action_editor_metadata || id == R.id.action_settings) name = "cog";
-            else if (id == R.id.action_toggle_theme) name = "theme-light-dark";
+            else if (id == R.id.action_toggle_theme) {
+                boolean isNight = (context.getResources().getConfiguration().uiMode
+                        & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+                name = isNight ? "weather-night" : "weather-sunny";
+            }
             else if (id == R.id.action_more) name = "dots-vertical";
             else if (id == R.id.action_info || id == R.id.action_tag_info) name = "information";
             if (name != null) item.setIcon(drawable(context, name));
