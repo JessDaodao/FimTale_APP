@@ -633,6 +633,7 @@ public class TopicDetailActivity extends AppCompatActivity {
             finalCoverUrl = topic.getBackground();
         }
         currentTopicCoverUrl = finalCoverUrl;
+        com.fimtale.ui.ImagePreview.bind(coverImageView, finalCoverUrl);
 
         if (isIntroPage || finalCoverUrl != null) {
             imageContainer.setVisibility(View.VISIBLE);
@@ -657,6 +658,7 @@ public class TopicDetailActivity extends AppCompatActivity {
             authorNameTextView.setText(author.getUserName());
             
             String authorAvatarUrl = author.getAvatar();
+            com.fimtale.ui.ImagePreview.bind(authorAvatarImageView, authorAvatarUrl);
             Glide.with(this)
                     .load(authorAvatarUrl)
                     .placeholder(MdiIcons.drawable(this, "account"))

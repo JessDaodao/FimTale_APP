@@ -40,7 +40,7 @@ public final class BbCodeRendering {
         int width = view.getWidth() - view.getPaddingLeft() - view.getPaddingRight();
         if (width <= 0) width = view.getResources().getDisplayMetrics().widthPixels - (int) (48 * view.getResources().getDisplayMetrics().density);
         BbCodeText.prepare(text, view.getPaint(), width);
-        renderer.setParsedMarkdown(view, text);
+        renderer.setParsedMarkdown(view, com.fimtale.ui.ImagePreview.images(text));
     }
 
     public static Markwon create(Context context) {

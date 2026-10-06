@@ -293,7 +293,9 @@ public class UserDetailActivity extends AppCompatActivity {
                  .into(ivBackground);
         }
 
+        com.fimtale.ui.ImagePreview.bind(ivBackground, info.getBackground());
         String avatarUrl = info.getAvatar();
+        com.fimtale.ui.ImagePreview.bind(ivAvatar, avatarUrl);
         Glide.with(this)
              .load(avatarUrl)
              .placeholder(MdiIcons.drawable(this, "account"))
@@ -334,6 +336,8 @@ public class UserDetailActivity extends AppCompatActivity {
         chip.setChipStrokeWidth(0);
 
         String medalUrl = com.fimtale.network.SiteUrls.media(medal.image);
+        com.fimtale.ui.ImagePreview.bind(chip, medalUrl);
+        chip.setContentDescription(medalName);
         int iconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 44, getResources().getDisplayMetrics());
         chip.setChipIconSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics()));
 

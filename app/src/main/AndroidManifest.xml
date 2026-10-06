@@ -17,6 +17,9 @@
         android:theme="@style/Theme.Fimtale"
         tools:targetApi="31">
 
+        <activity android:name=".ImagePreviewActivity" android:exported="false"
+            android:theme="@style/Theme.Fimtale.FullTransparent" />
+
         <!-- MainActivity 设置为启动页 -->
         <activity
             android:name=".MainActivity"
