@@ -19,7 +19,7 @@ import com.fimtale.R;
 
 /** Cover and text placeholders with one diagonal highlight clipped to their shapes. */
 public final class ShimmerSkeletonView extends View {
-    public enum Layout { HOME, ARTICLES, CARD, TOPIC_DETAIL, USER_DETAIL, HISTORY, HISTORY_ROW, TAGS, TAG_ROW, DRAFTS, COMMENTS }
+    public enum Layout { HOME, ARTICLES, CARD, TOPIC_DETAIL, USER_DETAIL, HISTORY, HISTORY_ROW, TAGS, TAG_ROW, DRAFTS, COMMENTS, CONVERSATIONS, CHAT }
     private Layout layout = Layout.ARTICLES;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path blocks = new Path();
@@ -134,10 +134,32 @@ public final class ShimmerSkeletonView extends View {
             y += dp(tags || drafts ? 128 : 120);
         } while (!single && y < getHeight());
     }
+    private void conversations() {
+        float right = getWidth() - dp(16), textLeft = dp(80);
+        for (float y = dp(16); y < getHeight(); y += dp(80)) {
+            block(dp(16), y, dp(68), y + dp(52), dp(26));
+            block(textLeft, y + dp(4), textLeft + (right - textLeft) * .48f, y + dp(21), dp(4));
+            block(right - dp(48), y + dp(6), right, y + dp(17), dp(4));
+            block(textLeft, y + dp(34), textLeft + (right - textLeft) * .8f, y + dp(47), dp(4));
+        }
+    }
+    private void chat() {
+        float width = getWidth(); int index = 0;
+        for (float y = dp(24); y < getHeight(); y += dp(100)) {
+            boolean mine = index++ % 2 != 0;
+            float avatarLeft = mine ? width - dp(52) : dp(12);
+            block(avatarLeft, y, avatarLeft + dp(40), y + dp(40), dp(6));
+            float bubbleWidth = Math.max(dp(40), (width - dp(112)) * (mine ? .7f : .9f));
+            float left = mine ? width - dp(60) - bubbleWidth : dp(60);
+            block(left, y, left + bubbleWidth, y + dp(mine ? 42 : 62), dp(8));
+        }
+    }
     private void rebuild() {
         blocks.reset(); cards.reset();
         if (getWidth() <= 0 || getHeight() <= 0) return;
-        if (layout == Layout.TOPIC_DETAIL) topicDetail();
+        if (layout == Layout.CONVERSATIONS) conversations();
+        else if (layout == Layout.CHAT) chat();
+        else if (layout == Layout.TOPIC_DETAIL) topicDetail();
         else if (layout == Layout.USER_DETAIL) userDetail();
         else if (layout == Layout.COMMENTS) {
             for (float y = dp(16); y < getHeight(); y += dp(140)) {

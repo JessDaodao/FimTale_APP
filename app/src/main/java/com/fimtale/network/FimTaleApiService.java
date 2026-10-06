@@ -10,6 +10,16 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
+    @GET("user/get_notification_count") Call<java.util.Map<String, Integer>> getNotificationCount(@Header("Token") String token);
+    @GET("user/get_notifications") Call<List<com.fimtale.notifications.Inbox.Notice>> getNotifications(@Header("Token") String token,
+            @Query("type") String type, @Query("page") int page, @Query("per_page") int perPage);
+    @GET("user/list_conversations") Call<List<com.fimtale.notifications.Inbox.Conversation>> getConversations(@Header("Token") String token,
+            @Query("page") int page, @Query("per_page") int perPage);
+    @GET("user/get_conversation_messages") Call<List<com.fimtale.notifications.Inbox.Message>> getMessages(@Header("Token") String token,
+            @Query("conversation_id") long id, @Query("page") int page, @Query("per_page") int perPage);
+    @POST("user/read_notifications") Call<Void> readNotifications(@Header("Token") String token, @Body com.fimtale.notifications.Inbox.Read read);
+    @POST("user/send_conversation_message") Call<Void> sendMessage(@Header("Token") String token, @Body com.fimtale.notifications.Inbox.Send message);
+    @POST("work/act_on_work_prequel_invite") Call<Void> actOnPrequelInvite(@Header("Token") String token, @Body com.fimtale.notifications.Inbox.Invite invite);
     @GET("user/get_timeline") Call<List<TimelineItem>> getTimeline(@Header("Token") String token,
             @Query("page") int page, @Query("per_page") int perPage);
     @GET("user/get_timeline_update_count") Call<Integer> getTimelineUpdateCount(@Header("Token") String token);

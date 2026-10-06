@@ -6,41 +6,24 @@
     android:orientation="vertical"
     android:background="?android:attr/colorBackground">
 
-    <LinearLayout
-        android:id="@+id/reviewContent"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingTop="88dp">
-
+    <LinearLayout android:id="@+id/inboxContent" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingTop="88dp">
         <com.google.android.material.tabs.TabLayout
-            android:id="@+id/reviewTabs"
+            android:id="@+id/inboxTabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?android:attr/colorBackground"
             app:tabMode="fixed"
             app:tabGravity="fill"
             app:tabIndicatorFullWidth="false" />
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
-
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/reviewPager"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-            <com.fimtale.ui.ShimmerSkeletonView
-                android:id="@+id/reviewSkeleton"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="?android:attr/colorBackground"
-                android:visibility="gone" />
-        </FrameLayout>
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/inboxList" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingBottom="16dp" />
+        <LinearLayout android:id="@+id/inboxComposer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="8dp" android:visibility="gone">
+            <com.google.android.material.button.MaterialButton android:id="@+id/inboxEmoji" style="@style/Widget.Material3.Button.TextButton" android:layout_width="48dp" android:layout_height="48dp" android:contentDescription="插入表情" android:minWidth="0dp" android:padding="8dp" />
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="发送私信…">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inboxInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textCapSentences|textMultiLine" android:maxLines="5" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/inboxSend" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="发送" />
+        </LinearLayout>
     </LinearLayout>
-
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -75,7 +58,7 @@
                     app:mdiNavigationIcon="arrow-left"
                     app:navigationIconTint="?attr/colorOnSurface"
                     app:titleCentered="false"
-                    app:title="@string/review_queue_title" />
+                    app:title="消息" />
             </com.google.android.material.card.MaterialCardView>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>

@@ -44,6 +44,10 @@
             android:exported="false"
             android:theme="@style/Theme.Fimtale.FullTransparent" />
 
+        <activity android:name=".ConversationActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.Fimtale.FullTransparent" />
+        <activity android:name=".NotificationsActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.Fimtale.FullTransparent" />
         <activity android:name=".ReviewQueueActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.Fimtale.FullTransparent" />
 

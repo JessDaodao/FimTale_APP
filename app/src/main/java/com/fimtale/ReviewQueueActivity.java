@@ -1,6 +1,5 @@
 package com.fimtale;
 
-import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.view.View;
@@ -35,12 +34,10 @@ public class ReviewQueueActivity extends AppCompatActivity {
     private ViewPager2 pager;
     private TabLayout tabs;
     private TabLayoutMediator tabsMediator;
-    private int contentTop;
     private ShimmerSkeletonView loadingSkeleton;
     private MaterialToolbar toolbar;
     private MaterialCardView header;
-    private ObjectAnimator elevation;
-    private boolean raised, showPending;
+    private boolean showPending;
     private boolean highlighted;
     private com.fimtale.ui.PageErrorView pageError;
 
@@ -55,7 +52,6 @@ public class ReviewQueueActivity extends AppCompatActivity {
         tabs = findViewById(R.id.reviewTabs);
         loadingSkeleton = findViewById(R.id.reviewSkeleton);
         loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.DRAFTS);
-        contentTop = Math.round(148 * getResources().getDisplayMetrics().density);
         for (ReviewQueueViewModel.Section section : ReviewQueueViewModel.Section.values()) {
             int page = section.ordinal();
             adapters[page] = new ReviewQueueAdapter(this, model, section);
@@ -68,21 +64,9 @@ public class ReviewQueueActivity extends AppCompatActivity {
         if (state != null) pager.setCurrentItem(Math.max(0, Math.min(2, state.getInt("review_page"))), false);
         PullToRefresh.attach(pager, model::refresh, () -> !model.loading && !model.mutating,
                 () -> lists[pager.getCurrentItem()] != null && lists[pager.getCurrentItem()].canScrollVertically(-1));
-        header.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            int padding = b + Math.round(16 * getResources().getDisplayMetrics().density);
-            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) tabs.getLayoutParams();
-            if (params.topMargin != padding) { params.topMargin = padding; tabs.setLayoutParams(params); }
-        });
-        tabs.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            contentTop = b + Math.round(12 * getResources().getDisplayMetrics().density);
-            for (RecyclerView list : lists) if (list != null) list.setPadding(0, contentTop, 0, list.getPaddingBottom());
-            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) loadingSkeleton.getLayoutParams();
-            if (params.topMargin != contentTop) { params.topMargin = contentTop; loadingSkeleton.setLayoutParams(params); }
-            updateHeader();
-        });
-        pager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override public void onPageSelected(int position) { updateHeader(); }
-        });
+        header.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
+                findViewById(R.id.reviewContent).setPadding(0,
+                        b + Math.round(16 * getResources().getDisplayMetrics().density), 0, 0));
         model.changes.observe(this, ignored -> render());
     }
     private void setupPages() {
@@ -95,17 +79,13 @@ public class ReviewQueueActivity extends AppCompatActivity {
                 list.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 list.setLayoutManager(new LinearLayoutManager(parent.getContext()));
                 list.setItemAnimator(null); list.setClipToPadding(false);
-                list.addOnScrollListener(new RecyclerView.OnScrollListener() {
-                    @Override public void onScrolled(@NonNull RecyclerView view, int dx, int dy) {
-                        if (view == lists[pager.getCurrentItem()]) updateHeader();
-                    }
-                });
                 return new RecyclerView.ViewHolder(list) {};
             }
             @Override public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 RecyclerView list = (RecyclerView) holder.itemView;
                 lists[position] = list; list.setId(ids[position]);
-                list.setPadding(0, contentTop, 0, Math.round(12 * getResources().getDisplayMetrics().density));
+                list.setPadding(0, Math.round(12 * getResources().getDisplayMetrics().density),
+                        0, Math.round(12 * getResources().getDisplayMetrics().density));
                 list.setAdapter(adapters[position]);
                 if (scrollStates[position] != null) {
                     list.getLayoutManager().onRestoreInstanceState(scrollStates[position]); scrollStates[position] = null;
@@ -113,23 +93,6 @@ public class ReviewQueueActivity extends AppCompatActivity {
                 list.post(ReviewQueueActivity.this::revealHighlightedEntry);
             }
         });
-    }
-    private void updateHeader() {
-        RecyclerView list = lists[pager.getCurrentItem()];
-        boolean next = list != null && list.canScrollVertically(-1);
-        // Follow the summary row as it scrolls; only the title card stays floating.
-        int tabOffset = 0;
-        if (next) {
-            View first = list.getLayoutManager().findViewByPosition(0);
-            tabOffset = first == null ? tabs.getBottom() : Math.max(0, list.getPaddingTop() - first.getTop());
-        }
-        tabs.setTranslationY(-Math.min(tabOffset, tabs.getBottom()));
-        if (next == raised) return;
-        raised = next;
-        if (elevation != null) elevation.cancel();
-        elevation = ObjectAnimator.ofFloat(header, "cardElevation", header.getCardElevation(),
-                raised ? 4 * getResources().getDisplayMetrics().density : 0);
-        elevation.setDuration(200); elevation.start();
     }
     private void render() {
         if (isFinishing() || isDestroyed()) return;
@@ -178,7 +141,6 @@ public class ReviewQueueActivity extends AppCompatActivity {
         super.onSaveInstanceState(out);
     }
     @Override protected void onDestroy() {
-        if (elevation != null) elevation.cancel();
         if (tabsMediator != null) tabsMediator.detach();
         super.onDestroy();
     }

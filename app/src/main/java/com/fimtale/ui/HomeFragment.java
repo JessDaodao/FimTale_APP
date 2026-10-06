@@ -100,6 +100,9 @@ public class HomeFragment extends Fragment {
                 MdiIcons.inflateMenu(requireContext(), inflater, R.menu.home_menu, menu);
             }
             @Override public boolean onMenuItemSelected(@NonNull android.view.MenuItem item) {
+                if (item.getItemId() == R.id.action_notifications) {
+                    startActivity(new Intent(requireContext(), com.fimtale.NotificationsActivity.class)); return true;
+                }
                 if (item.getItemId() != R.id.action_search) return false;
                 startActivity(new Intent(requireContext(), com.fimtale.SearchActivity.class)); return true;
             }
