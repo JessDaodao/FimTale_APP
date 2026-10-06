@@ -658,7 +658,8 @@ public class TopicDetailActivity extends AppCompatActivity {
             authorNameTextView.setText(author.getUserName());
             
             String authorAvatarUrl = author.getAvatar();
-            com.fimtale.ui.ImagePreview.bind(authorAvatarImageView, authorAvatarUrl);
+            authorAvatarImageView.setContentDescription("查看 " + author.getUserName() + " 的个人资料");
+            authorAvatarImageView.setOnClickListener(v -> authorLayout.performClick());
             Glide.with(this)
                     .load(authorAvatarUrl)
                     .placeholder(MdiIcons.drawable(this, "account"))

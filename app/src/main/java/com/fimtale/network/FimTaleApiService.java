@@ -10,6 +10,11 @@ import retrofit2.http.*;
 
 /** Routes from ft-front/schema/openapi.json. No deprecated v1 endpoints. */
 public interface FimTaleApiService {
+    @GET("report/get_reports") Call<com.fimtale.report.MyReport.Page> getMyReports(@Header("Token") String token,
+            @Query("source_user_id") long sourceUserId, @Query("status") List<Integer> statuses,
+            @Query("report_id") Long reportId, @Query("page") int page, @Query("per_page") int perPage);
+    @POST("report/append_report_message") Call<com.fimtale.report.MyReport> appendReportMessage(
+            @Header("Token") String token, @Body com.fimtale.report.MyReport.Reply reply);
     @GET("user/get_notification_count") Call<java.util.Map<String, Integer>> getNotificationCount(@Header("Token") String token);
     @GET("user/get_notifications") Call<List<com.fimtale.notifications.Inbox.Notice>> getNotifications(@Header("Token") String token,
             @Query("type") String type, @Query("page") int page, @Query("per_page") int perPage);

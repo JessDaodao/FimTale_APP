@@ -4,9 +4,6 @@ import com.fimtale.utils.MdiIcons;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,11 +14,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ConcatAdapter;
-import androidx.viewpager2.widget.CompositePageTransformer;
-import androidx.viewpager2.widget.MarginPageTransformer;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.fimtale.MainActivity;
@@ -36,8 +30,6 @@ import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import com.fimtale.network.RetrofitClient;
 import com.fimtale.utils.DialogHelper;
@@ -72,8 +64,7 @@ public class HomeFragment extends Fragment {
     private List<RecommendedTopic> pendingBanners;
     private List<TopicViewItem> topicListHot = new ArrayList<>();
     private List<TopicViewItem> topicListNew = new ArrayList<>();
-    private Timer bannerTimer;
-    private Handler bannerHandler = new Handler(Looper.getMainLooper());
+    private BannerAutoScroll bannerAutoScroll;
     private View rootView;
     private long editorVersion = com.fimtale.editor.EditorChanges.version();
 
@@ -186,18 +177,8 @@ public class HomeFragment extends Fragment {
         bannerViewPager.setClipToPadding(false);
         bannerViewPager.setClipChildren(false);
         bannerViewPager.setOffscreenPageLimit(1);
-        CompositePageTransformer compositeTransformer = new CompositePageTransformer();
-        compositeTransformer.addTransformer(new MarginPageTransformer(getResources().getDimensionPixelOffset(R.dimen.page_margin)));
-        compositeTransformer.addTransformer((page, position) -> {
-            View imageView = page.findViewById(R.id.bannerImageView);
-            if (imageView != null) {
-                int width = imageView.getWidth();
-                imageView.setScaleX(1.4f);
-                imageView.setScaleY(1.4f);
-                imageView.setTranslationX(-position * width * 0.2f);
-            }
-        });
-        bannerViewPager.setPageTransformer(compositeTransformer);
+        bannerViewPager.setPageTransformer(null);
+        bannerAutoScroll = new BannerAutoScroll(bannerViewPager);
     }
 
     private void setupTabLayout() {
@@ -350,53 +331,11 @@ public class HomeFragment extends Fragment {
     }
 
     private void startBannerAutoScroll() {
-        stopBannerAutoScroll();
-        bannerTimer = new Timer();
-        bannerTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                bannerHandler.post(() -> {
-                    if (bannerViewPager != null && bannerAdapter != null) {
-                        int currentItem = bannerViewPager.getCurrentItem();
-                        int totalItems = bannerAdapter.getItemCount();
-                        if (totalItems > 1) {
-                            int nextItem = (currentItem + 1) % totalItems;
-                            try {
-                                View child = bannerViewPager.getChildAt(0);
-                                if (child instanceof RecyclerView) {
-                                    RecyclerView rv = (RecyclerView) child;
-                                    final boolean isWrapAround = (nextItem == 0);
-                                    RecyclerView.SmoothScroller smoothScroller = new LinearSmoothScroller(getContext()) {
-                                        @Override
-                                        protected int getHorizontalSnapPreference() {
-                                            return SNAP_TO_START;
-                                        }
-
-                                        @Override
-                                        protected float calculateSpeedPerPixel(DisplayMetrics displayMetrics) {
-                                            return isWrapAround ? 0.1f : 0.25f; 
-                                        }
-                                    };
-                                    smoothScroller.setTargetPosition(nextItem);
-                                    rv.getLayoutManager().startSmoothScroll(smoothScroller);
-                                } else {
-                                    bannerViewPager.setCurrentItem(nextItem, true);
-                                }
-                            } catch (Exception e) {
-                                bannerViewPager.setCurrentItem(nextItem, true);
-                            }
-                        }
-                    }
-                });
-            }
-        }, 8000, 8000);
+        if (bannerAutoScroll != null && isResumed() && pendingHomeRequests == 0) bannerAutoScroll.start();
     }
 
     private void stopBannerAutoScroll() {
-        if (bannerTimer != null) {
-            bannerTimer.cancel();
-            bannerTimer = null;
-        }
+        if (bannerAutoScroll != null) bannerAutoScroll.stop();
     }
 
     @Override
@@ -422,9 +361,9 @@ public class HomeFragment extends Fragment {
         homeRequest++;
         for (Call<?> call : homeCalls) call.cancel();
         homeCalls.clear(); pendingHomeRequests = 0; pendingBanners = null;
-        stopBannerAutoScroll(); bannerHandler.removeCallbacksAndMessages(null);
+        if (bannerAutoScroll != null) { bannerAutoScroll.close(); bannerAutoScroll = null; }
         if (homeList != null) homeList.setAdapter(null);
-        if (bannerViewPager != null) bannerViewPager.setAdapter(null);
+        if (bannerViewPager != null) { bannerViewPager.setAdapter(null); bannerViewPager = null; }
         rootView = null; homeList = null;
         super.onDestroyView();
     }

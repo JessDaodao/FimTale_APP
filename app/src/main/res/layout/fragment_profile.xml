@@ -168,6 +168,15 @@
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_queue_title"
                     android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
+            <LinearLayout android:id="@+id/btnMyReports" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
+                android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp"
+                android:layout_marginBottom="16dp">
+                <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size"
+                    app:mdiIcon="flag-outline" app:tint="?attr/colorOnSurface"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/my_reports_title"
+                    android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 

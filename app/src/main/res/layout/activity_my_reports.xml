@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?android:attr/colorBackground">
+
+    <LinearLayout android:id="@+id/myReportsContent" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:paddingTop="88dp">
+        <com.google.android.material.tabs.TabLayout android:id="@+id/myReportsTabs" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="?android:attr/colorBackground" app:tabMode="fixed" app:tabGravity="fill" app:tabIndicatorFullWidth="false" />
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/myReportsList" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingBottom="12dp" />
+        <LinearLayout android:id="@+id/myReportComposer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp" android:visibility="gone">
+            <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
+                <LinearLayout android:id="@+id/myReportFormatting" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" />
+            </HorizontalScrollView>
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/myReportReplyLayout" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="消息 / 补充说明">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/myReportReply" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textCapSentences|textMultiLine" android:minLines="1" android:maxLines="4" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView android:id="@+id/myReportReplyError" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="?attr/colorError" android:accessibilityLiveRegion="polite" android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/myReportSend" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="发送消息" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:stateListAnimator="@null"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/toolbar_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            app:collapsedTitleTextColor="?attr/colorOnSurface"
+            app:expandedTitleTextColor="?attr/colorOnSurface"
+            app:titleEnabled="false"
+            app:toolbarId="@+id/toolbar">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/toolbarContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <com.fimtale.ui.icons.MdiToolbar
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    app:mdiNavigationIcon="arrow-left"
+                    app:navigationIconTint="?attr/colorOnSurface"
+                    app:titleTextColor="?attr/colorOnSurface"
+                    app:titleCentered="false"
+                    app:title="@string/my_reports_title" />
+            </com.google.android.material.card.MaterialCardView>
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

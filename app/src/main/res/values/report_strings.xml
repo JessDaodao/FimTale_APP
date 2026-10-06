@@ -15,4 +15,5 @@
     <string name="report_success">举报已提交，等待站务处理</string>
     <string name="report_uncertain">未能确认举报是否提交成功，请稍后重试，避免重复提交。</string>
     <string name="report_session_changed">登录状态已更改，未能确认刚才的举报是否提交成功。</string>
+    <string name="my_reports_title">我的报告</string>
 </resources>

@@ -75,6 +75,8 @@ public class ProfileFragment extends Fragment {
         btnFavorites = view.findViewById(R.id.btnFavorites);
         btnHistory = view.findViewById(R.id.btnHistory);
         btnReviewQueue = view.findViewById(R.id.btnReviewQueue);
+        view.findViewById(R.id.btnMyReports).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), com.fimtale.MyReportsActivity.class)));
         view.findViewById(R.id.btnMessages).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), com.fimtale.NotificationsActivity.class)));
         btnReviewQueue.setOnClickListener(v -> startActivity(new Intent(requireContext(), com.fimtale.ReviewQueueActivity.class)));

@@ -149,6 +149,8 @@ public abstract class InboxActivity extends AppCompatActivity {
     private void open(Inbox.Notice n) {
         String path = n.path(UserPreferences.getUserId(this), model.manager); if (path == null) return;
         if (n.type == 21 && path.startsWith("/user/")) startActivity(new Intent(this, ReviewQueueActivity.class).putExtra(ReviewQueueActivity.EXTRA_REVIEW_ID, (int) Inbox.number(n.object(), "id")));
+        else if (n.type == 22 && path.startsWith("/user/reports")) startActivity(new Intent(this, ReportDetailActivity.class)
+                .putExtra(ReportDetailActivity.EXTRA_REPORT_ID, Inbox.number(n.object(), "id")));
         else if (path.matches("/work/[0-9]+")) startActivity(new Intent(this, TopicDetailActivity.class).putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, Integer.parseInt(path.substring(6))));
         else startActivity(new Intent(this, SiteActivity.class).putExtra(SiteActivity.EXTRA_PATH, path));
     }
