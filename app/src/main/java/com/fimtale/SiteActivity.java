@@ -26,6 +26,9 @@ import retrofit2.Response;
 public class SiteActivity extends AppCompatActivity {
     public static final String EXTRA_PATH = "site_path";
     private WebView webView;
+    private com.fimtale.ui.PageErrorView pageError;
+    private boolean pageFailed;
+    private String failedUrl;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean verifying;
     private String startPath;
@@ -59,6 +62,7 @@ public class SiteActivity extends AppCompatActivity {
         toolbar.setTitle("FimTale");
         webView = findViewById(R.id.site_webview);
         com.fimtale.ui.PullToRefresh.attach(webView, webView::reload, () -> !loginOpening);
+        pageError = com.fimtale.ui.PageErrorView.wrap(webView);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         webView.getSettings().setAllowFileAccess(false);
@@ -80,14 +84,32 @@ public class SiteActivity extends AppCompatActivity {
             }
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap icon) {
                 pageLoaded = false;
+                pageFailed = false;
+                failedUrl = url;
+                pageError.hide();
             }
             @Override public void onPageFinished(WebView view, String url) {
+                if (pageFailed) return;
                 pageLoaded = true;
                 if (isLoginUrl(url)) openNativeLogin();
                 else if (SiteUrls.isSite(url)) readSession();
             }
             @Override public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
                 if (isLoginUrl(url)) openNativeLogin();
+            }
+            @Override public void onReceivedError(WebView view, WebResourceRequest request,
+                    android.webkit.WebResourceError error) {
+                if (request.isForMainFrame()) showPageError(request.getUrl().toString(), null);
+            }
+            @Override public void onReceivedHttpError(WebView view, WebResourceRequest request,
+                    android.webkit.WebResourceResponse error) {
+                if (request.isForMainFrame()) showPageError(request.getUrl().toString(),
+                        "服务器暂时无法显示此页面（" + error.getStatusCode() + "）。");
+            }
+            @Override public void onReceivedSslError(WebView view, android.webkit.SslErrorHandler handler,
+                    android.net.http.SslError error) {
+                handler.cancel();
+                if (error.getUrl().equals(view.getUrl())) showPageError(error.getUrl(), "无法建立安全连接，请稍后重试。");
             }
         });
         if (isLoginUrl(SiteUrls.SITE + startPath)) { startPath = "/"; openNativeLogin(); }
@@ -102,13 +124,22 @@ public class SiteActivity extends AppCompatActivity {
         return SiteUrls.isSite(url) && ("/user/login".equals(Uri.parse(url).getPath())
                 || "/user/login/".equals(Uri.parse(url).getPath()));
     }
+    private void showPageError(String url, String message) {
+        if (isFinishing() || isDestroyed()) return;
+        pageFailed = true; pageLoaded = false; failedUrl = url;
+        pageError.show(message, () -> {
+            if (SiteUrls.isSite(failedUrl)) webView.loadUrl(failedUrl); else loadSite();
+        });
+    }
     private void openNativeLogin() {
         if (loginOpening) return;
         loginOpening = true;
+        pageError.hide();
         webView.stopLoading(); webView.setVisibility(android.view.View.INVISIBLE);
         login.launch(new Intent(this, LoginActivity.class));
     }
     private void loadSite() {
+        pageError.hide();
         pageLoaded = false;
         String token = UserPreferences.getToken(this);
         String cookie = token.isEmpty() ? "ft_token=; Path=/; Max-Age=0; Secure"

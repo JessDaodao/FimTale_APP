@@ -62,6 +62,7 @@ public class DraftsActivity extends AppCompatActivity {
     private String listedUser = "";
     private ShimmerSkeletonView loadingSkeleton;
     private boolean loading;
+    private com.fimtale.ui.PageErrorView pageError;
     private final ActivityResultLauncher<Intent> login = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (UserPreferences.isLoggedIn(this)) refresh(); else finish();
@@ -77,6 +78,7 @@ public class DraftsActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvToolbarTitle)).setText(R.string.drafts_title);
         toolbar.setNavigationOnClickListener(v -> finish());
         RecyclerView list = findViewById(R.id.draftsList);
+        pageError = com.fimtale.ui.PageErrorView.wrap(list);
         loadingSkeleton = findViewById(R.id.draftsSkeleton);
         loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.DRAFTS);
         summaryText = getString(R.string.drafts_local_hint);
@@ -124,6 +126,7 @@ public class DraftsActivity extends AppCompatActivity {
     }
     @Override protected void onResume() { super.onResume(); refresh(); }
     private void refresh() {
+        pageError.hide();
         int current = ++generation;
         String userId = UserPreferences.getUserId(this);
         if (!UserPreferences.isLoggedIn(this) || !listedUser.equals(userId)) { items.clear(); adapter.notifyDataSetChanged(); }
@@ -168,6 +171,7 @@ public class DraftsActivity extends AppCompatActivity {
                 }
                 List<Row> drafts = new ArrayList<>(rows.values()); drafts.sort(java.util.Comparator.comparingLong((Row row) -> row.savedAt).reversed());
                 String notice = warning;
+                boolean onlineFailed = offline;
                 main.post(() -> {
                     if (isFinishing() || isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
                     items.clear(); items.addAll(drafts); adapter.notifyDataSetChanged();
@@ -177,6 +181,10 @@ public class DraftsActivity extends AppCompatActivity {
                     empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
                     summaryText = notice == null ? items.size() + " 篇草稿" : notice;
                     summaryAdapter.notifyItemChanged(0);
+                    if (onlineFailed) {
+                        empty.setVisibility(View.GONE);
+                        pageError.show("暂时无法读取在线草稿。", DraftsActivity.this::refresh, !items.isEmpty());
+                    }
                 });
             } catch (Exception e) {
                 main.post(() -> {
@@ -185,6 +193,8 @@ public class DraftsActivity extends AppCompatActivity {
                     TextView empty = findViewById(R.id.draftsEmpty); empty.setText("无法读取草稿，点击重试");
                     summaryText = "无法读取草稿，点击重试";
                     summaryAdapter.notifyItemChanged(0);
+                    empty.setVisibility(View.GONE);
+                    pageError.show(null, DraftsActivity.this::refresh, !items.isEmpty());
                 });
             }
         });

@@ -32,6 +32,7 @@ public final class WorkCommentsSection {
     private final TextView status, pageLabel, title, sort;
     private final View previous, next;
     private final Rect visibleBounds = new Rect();
+    private PageErrorView pageError;
     private Call<WorkCommentsResponse> activeCall;
     private int page = 1, totalPages = 1;
     private boolean started, loading, descending, closed;
@@ -41,6 +42,7 @@ public final class WorkCommentsSection {
         root = activity.findViewById(R.id.workCommentsSection);
         scroll = activity.findViewById(R.id.scrollView);
         list = root.findViewById(R.id.commentsList);
+        pageError = PageErrorView.wrap(list);
         list.setLayoutManager(new LinearLayoutManager(activity));
         adapter = new CommentAdapter(new ArrayList<>(), activity);
         list.setAdapter(adapter); list.setItemAnimator(null);
@@ -103,6 +105,7 @@ public final class WorkCommentsSection {
     }
 
     private void load(int requestedPage) {
+        pageError.hide();
         if (closed || requestedPage < 1) return;
         if (activeCall != null) activeCall.cancel();
         started = true; loading = true; updatePager();
@@ -136,8 +139,8 @@ public final class WorkCommentsSection {
     private void showError(int requestedPage, String message) {
         loading = false; updatePager();
         skeleton.setVisibility(View.GONE);
-        status.setText(message + "，点击重试"); status.setVisibility(View.VISIBLE);
-        status.setOnClickListener(v -> load(requestedPage));
+        status.setVisibility(View.GONE); list.setVisibility(View.VISIBLE);
+        pageError.show(message, () -> load(requestedPage), adapter.getItemCount() > 0);
     }
 
     private void updatePager() {

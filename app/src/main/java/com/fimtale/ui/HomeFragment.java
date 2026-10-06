@@ -46,6 +46,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
+    private com.fimtale.ui.PageErrorView pageError;
 
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView homeList;
@@ -105,6 +106,7 @@ public class HomeFragment extends Fragment {
         }, getViewLifecycleOwner(), androidx.lifecycle.Lifecycle.State.RESUMED);
 
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        pageError = com.fimtale.ui.PageErrorView.wrap(swipeRefreshLayout);
         homeList = view.findViewById(R.id.homeList);
         // The XML installs its LayoutManager before these inflations generate row LayoutParams.
         View header = getLayoutInflater().inflate(R.layout.item_home_header, homeList, false);
@@ -257,6 +259,7 @@ public class HomeFragment extends Fragment {
 
     private int homeRequest;
     private void fetchHomePageData() {
+        pageError.hide();
         final int request = ++homeRequest;
         for (Call<?> call : homeCalls) call.cancel();
         homeCalls.clear(); pendingHomeRequests = 3; homeError = null; pendingBanners = null;
@@ -338,8 +341,8 @@ public class HomeFragment extends Fragment {
             if (isResumed()) startBannerAutoScroll();
         }
         if (homeError != null) {
-            errorTextView.setText(homeError); errorTextView.setVisibility(View.VISIBLE);
-            errorTextView.setOnClickListener(v -> fetchHomePageData());
+            pageError.show(homeError.replace("，点击重试", ""), this::fetchHomePageData,
+                    !bannerList.isEmpty() || !visibleTopics.isEmpty());
         }
     }
 

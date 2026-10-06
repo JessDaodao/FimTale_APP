@@ -30,6 +30,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ArticleListFragment extends Fragment {
+    private com.fimtale.ui.PageErrorView pageError;
 
     private static final String ARG_CATEGORY = "category";
     private String category;
@@ -79,6 +80,7 @@ public class ArticleListFragment extends Fragment {
         errorTextView = view.findViewById(R.id.errorTextView);
         errorTextView.setOnClickListener(v -> { currentPage = 1; loadTopics(); });
 
+        pageError = com.fimtale.ui.PageErrorView.wrap(recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         topicAdapter = new TopicAdapter(topicViewItemList);
         loadingFooter = new LoadingCardAdapter();
@@ -116,6 +118,7 @@ public class ArticleListFragment extends Fragment {
     }
 
     private void loadTopics() {
+        pageError.hide();
         if (isLoading) return;
         isLoading = true;
         final int requestedPage = currentPage;
@@ -153,12 +156,12 @@ public class ArticleListFragment extends Fragment {
         recyclerView.setVisibility(View.VISIBLE);
     }
     private void showError(int requestedPage) {
-        currentPage = Math.max(1, requestedPage - 1); finishLoading();
-        if (topicViewItemList.isEmpty()) {
-            errorTextView.setText("加载失败，点击重试"); errorTextView.setVisibility(View.VISIBLE);
-        } else android.widget.Toast.makeText(getContext(), "加载失败，请重试", android.widget.Toast.LENGTH_SHORT).show();
+        currentPage = Math.max(1, requestedPage - 1);
+        finishLoading();
+        pageError.show(null, () -> { currentPage = requestedPage; loadTopics(); }, !topicViewItemList.isEmpty());
     }
     @Override public void onDestroyView() {
+        pageError = null;
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
         isLoading = false;
         super.onDestroyView();

@@ -45,6 +45,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
     public static final String EXTRA_DRAFT_ID = "editor_draft_id";
     private static final String EXTRA_INITIAL_TYPE = "editor_initial_type";
     private EditorViewModel model;
+    private com.fimtale.ui.PageErrorView pageError;
     private MaterialToolbar toolbar;
     private EditText title, intro, cover, originLink, prequel;
     private BbCodeEditText body;
@@ -84,6 +85,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_editor);
+        pageError = com.fimtale.ui.PageErrorView.wrap(findViewById(R.id.editorForm));
         com.fimtale.utils.EditorWindowStyle.apply(this);
         model = new ViewModelProvider(this).get(EditorViewModel.class);
         captcha = new CaptchaDialogHost(this, CaptchaDialogFragment.RESULT_KEY,
@@ -197,7 +199,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         updateToolbar();
         ((TextView) findViewById(R.id.editorStatus)).setText(model.message);
         findViewById(R.id.editorProgress).setVisibility(model.busy ? View.VISIBLE : View.GONE);
-        findViewById(R.id.editorRetry).setVisibility(model.error ? View.VISIBLE : View.GONE);
+        findViewById(R.id.editorRetry).setVisibility(model.error && !model.loadError ? View.VISIBLE : View.GONE);
         findViewById(R.id.editorForm).setVisibility(model.ready ? View.VISIBLE : View.GONE);
         findViewById(R.id.editorWorkFields).setVisibility(chapter ? View.GONE : View.VISIBLE);
         ((TextView) findViewById(R.id.editorHint)).setText(chapter ? "编辑当前章节的正文，提交后将更新到作品目录。"
@@ -205,6 +207,10 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         ((TextView) findViewById(R.id.editorSubmit)).setText(chapter ? (model.chapterId > 0 ? "保存章节修改" : "发表章节")
                 : (model.workId > 0 ? "保存作品修改" : "发表作品"));
         setEnabled(findViewById(R.id.editorForm), model.ready && !model.busy);
+        if (model.loadError && !model.busy) pageError.show(model.message, () -> {
+            if (model.needsLogin) login.launch(new Intent(this, LoginActivity.class)); else model.load();
+        }, model.ready);
+        else pageError.hide();
         for (int i = 0; i < toolbar.getMenu().size(); i++) toolbar.getMenu().getItem(i).setEnabled(!model.busy && model.initialized);
         toolbar.getMenu().findItem(R.id.action_editor_metadata).setEnabled(model.ready && !model.busy);
         toolbar.getMenu().findItem(R.id.action_editor_submit).setEnabled(model.ready && !model.busy);

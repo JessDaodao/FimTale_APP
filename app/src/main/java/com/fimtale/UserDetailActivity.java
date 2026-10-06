@@ -73,6 +73,7 @@ public class UserDetailActivity extends AppCompatActivity {
     private ChipGroup chipGroupMedals;
     private ShimmerSkeletonView loadingSkeleton, topicsSkeleton;
     private TextView loadError, topicsStatus;
+    private com.fimtale.ui.PageErrorView pageError;
     private Call<UserDetailResponse> profileCall;
     private Call<com.fimtale.model.UserWorksResponse> topicsCall;
     private CollapsingToolbarLayout collapsingToolbar;
@@ -158,6 +159,7 @@ public class UserDetailActivity extends AppCompatActivity {
         topicsSkeleton = findViewById(R.id.userTopicsSkeleton);
         topicsSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.CARD);
         loadError = findViewById(R.id.profileLoadError);
+        pageError = com.fimtale.ui.PageErrorView.wrap(findViewById(R.id.scrollView));
         loadError.setOnClickListener(v -> loadData(currentUsername));
         topicsStatus = findViewById(R.id.userTopicsStatus);
         rvUserTopics = findViewById(R.id.rvUserTopics);
@@ -214,6 +216,7 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     private void loadData(String username) {
+        pageError.hide();
         if (profileCall != null) profileCall.cancel();
         loadingSkeleton.setVisibility(View.VISIBLE);
         loadError.setVisibility(View.GONE);
@@ -247,7 +250,9 @@ public class UserDetailActivity extends AppCompatActivity {
 
     private void showProfileLoadError() {
         loadingSkeleton.setVisibility(View.GONE);
-        loadError.setVisibility(View.VISIBLE);
+        loadError.setVisibility(View.GONE);
+        scrollView.setVisibility(View.VISIBLE);
+        pageError.show(null, () -> { loadData(currentUsername); loadUserTopics(currentUsername, 1); });
     }
 
     private void bindData(UserDetailResponse data) {
@@ -386,6 +391,7 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     private void loadUserTopics(String username, int page) {
+        pageError.hide();
         if (username == null) return;
         if (isLoading) {
             if (page != 1) return;
@@ -429,8 +435,8 @@ public class UserDetailActivity extends AppCompatActivity {
 
     private void showTopicsLoadError(int page) {
         finishTopicsLoading();
-        topicsStatus.setText("文章加载失败，点击重试"); topicsStatus.setVisibility(View.VISIBLE);
-        topicsStatus.setOnClickListener(v -> loadUserTopics(currentUsername, page));
+        topicsStatus.setVisibility(View.GONE);
+        pageError.show("暂时无法加载该用户的作品。", () -> { loadData(currentUsername); loadUserTopics(currentUsername, page); }, currentUserId > 0);
     }
 
     @Override protected void onDestroy() {

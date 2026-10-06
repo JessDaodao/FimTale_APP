@@ -276,6 +276,7 @@ public class ReaderActivity extends AppCompatActivity {
         com.fimtale.ui.PullToRefresh.attach(findViewById(R.id.readerContent), this::refreshReading,
                 () -> !isLoadingChapter && !isMenuVisible && refreshWorkCall == null && refreshChapterCall == null,
                 this::readerCanScrollUp);
+        pageError = com.fimtale.ui.PageErrorView.wrap(findViewById(R.id.readerContent));
         menuOverlay = findViewById(R.id.menuOverlay);
         dimLayer = findViewById(R.id.dimLayer);
         topToolbar = findViewById(R.id.topToolbar);
@@ -714,6 +715,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void refreshReading() {
+        pageError.hide();
         final int chapterId = currentTopicId;
         Toast.makeText(this, "正在刷新章节", Toast.LENGTH_SHORT).show();
         refreshWorkCall = RetrofitClient.getInstance().getWork(rootTopicId);
@@ -769,7 +771,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void refreshReadingFailed() {
-        Toast.makeText(this, "刷新失败，已保留当前阅读内容", Toast.LENGTH_SHORT).show();
+        pageError.show("暂时无法刷新章节，已保留当前阅读内容。", this::refreshReading, contentReady);
     }
     
     private TopicDetailResponse workData;
@@ -790,7 +792,9 @@ public class ReaderActivity extends AppCompatActivity {
         if (version != editorVersion) { editorVersion = version; isLoadingChapter = false; loadWorkNavigation(); }
     }
     private boolean contentReady;
+    private com.fimtale.ui.PageErrorView pageError;
     private void loadWorkNavigation() {
+        pageError.hide();
         RetrofitClient.getInstance().getWork(rootTopicId).enqueue(new Callback<TopicDetailResponse>() {
             @Override public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
                 if (isFinishing() || isDestroyed()) return;
@@ -798,7 +802,7 @@ public class ReaderActivity extends AppCompatActivity {
                     applyNavigation(response.body());
                     CacheManager.getInstance(ReaderActivity.this).cacheChapterMenu(rootTopicId, workData);
                     fetchChapterContent(currentTopicId);
-                } else { showReadError("无法加载作品目录，请返回后重试"); }
+                } else { showReadError("暂时无法加载作品目录。"); }
             }
             @Override public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
                 CacheManager.getInstance(ReaderActivity.this).getChapterMenu(rootTopicId, data -> {
@@ -819,6 +823,7 @@ public class ReaderActivity extends AppCompatActivity {
     private int cacheKey(int chapterId) { return chapterId == 0 ? -rootTopicId : chapterId; }
 
     private void fetchChapterContent(int topicId, boolean scrollToEnd) {
+        pageError.hide();
         LoadedChapter existing = findLoadedChapter(topicId);
         if (existing != null) {
             activateChapter(existing, scrollToEnd, false);
@@ -869,14 +874,11 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void showReadError(String message) {
-        contentReady = false;
+        showReadError(message, this::loadWorkNavigation);
+    }
+    private void showReadError(String message, Runnable retry) {
         isLoadingChapter = false;
-        fullChapterContent = message;
-        loadedChapters.clear();
-        parsedSegments.clear(); parsedSegments.add(new ContentSegment(ReaderPage.TYPE_TEXT, message));
-        loadedChapters.add(new LoadedChapter(currentTopicId, "", message, parseSegments(message)));
-        prepareVerticalContent(); calculatePages();
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        pageError.show(message, retry, contentReady);
     }
 
     private void acceptLoadedChapter(LoadedChapter chapter, boolean activate, boolean scrollToEnd) {
@@ -899,6 +901,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void activateChapter(LoadedChapter chapter, boolean scrollToEnd, boolean reset) {
+        pageError.hide();
         if (reset) loadedChapters.clear();
         if (findLoadedChapter(chapter.id) == null) insertLoadedChapter(chapter);
         contentReady = true;
@@ -966,11 +969,11 @@ public class ReaderActivity extends AppCompatActivity {
                     CacheManager.getInstance(ReaderActivity.this).cacheChapter(data.chapter.id, rootTopicId,
                             data.chapter.id, data.chapter.title, data.chapter.content, null);
                     acceptLoadedChapter(createLoadedChapter(data.chapter.id, data.chapter.title, data.chapter.content), activate, scrollToEnd);
-                } else if (activate) showReadError("章节加载失败，请从目录重试");
+                } else if (activate) showReadError("暂时无法加载章节。", () -> requestChapter(chapterId, true, scrollToEnd));
             }
             @Override public void onFailure(Call<com.fimtale.model.ChapterResponse> call, Throwable t) {
                 loadingChapterIds.remove(chapterId);
-                if (activate && !isFinishing() && !isDestroyed()) showReadError("网络错误，请从目录重试");
+                if (activate && !isFinishing() && !isDestroyed()) showReadError("暂时无法连接服务器，请检查网络后重试。", () -> requestChapter(chapterId, true, scrollToEnd));
             }
         });
     }

@@ -47,6 +47,7 @@ public class AccountSessionsActivity extends AppCompatActivity {
     private ValueAnimator headerAnimator;
     private boolean headerRaised;
     private boolean closed;
+    private com.fimtale.ui.PageErrorView pageError;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -58,6 +59,7 @@ public class AccountSessionsActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.accountToolbarTitle)).setText("账户与会话");
         toolbar.setNavigationOnClickListener(v -> finish());
         ScrollView scroll = findViewById(R.id.accountScroll);
+        pageError = com.fimtale.ui.PageErrorView.wrap(scroll);
         View titleCard = findViewById(R.id.accountToolbarContainer);
         titleCard.addOnLayoutChangeListener((v, l, t, r, b, oldLeft, oldTop, oldRight, oldBottom) -> {
             int top = b + dp(16);
@@ -90,6 +92,7 @@ public class AccountSessionsActivity extends AppCompatActivity {
 
     private void loadSessions() {
         if (closed) return;
+        pageError.hide();
         if (sessionsCall != null) sessionsCall.cancel();
         setLoading(true);
         String token = UserPreferences.getToken(this);
@@ -99,11 +102,12 @@ public class AccountSessionsActivity extends AppCompatActivity {
                 if (!valid(call, sessionsCall)) return;
                 setLoading(false); sessionsCall = null;
                 if (response.isSuccessful()) renderSessions(response.body());
-                else showError(ApiErrors.message(response));
+                else pageError.show(ApiErrors.message(response), AccountSessionsActivity.this::loadSessions, sessions.getChildCount() > 0);
             }
             @Override public void onFailure(@NonNull Call<List<UserSession>> call, @NonNull Throwable error) {
                 if (!valid(call, sessionsCall)) return;
-                setLoading(false); sessionsCall = null; showError("会话加载失败，请重试");
+                setLoading(false); sessionsCall = null;
+                pageError.show(null, AccountSessionsActivity.this::loadSessions, sessions.getChildCount() > 0);
             }
         });
     }

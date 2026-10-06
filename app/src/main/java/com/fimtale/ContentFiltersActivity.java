@@ -87,6 +87,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.filterToolbarTitle)).setText("内容过滤");
         toolbar.setNavigationOnClickListener(v -> finish());
         ScrollView scroll = findViewById(R.id.filterScroll);
+        pageError = com.fimtale.ui.PageErrorView.wrap(scroll);
         View titleCard = findViewById(R.id.filterToolbarContainer);
         titleCard.addOnLayoutChangeListener((v, l, t, r, b, oldLeft, oldTop, oldRight, oldBottom) -> {
             int top = b + dp(16);
@@ -134,12 +135,24 @@ public class ContentFiltersActivity extends AppCompatActivity {
         load();
     }
 
+    private com.fimtale.ui.PageErrorView pageError;
+
+    private void showLoadError(String message) {
+        setLoading(false);
+        pageError.show(message, () -> load(true), user != null);
+    }
+
     private void load() {
         load(false);
     }
 
     private void load(boolean preserveEditor) {
         if (closed) return;
+        pageError.hide();
+        if (userCall != null) userCall.cancel();
+        if (defaultCall != null) defaultCall.cancel();
+        if (blockCall != null) blockCall.cancel();
+        defaultCall = null; blockCall = null;
         setLoading(true);
         String token = UserPreferences.getToken(this);
         userCall = RetrofitClient.getInstance().getCurrentUser(token);
@@ -147,7 +160,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
             @Override public void onResponse(@NonNull Call<CurrentUser> call, @NonNull Response<CurrentUser> response) {
                 if (!valid(call, userCall)) return;
                 userCall = null;
-                if (!response.isSuccessful() || response.body() == null) { setLoading(false); showError(ApiErrors.message(response)); return; }
+                if (!response.isSuccessful() || response.body() == null) { setLoading(false); showLoadError(ApiErrors.message(response)); return; }
                 user = response.body();
                 UserMaterial material = user.material == null ? new UserMaterial() : user.material;
                 activeFilter = material.contentFilter == null ? null : material.contentFilter.copy();
@@ -159,7 +172,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
             }
             @Override public void onFailure(@NonNull Call<CurrentUser> call, @NonNull Throwable error) {
                 if (!valid(call, userCall)) return;
-                userCall = null; setLoading(false); showError("过滤设置加载失败，请重试");
+                userCall = null; setLoading(false); showLoadError("过滤设置加载失败，请重试");
             }
         });
     }
@@ -169,13 +182,15 @@ public class ContentFiltersActivity extends AppCompatActivity {
         defaultCall.enqueue(new Callback<ContentFilterDef>() {
             @Override public void onResponse(@NonNull Call<ContentFilterDef> call, @NonNull Response<ContentFilterDef> response) {
                 if (!valid(call, defaultCall)) return;
-                defaultCall = null; if (response.isSuccessful()) defaultFilter = response.body();
+                defaultCall = null;
+                if (!response.isSuccessful()) { showLoadError(ApiErrors.message(response)); return; }
+                defaultFilter = response.body();
                 if (!preserveEditor && activeFilter == null && defaultFilter != null) { seedEditor(defaultFilter); renderAll(); }
                 setLoading(false);
             }
             @Override public void onFailure(@NonNull Call<ContentFilterDef> call, @NonNull Throwable error) {
                 if (!valid(call, defaultCall)) return;
-                defaultCall = null; setLoading(false);
+                defaultCall = null; showLoadError("暂时无法加载默认过滤设置。");
             }
         });
     }
@@ -186,9 +201,10 @@ public class ContentFiltersActivity extends AppCompatActivity {
             @Override public void onResponse(@NonNull Call<List<BlockedUser>> call, @NonNull Response<List<BlockedUser>> response) {
                 if (!valid(call, blockCall)) return;
                 blockCall = null; if (response.isSuccessful()) { blockedUsers = response.body() == null ? new ArrayList<>() : response.body(); renderBlocked(); }
+                else showLoadError(ApiErrors.message(response));
             }
             @Override public void onFailure(@NonNull Call<List<BlockedUser>> call, @NonNull Throwable error) {
-                if (valid(call, blockCall)) blockCall = null;
+                if (valid(call, blockCall)) { blockCall = null; showLoadError("暂时无法加载屏蔽用户列表。"); }
             }
         });
     }

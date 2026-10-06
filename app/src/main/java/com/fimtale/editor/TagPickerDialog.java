@@ -30,6 +30,7 @@ import retrofit2.Response;
 /** Paged server-side tag search; selections are independent of the visible page. */
 public final class TagPickerDialog {
     private final Context context;
+    private final com.fimtale.ui.PageErrorView pageError;
     private final Map<Integer, String> selected;
     private final Map<Integer, String> groups;
     private final Runnable changed;
@@ -58,6 +59,7 @@ public final class TagPickerDialog {
         status = new TextView(context); layout.addView(status);
         android.widget.ScrollView scroll = new android.widget.ScrollView(context);
         tags = new ChipGroup(context); scroll.addView(tags); layout.addView(scroll, new LinearLayout.LayoutParams(-1, 240 * pad / 20));
+        pageError = com.fimtale.ui.PageErrorView.wrap(scroll);
         LinearLayout paging = new LinearLayout(context);
         previous = new MaterialButton(context); previous.setText("上一页"); paging.addView(previous, new LinearLayout.LayoutParams(0, -2, 1));
         next = new MaterialButton(context); next.setText("下一页"); paging.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); layout.addView(paging);
@@ -74,6 +76,7 @@ public final class TagPickerDialog {
     public void show() { dialog.show(); }
     public void dismiss() { dialog.dismiss(); }
     private void load() {
+        pageError.hide();
         if (call != null) call.cancel();
         int current = ++generation;
         tags.removeAllViews(); status.setText("正在加载…"); previous.setEnabled(false); next.setEnabled(false);
@@ -83,7 +86,7 @@ public final class TagPickerDialog {
             @Override public void onResponse(Call<List<TagGroup>> c, Response<List<TagGroup>> response) {
                 if (current != generation || !dialog.isShowing()) return;
                 previous.setEnabled(page > 1);
-                if (!response.isSuccessful() || response.body() == null) { status.setText(ApiErrors.message(response)); return; }
+                if (!response.isSuccessful() || response.body() == null) { status.setText(""); pageError.show(ApiErrors.message(response), TagPickerDialog.this::load); return; }
                 int count = 0;
                 for (TagGroup group : response.body()) if (group.tags != null) for (TagInfo tag : group.tags) {
                     count++;
@@ -98,7 +101,8 @@ public final class TagPickerDialog {
             }
             @Override public void onFailure(Call<List<TagGroup>> c, Throwable t) {
                 if (current == generation && dialog.isShowing() && !c.isCanceled()) {
-                    status.setText("标签加载失败，请点击搜索重试"); previous.setEnabled(page > 1);
+                    status.setText(""); previous.setEnabled(page > 1);
+                    pageError.show(null, TagPickerDialog.this::load);
                 }
             }
         });

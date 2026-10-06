@@ -45,6 +45,7 @@ import retrofit2.Response;
 
 /** Full-page work search with its own query, history and result state. */
 public class SearchActivity extends AppCompatActivity {
+    private com.fimtale.ui.PageErrorView pageError;
     public static final String EXTRA_QUERY = "query";
 
     private MaterialToolbar toolbar;
@@ -102,6 +103,7 @@ public class SearchActivity extends AppCompatActivity {
         searchButton = findViewById(R.id.searchButton);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         recyclerView = findViewById(R.id.recyclerView);
+        pageError = com.fimtale.ui.PageErrorView.wrap(recyclerView);
         historyRecyclerView = findViewById(R.id.historyRecyclerView);
         historyPanel = findViewById(R.id.historyPanel);
         clearHistoryButton = findViewById(R.id.clearHistoryButton);
@@ -210,6 +212,7 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void showHistory() {
+        pageError.hide();
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
         isLoading = false;
         loadingSkeleton.setVisibility(View.GONE);
@@ -223,6 +226,7 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void loadTopics(int page) {
+        pageError.hide();
         String query = searchInput.getText() == null ? "" : searchInput.getText().toString().trim();
         if (query.isEmpty()) { showHistory(); return; }
         if (isLoading && page != 1) return;
@@ -256,12 +260,12 @@ public class SearchActivity extends AppCompatActivity {
                         loadingStatus.setText("未找到搜索结果");
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
-                } else showLoadError(ApiErrors.message(response));
+                } else showLoadError(page, ApiErrors.message(response));
             }
 
             @Override public void onFailure(Call<TopicListResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || call.isCanceled() || call != topicsCall) return;
-                showLoadError("加载失败，请重试");
+                showLoadError(page, "暂时无法连接服务器，请检查网络后重试。");
             }
         });
     }
@@ -274,12 +278,10 @@ public class SearchActivity extends AppCompatActivity {
         swipeRefreshLayout.setRefreshing(false);
     }
 
-    private void showLoadError(String message) {
+    private void showLoadError(int page, String message) {
         finishLoading();
-        if (topicItems.isEmpty()) {
-            loadingStatus.setText("加载失败，点击重试");
-            loadingStatus.setVisibility(View.VISIBLE);
-        } else Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        loadingStatus.setVisibility(View.GONE);
+        pageError.show(message, () -> loadTopics(page), !topicItems.isEmpty());
     }
 
     private void showFilterDialog() {

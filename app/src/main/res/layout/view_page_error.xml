@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:fillViewport="true" android:background="?android:attr/colorBackground"
+    android:clickable="true" android:focusable="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:gravity="center" android:padding="24dp" android:minHeight="240dp">
+        <com.fimtale.ui.icons.MdiImageView android:layout_width="48dp" android:layout_height="48dp"
+            android:alpha="0.5" android:contentDescription="@null" app:mdiIcon="cloud-off-outline"
+            app:tint="?attr/colorOnSurfaceVariant" />
+        <TextView android:id="@+id/pageErrorTitle" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="20dp" android:gravity="center"
+            android:text="@string/page_error_title" android:textAppearance="?attr/textAppearanceTitleLarge" />
+        <TextView android:id="@+id/pageErrorMessage" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center"
+            android:textAppearance="?attr/textAppearanceBodyMedium" android:textColor="?attr/colorOnSurfaceVariant"
+            android:accessibilityLiveRegion="polite" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/pageErrorRetry"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:text="@string/page_error_retry" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/pageErrorContinue"
+            style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="@string/page_error_continue" android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

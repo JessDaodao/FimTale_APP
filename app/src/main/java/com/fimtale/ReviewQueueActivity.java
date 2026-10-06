@@ -42,6 +42,7 @@ public class ReviewQueueActivity extends AppCompatActivity {
     private ObjectAnimator elevation;
     private boolean raised, showPending;
     private boolean highlighted;
+    private com.fimtale.ui.PageErrorView pageError;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); setContentView(R.layout.activity_review_queue); EditorWindowStyle.apply(this);
@@ -50,6 +51,7 @@ public class ReviewQueueActivity extends AppCompatActivity {
         toolbar = findViewById(R.id.toolbar); toolbar.setNavigationOnClickListener(v -> finish());
         header = findViewById(R.id.toolbarContainer);
         pager = findViewById(R.id.reviewPager);
+        pageError = com.fimtale.ui.PageErrorView.wrap(pager);
         tabs = findViewById(R.id.reviewTabs);
         loadingSkeleton = findViewById(R.id.reviewSkeleton);
         loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.DRAFTS);
@@ -135,6 +137,9 @@ public class ReviewQueueActivity extends AppCompatActivity {
         for (ReviewQueueAdapter adapter : adapters) adapter.rebuild();
         loadingSkeleton.setVisibility(model.loading ? View.VISIBLE : View.GONE);
         pager.setVisibility(model.loading ? View.INVISIBLE : View.VISIBLE);
+        if (!model.loading && !model.needsLogin && !model.error.isEmpty())
+            pageError.show(model.error, model::refresh, !model.reviews.isEmpty());
+        else pageError.hide();
         revealHighlightedEntry();
         if (model.notice != null) { Toast.makeText(this, model.notice, Toast.LENGTH_SHORT).show(); model.notice = null; }
         syncDialog();

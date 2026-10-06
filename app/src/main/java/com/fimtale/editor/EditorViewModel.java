@@ -36,6 +36,7 @@ public class EditorViewModel extends AndroidViewModel {
     public String userId, message = "正在加载…";
     public boolean initialized, ready, busy, error, needsLogin, captchaRequested;
     public boolean dirty, finished, allowAnnouncement;
+    public boolean loadError;
     private boolean cleared, loading;
     private int ownerId;
     private int initialWorkType = 1;
@@ -56,6 +57,7 @@ public class EditorViewModel extends AndroidViewModel {
     public boolean isChapter() { return chapterId >= 0; }
     private void notifyUi() { if (!cleared) changes.setValue(changes.getValue() + 1); }
     private void fail(String text) {
+        loadError = loading;
         busy = false; loading = false; captchaRequested = false; error = true; message = text; notifyUi();
     }
     private boolean sameAccount() {
@@ -80,6 +82,7 @@ public class EditorViewModel extends AndroidViewModel {
     }
     public void load() {
         if (busy || loading || finished) return;
+        loadError = false;
         if (ready) persistDraft();
         busy = true; loading = true; error = false; message = "正在加载在线草稿…"; notifyUi();
         io.execute(() -> {

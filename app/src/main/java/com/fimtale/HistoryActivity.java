@@ -24,6 +24,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HistoryActivity extends AppCompatActivity {
+    private com.fimtale.ui.PageErrorView pageError;
 
     private HistoryAdapter adapter;
     private RecyclerView recyclerView;
@@ -55,6 +56,7 @@ public class HistoryActivity extends AppCompatActivity {
         loadingStatus.setOnClickListener(v -> loadHistory(1));
 
         recyclerView = findViewById(R.id.recyclerView);
+        pageError = com.fimtale.ui.PageErrorView.wrap(recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         float targetElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
@@ -114,6 +116,7 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void loadHistory(int page) {
+        pageError.hide();
         if (isLoading) return;
         isLoading = true;
         loadingStatus.setVisibility(View.GONE);
@@ -137,11 +140,11 @@ public class HistoryActivity extends AppCompatActivity {
                         loadingStatus.setText("暂无历史记录，点击刷新");
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
-                } else showLoadError(com.fimtale.network.ApiErrors.message(response));
+                } else showLoadError(page, com.fimtale.network.ApiErrors.message(response));
             }
             @Override public void onFailure(Call<HistoryResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || call.isCanceled() || call != activeCall) return;
-                showLoadError("加载失败，请重试");
+                showLoadError(page, "暂时无法连接服务器，请检查网络后重试。");
             }
         });
     }
@@ -153,12 +156,10 @@ public class HistoryActivity extends AppCompatActivity {
         recyclerView.setVisibility(View.VISIBLE);
     }
 
-    private void showLoadError(String message) {
+    private void showLoadError(int page, String message) {
         finishLoading();
-        if (adapter.getItemCount() == 0) {
-            loadingStatus.setText("加载失败，点击重试");
-            loadingStatus.setVisibility(View.VISIBLE);
-        } else Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        loadingStatus.setVisibility(View.GONE);
+        pageError.show(message, () -> loadHistory(page), adapter.getItemCount() > 0);
     }
 
     @Override protected void onDestroy() {

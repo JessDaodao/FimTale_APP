@@ -31,6 +31,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class TagListActivity extends AppCompatActivity {
+    private com.fimtale.ui.PageErrorView pageError;
 
     private RecyclerView recyclerView;
     private TagAdapter adapter;
@@ -67,6 +68,7 @@ public class TagListActivity extends AppCompatActivity {
         toolbarContainer = findViewById(R.id.toolbarContainer);
 
         recyclerView = findViewById(R.id.recyclerView);
+        pageError = com.fimtale.ui.PageErrorView.wrap(recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new TagAdapter(tagList, this);
         recyclerView.setAdapter(new ConcatAdapter(adapter, loadingFooter));
@@ -111,6 +113,7 @@ public class TagListActivity extends AppCompatActivity {
     }
 
     private void loadTags(int page) {
+        pageError.hide();
         if (isLoading && page != 1) return;
         if (tagsCall != null) tagsCall.cancel();
         isLoading = true;
@@ -140,11 +143,11 @@ public class TagListActivity extends AppCompatActivity {
                         loadingStatus.setText("暂无标签，点击刷新");
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
-                } else showLoadError();
+                } else showLoadError(page);
             }
             @Override public void onFailure(Call<List<TagGroup>> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagsCall) return;
-                showLoadError();
+                showLoadError(page);
             }
         });
     }
@@ -156,12 +159,10 @@ public class TagListActivity extends AppCompatActivity {
         recyclerView.setVisibility(View.VISIBLE);
     }
 
-    private void showLoadError() {
+    private void showLoadError(int page) {
         finishLoading();
-        if (tagList.isEmpty()) {
-            loadingStatus.setText("加载失败，点击重试");
-            loadingStatus.setVisibility(View.VISIBLE);
-        } else Toast.makeText(this, "加载标签失败，请重试", Toast.LENGTH_SHORT).show();
+        loadingStatus.setVisibility(View.GONE);
+        pageError.show(null, () -> loadTags(page), adapter.getItemCount() > 0);
     }
 
     @Override protected void onDestroy() {

@@ -46,6 +46,7 @@ public class ProfileFragment extends Fragment {
     private View btnFavorites, btnHistory;
     private View btnReviewQueue;
     private Call<com.fimtale.model.CurrentUser> userCall;
+    private PageErrorView pageError;
     private boolean isLoggedIn = false;
 
     private View contentLayout;
@@ -83,6 +84,7 @@ public class ProfileFragment extends Fragment {
         setupButtons();
         setupEmptyState();
         PullToRefresh.attach(view.findViewById(R.id.profileScroll), this::loadContent, () -> isAdded());
+        pageError = PageErrorView.wrap(view.findViewById(R.id.profileScroll));
 
         requireActivity().addMenuProvider(new MenuProvider() {
             @Override
@@ -114,6 +116,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadContent() {
+        pageError.hide();
         if (userCall != null) userCall.cancel();
         btnReviewQueue.setVisibility(View.GONE);
         if (UserPreferences.isLoggedIn(requireContext())) {
@@ -190,13 +193,18 @@ public class ProfileFragment extends Fragment {
                     UserPreferences.clearSession(requireContext());
                     isLoggedIn = false;
                     loadContent();
-                }
+                } else pageError.show(com.fimtale.network.ApiErrors.message(response), ProfileFragment.this::loadContent);
             }
-            @Override public void onFailure(Call<com.fimtale.model.CurrentUser> call, Throwable t) {}
+            @Override public void onFailure(Call<com.fimtale.model.CurrentUser> call, Throwable t) {
+                if (!isAdded() || getView() == null || call != userCall || call.isCanceled()) return;
+                if (!token.equals(UserPreferences.getToken(requireContext()))) { loadContent(); return; }
+                pageError.show(null, ProfileFragment.this::loadContent);
+            }
         });
     }
 
     @Override public void onDestroyView() {
+        pageError = null;
         if (userCall != null) userCall.cancel();
         userCall = null; btnReviewQueue = null;
         super.onDestroyView();

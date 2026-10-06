@@ -37,6 +37,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class TagArticlesActivity extends AppCompatActivity {
+    private com.fimtale.ui.PageErrorView pageError;
     public static final String EXTRA_WORK_TYPE = "work_type";
     private int workType;
 
@@ -100,6 +101,7 @@ public class TagArticlesActivity extends AppCompatActivity {
         toolbarContainer = findViewById(R.id.toolbarContainer);
 
         recyclerView = findViewById(R.id.recyclerView);
+        pageError = com.fimtale.ui.PageErrorView.wrap(recyclerView);
         loadingSkeleton = findViewById(R.id.loadingSkeleton);
         loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.ARTICLES);
         loadingFooter = new LoadingCardAdapter();
@@ -218,6 +220,7 @@ public class TagArticlesActivity extends AppCompatActivity {
     }
 
     private void fetchTagTopics(int page) {
+        pageError.hide();
         if (isLoading && page != 1) return;
         if (topicsCall != null) topicsCall.cancel();
         isLoading = true;
@@ -227,9 +230,13 @@ public class TagArticlesActivity extends AppCompatActivity {
             tagInfoCall.enqueue(new Callback<TagInfo>() {
                 @Override public void onResponse(Call<TagInfo> call, Response<TagInfo> response) {
                     if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagInfoCall) return;
-                    if (response.isSuccessful()) { tagInfo = response.body(); updateTagInfoMenuItemVisibility(); }
+                    if (response.isSuccessful() && response.body() != null) { tagInfo = response.body(); updateTagInfoMenuItemVisibility(); }
+                    else pageError.show("暂时无法加载标签信息。", () -> fetchTagTopics(1), topicAdapter.getItemCount() > 0);
                 }
-                @Override public void onFailure(Call<TagInfo> call, Throwable t) {}
+                @Override public void onFailure(Call<TagInfo> call, Throwable t) {
+                    if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagInfoCall) return;
+                    pageError.show("暂时无法加载标签信息。", () -> fetchTagTopics(1), topicAdapter.getItemCount() > 0);
+                }
             });
         }
         loadingStatus.setVisibility(View.GONE);
@@ -259,11 +266,11 @@ public class TagArticlesActivity extends AppCompatActivity {
                         loadingStatus.setText("暂无文章，点击刷新");
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
-                } else showLoadError();
+                } else showLoadError(page);
             }
             @Override public void onFailure(@NonNull Call<TopicListResponse> call, @NonNull Throwable t) {
                 if (isFinishing() || isDestroyed() || call.isCanceled() || call != topicsCall) return;
-                showLoadError();
+                showLoadError(page);
             }
         });
     }
@@ -275,12 +282,10 @@ public class TagArticlesActivity extends AppCompatActivity {
         recyclerView.setVisibility(View.VISIBLE);
     }
 
-    private void showLoadError() {
+    private void showLoadError(int page) {
         finishLoading();
-        if (topicViewItemList.isEmpty()) {
-            loadingStatus.setText("加载失败，点击重试");
-            loadingStatus.setVisibility(View.VISIBLE);
-        } else Toast.makeText(this, "加载失败，请重试", Toast.LENGTH_SHORT).show();
+        loadingStatus.setVisibility(View.GONE);
+        pageError.show(null, () -> fetchTagTopics(page), topicAdapter.getItemCount() > 0);
     }
 
     @Override protected void onDestroy() {

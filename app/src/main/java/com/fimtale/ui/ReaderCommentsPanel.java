@@ -45,6 +45,7 @@ public final class ReaderCommentsPanel {
     private final MaterialButton refresh, sort, previous, next, send, emoji;
     private final TextInputEditText input;
     private final View pager;
+    private PageErrorView pageError;
     private Call<WorkCommentsResponse> activeCall;
     private Call<Void> commentCall;
     private int chapterId;
@@ -59,6 +60,7 @@ public final class ReaderCommentsPanel {
         this.root = root;
         this.workId = workId;
         list = root.findViewById(R.id.readerCommentsList);
+        pageError = PageErrorView.wrap(list);
         list.setLayoutManager(new LinearLayoutManager(activity));
         adapter = new CommentAdapter(new ArrayList<>(), activity);
         list.setAdapter(adapter);
@@ -110,6 +112,7 @@ public final class ReaderCommentsPanel {
     }
 
     private void load(int requestedPage) {
+        pageError.hide();
         if (closed || requestedPage < 1) return;
         if (activeCall != null) activeCall.cancel();
         updatePager(true);
@@ -136,22 +139,21 @@ public final class ReaderCommentsPanel {
                         status.setVisibility(View.VISIBLE);
                         status.setOnClickListener(v -> load(1));
                     }
-                } else showError(ApiErrors.message(response));
+                } else showError(requestedPage, ApiErrors.message(response));
             }
 
             @Override public void onFailure(Call<WorkCommentsResponse> call, Throwable error) {
-                if (valid(call)) showError("评论加载失败");
+                if (valid(call)) showError(requestedPage, "评论加载失败");
             }
         });
     }
 
-    private void showError(String message) {
+    private void showError(int requestedPage, String message) {
         skeleton.setVisibility(View.GONE);
-        list.setVisibility(View.GONE);
+        list.setVisibility(View.VISIBLE);
         updatePager(false);
-        status.setText(message + "，点击重试");
-        status.setVisibility(View.VISIBLE);
-        status.setOnClickListener(v -> load(page));
+        status.setVisibility(View.GONE);
+        pageError.show(message, () -> load(requestedPage), adapter.getItemCount() > 0);
     }
 
     private void updatePager(boolean loading) {

@@ -115,6 +115,7 @@ public class TopicDetailActivity extends AppCompatActivity {
     private ChipGroup tagChipGroup;
     private ShimmerSkeletonView loadingSkeleton;
     private TextView loadError;
+    private com.fimtale.ui.PageErrorView pageError;
     private Call<TopicDetailResponse> detailCall;
     private NestedScrollView scrollView;
     private Button startReadingButton;
@@ -245,6 +246,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         loadingSkeleton = findViewById(R.id.detailLoadingSkeleton);
         loadingSkeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.TOPIC_DETAIL);
         loadError = findViewById(R.id.detailLoadError);
+        pageError = com.fimtale.ui.PageErrorView.wrap(findViewById(R.id.scrollView));
         loadError.setOnClickListener(v -> fetchTopicDetail(currentTopicId));
         scrollView = findViewById(R.id.scrollView);
         startReadingButton = findViewById(R.id.startReadingButton);
@@ -564,6 +566,7 @@ public class TopicDetailActivity extends AppCompatActivity {
     }
 
     private void fetchTopicDetail(int topicId) {
+        pageError.hide();
         if (detailCall != null) detailCall.cancel();
         loadingSkeleton.setVisibility(View.VISIBLE);
         loadError.setVisibility(View.GONE);
@@ -603,12 +606,10 @@ public class TopicDetailActivity extends AppCompatActivity {
 
     private void showDetailLoadError(String message) {
         loadingSkeleton.setVisibility(View.GONE);
-        if (editableWork == null) loadError.setVisibility(View.VISIBLE);
-        else {
-            scrollView.setVisibility(View.VISIBLE);
-            readingActionsBar.setVisibility(View.VISIBLE);
-        }
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        loadError.setVisibility(View.GONE);
+        scrollView.setVisibility(View.VISIBLE);
+        if (editableWork != null) readingActionsBar.setVisibility(View.VISIBLE);
+        pageError.show(message, () -> fetchTopicDetail(currentTopicId), editableWork != null);
     }
 
     private void updateUI(TopicDetailResponse data) {

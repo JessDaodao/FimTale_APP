@@ -37,7 +37,7 @@ public final class TimelineFragment extends Fragment {
     private final TimelineFeed feed = new TimelineFeed();
     private final Set<Call<?>> calls = new HashSet<>();
     private final Set<String> reposting = new HashSet<>();
-    private String session, error;
+    private String session, error, authError;
     private int generation;
     private boolean loading, failedReset, activating, loadingAuth, needsRead, reading;
     private long editorVersion = EditorChanges.version();
@@ -49,6 +49,7 @@ public final class TimelineFragment extends Fragment {
     private TextView stateTitle, composeHint, footerText;
     private MaterialButton stateAction, composeAction, loadMore;
     private TimelineAdapter adapter;
+    private PageErrorView pageError;
 
     @Nullable @Override public View onCreateView(@NonNull LayoutInflater inflater,
             @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -58,6 +59,7 @@ public final class TimelineFragment extends Fragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         list = view.findViewById(R.id.timelineList);
         refresh = view.findViewById(R.id.timelineRefresh);
+        pageError = PageErrorView.wrap(refresh);
         skeleton = view.findViewById(R.id.timelineSkeleton);
         skeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.COMMENTS);
         state = view.findViewById(R.id.timelineState);
@@ -105,7 +107,7 @@ public final class TimelineFragment extends Fragment {
         String token = UserPreferences.getToken(requireContext());
         if (token.equals(session)) return false;
         cancelCalls();
-        session = token; feed.clear(); auth = null; error = null;
+        session = token; feed.clear(); auth = null; error = null; authError = null;
         needsRead = false; reposting.clear();
         editorVersion = EditorChanges.version();
         adapter.notifyDataSetChanged(); render();
@@ -156,6 +158,8 @@ public final class TimelineFragment extends Fragment {
     private void loadAuth() {
         if (loadingAuth || session == null || session.isEmpty()) return;
         loadingAuth = true;
+        authError = null;
+        render();
         int request = generation;
         Call<UserAuth> call = RetrofitClient.getInstance().getUserAuth(session);
         calls.add(call);
@@ -164,13 +168,16 @@ public final class TimelineFragment extends Fragment {
                 calls.remove(call);
                 if (!accepts(request)) { reconcileExpiredSession(request); return; }
                 loadingAuth = false;
-                if (response.isSuccessful()) auth = response.body();
+                if (response.isSuccessful() && response.body() != null) auth = response.body();
+                else authError = ApiErrors.message(response);
                 render();
             }
             @Override public void onFailure(Call<UserAuth> call, Throwable cause) {
                 calls.remove(call);
                 if (!accepts(request)) return;
                 loadingAuth = false;
+                authError = "暂时无法加载发帖权限。";
+                render();
             }
         });
     }
@@ -252,12 +259,16 @@ public final class TimelineFragment extends Fragment {
     private void render() {
         if (list == null) return;
         boolean guest = session == null || session.isEmpty();
-        boolean initialError = !guest && error != null && feed.items.isEmpty();
         boolean replacing = !guest && loading && failedReset;
+        if (!guest && error != null && !loading)
+            pageError.show(error, () -> load(failedReset), !feed.items.isEmpty());
+        else if (!guest && authError != null && !loading)
+            pageError.show(authError, this::loadAuth, !feed.items.isEmpty());
+        else pageError.hide();
         refresh.setEnabled(!guest);
         skeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
-        list.setVisibility(guest || initialError || replacing ? View.INVISIBLE : View.VISIBLE);
-        state.setVisibility(guest || initialError ? View.VISIBLE : View.GONE);
+        list.setVisibility(guest || replacing ? View.INVISIBLE : View.VISIBLE);
+        state.setVisibility(guest ? View.VISIBLE : View.GONE);
         stateTitle.setText(guest ? "登录后查看关注动态" : error);
         stateAction.setText(guest ? "登录" : "重试");
         boolean canPost = !guest && auth != null && auth.canPost();
@@ -281,6 +292,7 @@ public final class TimelineFragment extends Fragment {
         cancelCalls(); reposting.clear();
         if (list != null) list.setAdapter(null);
         list = null; adapter = null; refresh = null; skeleton = null; state = null; composeCard = null;
+        pageError = null;
         stateTitle = composeHint = footerText = null; stateAction = composeAction = loadMore = null;
         super.onDestroyView();
     }

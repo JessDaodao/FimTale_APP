@@ -45,6 +45,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ArticleFragment extends Fragment {
+    private com.fimtale.ui.PageErrorView pageError;
 
     private TabLayout tabLayout;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -165,6 +166,7 @@ public class ArticleFragment extends Fragment {
             }
         });
         contentContainer.addView(recyclerView, 0);
+        pageError = com.fimtale.ui.PageErrorView.wrap(recyclerView);
     }
 
     private void setupSwipeRefresh() {
@@ -208,6 +210,7 @@ public class ArticleFragment extends Fragment {
     }
 
     private void loadTopics() {
+        pageError.hide();
         if (isLoading) {
             if (currentPage != 1) return;
             if (topicsCall != null) topicsCall.cancel();
@@ -254,13 +257,10 @@ public class ArticleFragment extends Fragment {
     private void loadFailed(int requestedPage, String message) {
         currentPage = Math.max(1, requestedPage - 1);
         finishLoading();
-        if (dataList.isEmpty()) {
-            tvNoResults.setText("加载失败，点击重试"); tvNoResults.setVisibility(View.VISIBLE);
-            tvNoResults.setOnClickListener(v -> { currentPage = 1; loadTopics(); });
-        }
-        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        pageError.show(message, () -> { currentPage = requestedPage; loadTopics(); }, !dataList.isEmpty());
     }
     @Override public void onDestroyView() {
+        pageError = null;
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
         isLoading = false;
         super.onDestroyView();
