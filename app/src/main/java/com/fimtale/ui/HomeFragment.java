@@ -100,8 +100,8 @@ public class HomeFragment extends Fragment {
                 MdiIcons.inflateMenu(requireContext(), inflater, R.menu.home_menu, menu);
             }
             @Override public boolean onMenuItemSelected(@NonNull android.view.MenuItem item) {
-                if (item.getItemId() != R.id.action_publish) return false;
-                startActivity(new Intent(requireContext(), com.fimtale.DraftsActivity.class)); return true;
+                if (item.getItemId() != R.id.action_search) return false;
+                startActivity(new Intent(requireContext(), com.fimtale.SearchActivity.class)); return true;
             }
         }, getViewLifecycleOwner(), androidx.lifecycle.Lifecycle.State.RESUMED);
 

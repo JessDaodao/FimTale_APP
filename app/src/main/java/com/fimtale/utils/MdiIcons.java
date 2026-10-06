@@ -76,7 +76,7 @@ public final class MdiIcons {
             String name = null;
             if (id == R.id.action_filter) name = menuRes == R.menu.menu_tag_list ? "magnify" : "filter-variant";
             else if (id == R.id.action_search) name = "magnify";
-            else if (id == R.id.action_publish || id == R.id.action_edit_work) name = "pencil";
+            else if (id == R.id.action_edit_work) name = "pencil";
             else if (id == R.id.action_editor_metadata || id == R.id.action_settings) name = "cog";
             else if (id == R.id.action_toggle_theme) {
                 boolean isNight = (context.getResources().getConfiguration().uiMode

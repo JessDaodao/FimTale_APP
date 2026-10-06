@@ -101,10 +101,6 @@ public class ArticleFragment extends Fragment {
                     showFilterDialog();
                     return true;
                 }
-                if (menuItem.getItemId() == R.id.action_search) {
-                    startActivity(new android.content.Intent(requireContext(), com.fimtale.SearchActivity.class));
-                    return true;
-                }
                 return false;
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);

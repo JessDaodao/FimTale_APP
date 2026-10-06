@@ -6,9 +6,4 @@
         android:title="过滤器"
         app:showAsAction="ifRoom"
         app:iconTint="?attr/colorControlNormal" />
-    <item
-        android:id="@+id/action_search"
-        android:title="搜索"
-        app:showAsAction="always"
-        app:iconTint="?attr/colorControlNormal" />
 </menu>
