@@ -60,7 +60,8 @@ public class BbCodeEditTextRenderingTest {
         String source = "[table]\n[tr][th colspan=2]Header[/th][/tr]\n[tr][td]A[/td][td]B[/td][/tr]\n[/table]\n"
                 + "[markdown]\n## Title\n\n**bold**\n[/markdown]\n[collapse=Note][b]hidden[/b][/collapse]\n[ref type=1 id=42]work[/ref]\n[list=1][*]one[*]two[/list]";
         Editable text = render(source);
-        assertEquals(5, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
+        assertEquals(2, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
+        assertEquals(1, text.getSpans(0, text.length(), EditableTableSpan.class).length);
         editor.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1000, View.MeasureSpec.AT_MOST));
         editor.layout(0, 0, 400, editor.getMeasuredHeight());
         Bitmap bitmap = Bitmap.createBitmap(400, Math.max(1, editor.getMeasuredHeight()), Bitmap.Config.ARGB_8888);
@@ -83,7 +84,7 @@ public class BbCodeEditTextRenderingTest {
         Editable text = render(source);
         assertEquals(2, text.getSpans(0, text.length(), ReplacementSpan.class).length);
         editor.requestFocus(); editor.setSelection(source.indexOf("seven")); editor.setSourceVisible(false);
-        assertEquals(0, text.getSpans(0, text.length(), ReplacementSpan.class).length);
+        assertEquals(4, text.getSpans(0, text.length(), ReplacementSpan.class).length);
         assertEquals(source, text.toString());
     }
     @Test public void hardBreaksAndRulesRenderWithoutAddingNewlinesToTheDraft() {
@@ -92,10 +93,10 @@ public class BbCodeEditTextRenderingTest {
         assertEquals(2, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
         assertEquals(source, text.toString());
         editor.requestFocus(); editor.setSelection(source.indexOf("second")); editor.setSourceVisible(false);
-        assertEquals(1, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
+        assertEquals(2, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
         assertEquals(source, text.toString());
     }
-    @Test public void caretAndComposingTextRevealBlocksWithoutEditingTheirSource() {
+    @Test public void caretAndComposingTextKeepBlocksRenderedUntilSourceIsRequested() {
         String source = "[markdown]\n**正文**\n[/markdown]\n输入中";
         Editable text = render(source);
         assertEquals(1, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
@@ -105,12 +106,12 @@ public class BbCodeEditTextRenderingTest {
         text.setSpan(composing, selection, selection + 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE | Spanned.SPAN_COMPOSING);
         editor.setSourceVisible(false);
         assertTrue(editor.hasFocus());
-        assertEquals(0, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
+        assertEquals(1, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
         assertSame(text, editor.getText()); assertEquals(source, text.toString());
         assertEquals(selection, editor.getSelectionStart()); assertEquals(selection, text.getSpanStart(composing));
         assertTrue((text.getSpanFlags(composing) & Spanned.SPAN_COMPOSING) != 0);
         text.removeSpan(composing);
-        text.delete(0, "[markdown]".length()); editor.setSourceVisible(false);
+        editor.setSourceVisible(true);
         assertEquals(0, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
     }
     @Test public void spoilerConcealmentOverridesNestedColorsAndBlocks() {

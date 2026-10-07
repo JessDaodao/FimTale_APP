@@ -188,7 +188,27 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
             case TABLE:
                 field("行数（1–20）", "3", InputType.TYPE_CLASS_NUMBER); field("列数（1–10）", "3", InputType.TYPE_CLASS_NUMBER);
                 headerRow = new MaterialCheckBox(content.getContext()); headerRow.setId(R.id.editorFormatHeaderRow);
-                headerRow.setText("首行为表头"); headerRow.setChecked(restoredHeader); content.addView(headerRow); break;
+                headerRow.setText("首行为表头"); headerRow.setChecked(restoredHeader); content.addView(headerRow);
+                TextView dimensions = new TextView(content.getContext()); dimensions.setId(R.id.editorTableDimensions);
+                dimensions.setText("3 行 × 3 列 · 拖动网格选择大小"); dimensions.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+                content.addView(dimensions);
+                TableSizePicker picker = new TableSizePicker(content.getContext()); picker.setId(R.id.editorTableSizePicker);
+                content.addView(picker, new LinearLayout.LayoutParams(-1, -2));
+                picker.setListener((rows, columns) -> { inputs.get(0).setText(String.valueOf(rows)); inputs.get(1).setText(String.valueOf(columns)); });
+                android.text.TextWatcher resize = new android.text.TextWatcher() {
+                    @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        try {
+                            int rows = Integer.parseInt(value(0)), columns = Integer.parseInt(value(1));
+                            if (rows >= 1 && rows <= 20 && columns >= 1 && columns <= 10) {
+                                picker.setSelection(rows, columns); dimensions.setText(rows + " 行 × " + columns + " 列 · 拖动网格选择大小");
+                            }
+                        } catch (NumberFormatException ignored) {}
+                    }
+                    @Override public void afterTextChanged(android.text.Editable s) {}
+                };
+                inputs.get(0).addTextChangedListener(resize); inputs.get(1).addTextChangedListener(resize);
+                break;
             default: break;
         }
     }

@@ -147,7 +147,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         findViewById(R.id.editorQuote).setOnClickListener(v -> wrap("quote"));
         findViewById(R.id.editorSpoiler).setOnClickListener(v -> wrap("spoiler"));
         findViewById(R.id.editorEmoji).setOnClickListener(v -> FtemojiPicker.show(this,
-                name -> insertAtCaret(body, ":ftemoji_" + name + ":")));
+                name -> insertAtCaret(formatBody(), ":ftemoji_" + name + ":")));
         findViewById(R.id.editorImage).setOnClickListener(v -> imagePicker.launch("image/*"));
         findViewById(R.id.editorUploadCover).setOnClickListener(v -> coverPicker.launch("image/*"));
         findViewById(R.id.editorSource).setOnClickListener(v -> {
@@ -470,21 +470,26 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
                 .putExtra(UserDetailActivity.EXTRA_USERNAME, UserPreferences.getUserName(this)));
     }
     private void wrap(String tag) {
-        int start = Math.max(0, Math.min(body.getSelectionStart(), body.getSelectionEnd()));
-        int end = Math.max(start, Math.max(body.getSelectionStart(), body.getSelectionEnd()));
-        String selected = body.getText().subSequence(start, end).toString();
-        applyFormat(BbCodeInsertion.at(body.getText().toString(), start, end, BbCodeInsertion.wrap(tag, selected, tag.equals("quote"))));
+        BbCodeEditText target = formatBody();
+        int start = Math.max(0, Math.min(target.getSelectionStart(), target.getSelectionEnd()));
+        int end = Math.max(start, Math.max(target.getSelectionStart(), target.getSelectionEnd()));
+        String selected = target.getText().subSequence(start, end).toString();
+        applyFormat(BbCodeInsertion.at(target.getText().toString(), start, end, BbCodeInsertion.wrap(tag, selected, tag.equals("quote"))));
     }
-    @Override public BbCodeEditText formatBody() { return body; }
+    @Override public BbCodeEditText formatBody() {
+        com.fimtale.editor.BbCodeEditorLayout layout = findViewById(R.id.editorVisualLayout);
+        return layout == null ? body : layout.activeEditor();
+    }
     @Override public int formatVersion() { return model.documentVersion; }
     @Override public boolean canInsertFormat() { return model.ready && !model.busy; }
     @Override public void applyFormat(BbCodeInsertion.Edit edit) {
         if (!canInsertFormat()) return;
-        body.beginBatchEdit();
+        BbCodeEditText target = formatBody();
+        target.beginBatchEdit();
         try {
-            body.getText().replace(edit.start, edit.end, edit.replacement);
-            body.requestFocus(); body.setSelection(edit.selectionStart, edit.selectionEnd);
-        } finally { body.endBatchEdit(); }
+            target.getText().replace(edit.start, edit.end, edit.replacement);
+            target.requestFocus(); target.setSelection(edit.selectionStart, edit.selectionEnd);
+        } finally { target.endBatchEdit(); }
     }
     private void insertAtCaret(EditText field, String value) {
         int start = Math.max(0, field.getSelectionStart());

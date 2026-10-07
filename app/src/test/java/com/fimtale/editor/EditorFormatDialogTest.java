@@ -85,4 +85,24 @@ public class EditorFormatDialogTest {
         assertEquals("正文🐴", activity.body.getText().subSequence(activity.body.getSelectionStart(), activity.body.getSelectionEnd()).toString());
         assertTrue(activity.body.getText().toString().contains("[th][s]正文🐴[/s][/th]"));
     }
+    @Test public void tableGridSelectionUpdatesDimensionsAndSurvivesRotation() {
+        open(EditorFormat.TABLE);
+        TableSizePicker picker = dialog().requireDialog().findViewById(R.id.editorTableSizePicker);
+        picker.measure(android.view.View.MeasureSpec.makeMeasureSpec(300, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED));
+        picker.layout(0, 0, 300, 600);
+        for (int action : new int[]{android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_MOVE, android.view.MotionEvent.ACTION_UP}) {
+            android.view.MotionEvent event = android.view.MotionEvent.obtain(0, 10, action, 105, 135, 0);
+            picker.dispatchTouchEvent(event); event.recycle();
+        }
+        assertEquals("5", input(R.id.editorFormatInput0).getText().toString());
+        assertEquals("4", input(R.id.editorFormatInput1).getText().toString());
+        Configuration next = new Configuration(activity.getResources().getConfiguration()); next.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        controller.configurationChange(next); activity = controller.get(); shadowOf(Looper.getMainLooper()).idle();
+        assertEquals("5", input(R.id.editorFormatInput0).getText().toString());
+        assertEquals("4", input(R.id.editorFormatInput1).getText().toString());
+        insert();
+        EditorTable table = EditorTable.parse(activity.body.getText().toString().substring(activity.body.getText().toString().indexOf("[table]")));
+        assertEquals(5, table.rows); assertEquals(4, table.columns);
+    }
 }

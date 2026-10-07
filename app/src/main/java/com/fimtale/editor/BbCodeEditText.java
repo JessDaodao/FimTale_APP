@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
@@ -30,6 +31,12 @@ import android.text.style.SuperscriptSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.ViewConfiguration;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputConnectionWrapper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatEditText;
@@ -58,9 +65,37 @@ public final class BbCodeEditText extends AppCompatEditText {
     private boolean sourceVisible;
     private Markwon blockRenderer;
     private final Map<String, BbCodeBlockPreview> previews = new HashMap<>();
+    private final Map<String, EditableTableSpan> tables = new HashMap<>();
+    interface TableCellListener {
+        void edit(TableHit hit); void editBlock(BlockHit hit); void layoutChanged(); void sourceModeChanged(); void textTouched();
+    }
+    private TableCellListener tableCellListener;
+    void setTableCellListener(TableCellListener listener) { tableCellListener = listener; }
+    static final class TableHit {
+        final EditableTableSpan table;
+        final EditableTableSpan.Cell cell;
+        final int tableStart;
+        final RectF bounds;
+        TableHit(EditableTableSpan table, EditableTableSpan.Cell cell, int tableStart, RectF bounds) {
+            this.table = table; this.cell = cell; this.tableStart = tableStart; this.bounds = bounds;
+        }
+        int start() { return tableStart + cell.source.node.contentStart; }
+        int end() { return tableStart + cell.source.node.contentEnd; }
+    }
+    private TableHit pressedCell;
+    private BlockHit pressedBlock;
+    private float downX, downY;
+    static final class BlockHit {
+        final int start, end;
+        final String content;
+        final RectF bounds;
+        BlockHit(int start, int end, String content, RectF bounds) {
+            this.start = start; this.end = end; this.content = content; this.bounds = bounds;
+        }
+    }
     private final List<int[]> previewRanges = new ArrayList<>();
     private static final Set<String> PREVIEW_BLOCKS = new HashSet<>(java.util.Arrays.asList(
-            "table", "list", "markdown", "collapse", "ref", "handbook", "hr"));
+            "table", "markdown", "ref", "handbook", "hr"));
 
     public BbCodeEditText(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -71,14 +106,81 @@ public final class BbCodeEditText extends AppCompatEditText {
         });
     }
 
-    public void setSourceVisible(boolean visible) { sourceVisible = visible; renderNow(); }
+    public void setSourceVisible(boolean visible) {
+        if (visible && tableCellListener != null) tableCellListener.sourceModeChanged();
+        sourceVisible = visible; renderNow();
+    }
     public boolean isSourceVisible() { return sourceVisible; }
+
+    @Override public InputConnection onCreateInputConnection(EditorInfo info) {
+        InputConnection connection = super.onCreateInputConnection(info);
+        if (connection == null) return null;
+        return new InputConnectionWrapper(connection, false) {
+            private CharSequence protectedText(CharSequence value) {
+                if (sourceVisible || getText() == null) return value;
+                int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
+                int composingStart = android.view.inputmethod.BaseInputConnection.getComposingSpanStart(getText());
+                int composingEnd = android.view.inputmethod.BaseInputConnection.getComposingSpanEnd(getText());
+                if (composingStart >= 0 && composingEnd > composingStart) { start = composingStart; end = composingEnd; }
+                return VisualEditing.replacement(getText().toString(), start, end, value);
+            }
+            @Override public boolean commitText(CharSequence text, int position) { return super.commitText(protectedText(text), position); }
+            @Override public boolean setComposingText(CharSequence text, int position) { return super.setComposingText(protectedText(text), position); }
+            @Override public boolean deleteSurroundingText(int before, int after) {
+                if (!sourceVisible && ((before == 1 && after == 0) || (before == 0 && after == 1))) return deleteVisual(before == 1);
+                return super.deleteSurroundingText(before, after);
+            }
+            @Override public boolean deleteSurroundingTextInCodePoints(int before, int after) {
+                if (!sourceVisible && ((before == 1 && after == 0) || (before == 0 && after == 1))) return deleteVisual(before == 1);
+                return super.deleteSurroundingTextInCodePoints(before, after);
+            }
+        };
+    }
+    private boolean deleteVisual(boolean backward) {
+        Editable text = getText();
+        int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
+        if (text == null || start < 0) return false;
+        if (start == end) {
+            int[] range = VisualEditing.deletion(text.toString(), start, backward); start = range[0]; end = range[1];
+            text.delete(start, end);
+        } else text.replace(start, end, VisualEditing.replacement(text.toString(), start, end, ""));
+        setSelection(Math.min(start, text.length()));
+        return true;
+    }
+    @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (!sourceVisible && (keyCode == KeyEvent.KEYCODE_DEL || keyCode == KeyEvent.KEYCODE_FORWARD_DEL))
+            return deleteVisual(keyCode == KeyEvent.KEYCODE_DEL);
+        return super.onKeyDown(keyCode, event);
+    }
+    @Override public boolean onTextContextMenuItem(int id) {
+        if (sourceVisible || getText() == null || getSelectionStart() < 0) return super.onTextContextMenuItem(id);
+        int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
+        android.content.ClipboardManager clipboard = getContext().getSystemService(android.content.ClipboardManager.class);
+        if (id == android.R.id.copy || id == android.R.id.cut) {
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("内容", VisualEditing.selectedText(getText().toString(), start, end)));
+            if (id == android.R.id.cut) deleteVisual(true);
+            return true;
+        }
+        if (id == android.R.id.paste || id == android.R.id.pasteAsPlainText) {
+            android.content.ClipData clip = clipboard.getPrimaryClip();
+            if (clip == null || clip.getItemCount() == 0) return true;
+            StringBuilder incoming = new StringBuilder();
+            for (int i = 0; i < clip.getItemCount(); i++) {
+                if (i > 0) incoming.append('\n');
+                incoming.append(clip.getItemAt(i).coerceToText(getContext()));
+            }
+            CharSequence replacement = VisualEditing.replacement(getText().toString(), start, end, incoming);
+            getText().replace(start, end, replacement); setSelection(start + replacement.length()); return true;
+        }
+        return super.onTextContextMenuItem(id);
+    }
 
     private void scheduleRender() {
         // Callbacks can arrive from TextView's constructor before our fields exist.
         if (render == null) return;
         removeCallbacks(render); postDelayed(render, 80);
     }
+    void refreshVisuals() { scheduleRender(); }
     @Override protected void onSelectionChanged(int start, int end) { super.onSelectionChanged(start, end); scheduleRender(); }
     @Override protected void onFocusChanged(boolean focused, int direction, Rect rect) { super.onFocusChanged(focused, direction, rect); scheduleRender(); }
     @Override protected void onSizeChanged(int w, int h, int oldw, int oldh) { super.onSizeChanged(w, h, oldw, oldh); scheduleRender(); }
@@ -91,6 +193,8 @@ public final class BbCodeEditText extends AppCompatEditText {
         for (InlineImage image : images.values()) image.requests.clear(image);
         images.clear();
         for (BbCodeBlockPreview preview : previews.values()) preview.close();
+        for (EditableTableSpan table : tables.values()) table.close();
+        tables.clear();
         previews.clear(); super.onDetachedFromWindow();
     }
 
@@ -103,7 +207,7 @@ public final class BbCodeEditText extends AppCompatEditText {
         return paragraph[0] >= 0 && start <= paragraph[1] && end > paragraph[0];
     }
     private void syntax(Editable text, int start, int end, int[] paragraph) {
-        if (sourceVisible || intersects(paragraph, start, end)) {
+        if (sourceVisible) {
             span(text, new ForegroundColorSpan(ColorUtils.setAlphaComponent(getCurrentTextColor(), 140)), start, end);
         } else span(text, new HiddenSyntaxSpan(), start, end);
     }
@@ -118,21 +222,32 @@ public final class BbCodeEditText extends AppCompatEditText {
             for (Object span : decoration) text.removeSpan(span);
             decoration.clear();
             int[] paragraph = BbCodeSyntax.activeParagraph(source, hasFocus() ? getSelectionStart() : -1, hasFocus() ? getSelectionEnd() : -1);
-            // Editing any part of a rich block reveals that entire block, including nested syntax.
-            for (BbCodeSyntax.Node node : nodes) {
-                if (PREVIEW_BLOCKS.contains(node.name) && intersects(paragraph, node.start, node.end)) {
-                    paragraph[0] = Math.min(paragraph[0], node.start);
-                    paragraph[1] = Math.max(paragraph[1], node.end);
-                }
-            }
             previewRanges.clear();
             Set<String> usedPreviews = new HashSet<>();
+            Set<String> usedTables = new HashSet<>();
             renderBreakParagraphs(text, source, paragraph, usedPreviews);
             Set<String> usedImages = new HashSet<>();
             List<BbCodeSyntax.Node> sizeAncestors = new ArrayList<>();
             Map<Integer, Integer> sizeSteps = new HashMap<>();
             for (BbCodeSyntax.Node node : nodes) {
                 if (insidePreview(node.start, node.end)) continue;
+                if (node.name.equals("table") && !sourceVisible
+                        && (!insideNode("spoiler", node.start, node.end) || intersects(paragraph, node.start, node.end))) {
+                    String key = node.start + ":" + source.substring(node.start, node.end);
+                    EditableTableSpan table = tables.get(key);
+                    if (table == null) {
+                        EditorTable model = EditorTable.parse(source.substring(node.start, node.end));
+                        if (model != null) {
+                            if (blockRenderer == null) blockRenderer = BbCodeRendering.create(getContext());
+                            table = new EditableTableSpan(this, blockRenderer, model); tables.put(key, table);
+                        }
+                    }
+                    if (table != null) {
+                        usedTables.add(key); table.prepare();
+                        block(text, source, node, table);
+                        continue;
+                    }
+                }
                 if ((node.name.equals("mention") || node.name.equals("hash")) && !sourceVisible
                         && !intersects(paragraph, node.start, node.end) && !insideNode("spoiler", node.start, node.end)
                         && source.substring(node.start, node.end).indexOf('\n') < 0) {
@@ -142,8 +257,8 @@ public final class BbCodeEditText extends AppCompatEditText {
                     previewRanges.add(new int[]{node.start, node.end});
                     continue;
                 }
-                if (PREVIEW_BLOCKS.contains(node.name) && !sourceVisible && !intersects(paragraph, node.start, node.end)
-                        && !insideNode("spoiler", node.start, node.end) && canPreview(source, node)) {
+                if (PREVIEW_BLOCKS.contains(node.name) && !sourceVisible
+                        && !insideNode("spoiler", node.start, node.end)) {
                     String key = node.start + ":" + source.substring(node.start, node.end);
                     usedPreviews.add(key);
                     BbCodeBlockPreview preview = previews.get(key);
@@ -157,14 +272,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                         leadingMargin += margin.getLeadingMargin(true);
                     preview.setLeadingMargin(leadingMargin);
                     preview.prepare();
-                    int firstBreak = source.indexOf('\n', node.start);
-                    int firstEnd = firstBreak >= 0 && firstBreak < node.end ? firstBreak : node.end;
-                    span(text, preview, node.start, firstEnd);
-                    if (firstEnd < node.end) {
-                        hideLines(text, source, firstEnd + 1, node.end);
-                        span(text, new HiddenSourceLines(), firstEnd + 1, node.end);
-                    }
-                    previewRanges.add(new int[]{node.start, node.end});
+                    block(text, source, node, preview);
                     continue;
                 }
                 while (!sizeAncestors.isEmpty() && sizeAncestors.get(sizeAncestors.size() - 1).end <= node.start)
@@ -172,7 +280,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                 if (node.name.equals("img")) {
                     if (insideNode("spoiler", node.start, node.end)) continue;
                     String url = BbCode.safeUrl(source.substring(node.contentStart, node.contentEnd).trim(), true);
-                    if (!sourceVisible && !intersects(paragraph, node.start, node.end) && url != null
+                    if (!sourceVisible && url != null
                             && source.substring(node.start, node.end).indexOf('\n') < 0 && isAttachedToWindow()) {
                         usedImages.add(url);
                         InlineImage image = images.get(url);
@@ -187,7 +295,10 @@ public final class BbCodeEditText extends AppCompatEditText {
                             span(text, new ImageSpan(drawable), node.start, node.end); continue;
                         }
                     }
-                    // Keep the URL editable while loading, on failure or under the caret.
+                    if (!sourceVisible) {
+                        span(text, new InlineLabelSpan("[图片]", getLinkTextColors().getDefaultColor()), node.start, node.end);
+                        continue;
+                    }
                     span(text, new ForegroundColorSpan(getLinkTextColors().getDefaultColor()), node.contentStart, node.contentEnd);
                     continue;
                 }
@@ -206,8 +317,10 @@ public final class BbCodeEditText extends AppCompatEditText {
             }
             Matcher emojis = Pattern.compile(":ftemoji_([a-zA-Z0-9_]+):").matcher(source);
             while (emojis.find()) {
-                if (insideLiteral(emojis.start(), emojis.end()) || insidePreview(emojis.start(), emojis.end()) || insideNode("spoiler", emojis.start(), emojis.end()) || sourceVisible
-                        || intersects(paragraph, emojis.start(), emojis.end()) || !isAttachedToWindow()) continue;
+                if (insideLiteral(emojis.start(), emojis.end()) || insidePreview(emojis.start(), emojis.end()) || insideNode("spoiler", emojis.start(), emojis.end()) || sourceVisible) continue;
+                if (!isAttachedToWindow()) {
+                    span(text, new InlineLabelSpan("[表情]", getCurrentTextColor()), emojis.start(), emojis.end()); continue;
+                }
                 String url = SiteUrls.media("/img/ftemoji/" + emojis.group(1) + ".png");
                 if (url == null) continue;
                 usedImages.add(url);
@@ -219,6 +332,14 @@ public final class BbCodeEditText extends AppCompatEditText {
                 if (image.drawable != null) {
                     image.drawable.setBounds(0, 0, Math.round(getTextSize() * 1.2f), Math.round(getTextSize() * 1.2f));
                     span(text, new ImageSpan(image.drawable), emojis.start(), emojis.end());
+                } else span(text, new InlineLabelSpan("[表情]", getCurrentTextColor()), emojis.start(), emojis.end());
+            }
+            if (!sourceVisible) {
+                Matcher entities = VisualEditing.ENTITIES.matcher(source);
+                while (entities.find()) {
+                    if (insideLiteral(entities.start(), entities.end()) || insidePreview(entities.start(), entities.end())) continue;
+                    String decoded = android.text.Html.fromHtml(entities.group(), android.text.Html.FROM_HTML_MODE_LEGACY).toString();
+                    span(text, new LiteralSpan(decoded), entities.start(), entities.end());
                 }
             }
             // Apply the concealment last so inner color/background tags cannot reveal a spoiler.
@@ -228,6 +349,11 @@ public final class BbCodeEditText extends AppCompatEditText {
                     span(text, new BackgroundColorSpan(Color.BLACK), node.contentStart, node.contentEnd);
                     span(text, new ForegroundColorSpan(Color.TRANSPARENT), node.contentStart, node.contentEnd);
                 }
+            }
+            java.util.Iterator<Map.Entry<String, EditableTableSpan>> tableIterator = tables.entrySet().iterator();
+            while (tableIterator.hasNext()) {
+                Map.Entry<String, EditableTableSpan> entry = tableIterator.next();
+                if (!usedTables.contains(entry.getKey())) { entry.getValue().close(); tableIterator.remove(); }
             }
             java.util.Iterator<Map.Entry<String, BbCodeBlockPreview>> previewIterator = previews.entrySet().iterator();
             while (previewIterator.hasNext()) {
@@ -242,6 +368,97 @@ public final class BbCodeEditText extends AppCompatEditText {
         } finally { endBatchEdit(); }
     }
 
+    private void block(Editable text, String source, BbCodeSyntax.Node node, ReplacementSpan preview) {
+        int firstBreak = source.indexOf('\n', node.start);
+        int firstEnd = firstBreak >= 0 && firstBreak < node.end ? firstBreak : node.end;
+        span(text, preview, node.start, firstEnd);
+        if (firstEnd < node.end) {
+            hideLines(text, source, firstEnd + 1, node.end);
+            int lineEnd = source.indexOf('\n', node.end);
+            if (lineEnd < 0) lineEnd = source.length();
+            int hiddenEnd = source.substring(node.end, lineEnd).trim().isEmpty() ? node.end
+                    : source.lastIndexOf('\n', node.end - 1) + 1;
+            span(text, new HiddenSourceLines(), firstEnd + 1, hiddenEnd);
+        }
+        previewRanges.add(new int[]{node.start, node.end});
+    }
+
+    TableHit tableCellAt(float x, float y) {
+        if (sourceVisible || getText() == null) return null;
+        float textX = x - getTotalPaddingLeft() + getScrollX();
+        float textY = y - getTotalPaddingTop() + getScrollY();
+        for (EditableTableSpan table : getText().getSpans(0, length(), EditableTableSpan.class)) {
+            EditableTableSpan.Cell cell = table.hit(textX, textY);
+            if (cell != null) return tableHit(table, cell);
+        }
+        return null;
+    }
+    TableHit tableCellAtSource(int offset) {
+        if (sourceVisible || getText() == null) return null;
+        for (EditableTableSpan table : getText().getSpans(0, length(), EditableTableSpan.class)) {
+            int start = getText().getSpanStart(table);
+            for (EditableTableSpan.Cell cell : table.cells)
+                if (start + cell.source.node.contentStart == offset) return tableHit(table, cell);
+        }
+        return null;
+    }
+    private TableHit tableHit(EditableTableSpan table, EditableTableSpan.Cell cell) {
+        RectF bounds = new RectF(cell.bounds);
+        bounds.offset(table.bounds.left + getTotalPaddingLeft() - getScrollX(),
+                table.bounds.top + getTotalPaddingTop() - getScrollY());
+        return new TableHit(table, cell, getText().getSpanStart(table), bounds);
+    }
+    private BlockHit blockAt(float x, float y) {
+        if (getText() == null) return null;
+        x += getScrollX() - getTotalPaddingLeft(); y += getScrollY() - getTotalPaddingTop();
+        for (BbCodeBlockPreview preview : getText().getSpans(0, length(), BbCodeBlockPreview.class)) {
+            if (!preview.bounds.contains(x, y)) continue;
+            String editable = preview.editableSource();
+            if (editable == null) continue;
+            int start = getText().getSpanStart(preview);
+            RectF bounds = new RectF(preview.bounds);
+            bounds.offset(getTotalPaddingLeft() - getScrollX(), getTotalPaddingTop() - getScrollY());
+            return new BlockHit(start, start + preview.source.length(), editable, bounds);
+        }
+        return null;
+    }
+    RectF blockBounds(int start, int end) {
+        for (BbCodeBlockPreview preview : getText().getSpans(start, Math.min(length(), start + 1), BbCodeBlockPreview.class)) {
+            RectF bounds = new RectF(preview.bounds);
+            bounds.offset(getTotalPaddingLeft() - getScrollX(), getTotalPaddingTop() - getScrollY()); return bounds;
+        }
+        Layout layout = getLayout();
+        if (layout == null) return null;
+        int first = layout.getLineForOffset(Math.max(0, start)), last = layout.getLineForOffset(Math.min(length(), Math.max(start, end - 1)));
+        return new RectF(getTotalPaddingLeft(), getTotalPaddingTop() + layout.getLineTop(first) - getScrollY(),
+                getWidth() - getTotalPaddingRight(), getTotalPaddingTop() + layout.getLineBottom(last) - getScrollY());
+    }
+    @Override protected void onDraw(Canvas canvas) {
+        // Format insertion and IME commits must not flash their delimiters before the debounce runs.
+        if (getText() != null && !getText().toString().equals(parsedSource)) renderNow();
+        super.onDraw(canvas);
+        if (tableCellListener != null) tableCellListener.layoutChanged();
+    }
+    @Override public boolean onTouchEvent(MotionEvent event) {
+        if (!sourceVisible && tableCellListener != null && isEnabled()) {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                pressedCell = tableCellAt(event.getX(), event.getY());
+                pressedBlock = pressedCell == null ? blockAt(event.getX(), event.getY()) : null;
+                downX = event.getX(); downY = event.getY();
+                if (pressedCell == null && pressedBlock == null) tableCellListener.textTouched();
+            } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+                int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (Math.abs(event.getX() - downX) > slop || Math.abs(event.getY() - downY) > slop) { pressedCell = null; pressedBlock = null; }
+            } else if (event.getActionMasked() == MotionEvent.ACTION_UP && pressedCell != null) {
+                TableHit hit = pressedCell; pressedCell = null;
+                tableCellListener.edit(hit); return true;
+            } else if (event.getActionMasked() == MotionEvent.ACTION_UP && pressedBlock != null) {
+                BlockHit hit = pressedBlock; pressedBlock = null; tableCellListener.editBlock(hit); return true;
+            } else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) { pressedCell = null; pressedBlock = null; }
+        }
+        return super.onTouchEvent(event);
+    }
+
     private boolean insidePreview(int start, int end) {
         for (int[] range : previewRanges) if (start >= range[0] && end <= range[1]) return true;
         return false;
@@ -254,7 +471,6 @@ public final class BbCodeEditText extends AppCompatEditText {
             int start = source.lastIndexOf('\n', Math.max(0, node.start - 1)) + 1;
             int end = source.indexOf('\n', node.end);
             if (end < 0) end = source.length();
-            if (intersects(active, start, end)) continue;
             boolean crossing = false;
             for (BbCodeSyntax.Node other : nodes) {
                 if ((other.start < start && other.end > start) || (other.start < end && other.end > end)) {
@@ -275,15 +491,6 @@ public final class BbCodeEditText extends AppCompatEditText {
             preview.prepare();
             span(text, preview, start, end); previewRanges.add(new int[]{start, end});
         }
-    }
-
-    private boolean canPreview(String source, BbCodeSyntax.Node node) {
-        if (source.substring(node.start, node.end).indexOf('\n') < 0) return true;
-        int lineStart = source.lastIndexOf('\n', Math.max(0, node.start - 1)) + 1;
-        int lineEnd = source.indexOf('\n', node.end);
-        if (lineEnd < 0) lineEnd = source.length();
-        // Never collapse a source line containing prose outside this block.
-        return source.substring(lineStart, node.start).trim().isEmpty() && source.substring(node.end, lineEnd).trim().isEmpty();
     }
 
     private void hideLines(Editable text, String source, int start, int end) {
@@ -355,10 +562,22 @@ public final class BbCodeEditText extends AppCompatEditText {
             case "collapse":
                 span(text, new BackgroundColorSpan(ColorUtils.setAlphaComponent(getCurrentTextColor(), 12)), start, end); break;
             case "*":
-                // While editing, source item boundaries stay visible. The inactive list uses the reader renderer.
+                if (!sourceVisible) {
+                    int number = 1; boolean ordered = false;
+                    BbCodeSyntax.Node parent = null;
+                    for (BbCodeSyntax.Node candidate : nodes) if (candidate.name.equals("list")
+                            && candidate.contentStart <= node.start && candidate.contentEnd >= node.end) parent = candidate;
+                    if (parent != null) {
+                        ordered = parent.argument.equals("1");
+                        for (BbCodeSyntax.Node item : nodes) if (item.name.equals("*") && item.start >= parent.contentStart
+                                && item.start < node.start) number++;
+                    }
+                    span(text, new LiteralSpan(ordered ? number + ". " : "• "), node.start, node.contentStart);
+                    syntax(text, node.contentEnd, node.end, new int[]{-1, -1});
+                }
                 return false;
             case "br": case "hr":
-                span(text, new ForegroundColorSpan(getLinkTextColors().getDefaultColor()), node.start, node.end);
+                if (!sourceVisible) span(text, new HiddenSyntaxSpan(), node.start, node.end);
                 return false;
             case "h1": case "h2": case "h3": case "h4": case "h5": case "h6":
                 span(text, new StyleSpan(Typeface.BOLD), start, end);
@@ -406,6 +625,17 @@ public final class BbCodeEditText extends AppCompatEditText {
         @Override public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
             Paint link = new Paint(paint); link.setColor(color); link.setUnderlineText(true);
             canvas.drawText(label, x, y, link);
+        }
+    }
+    private static final class LiteralSpan extends ReplacementSpan {
+        private final String text;
+        LiteralSpan(String text) { this.text = text; }
+        @Override public int getSize(Paint paint, CharSequence source, int start, int end, Paint.FontMetricsInt metrics) {
+            if (metrics != null) paint.getFontMetricsInt(metrics);
+            return (int) Math.ceil(paint.measureText(text));
+        }
+        @Override public void draw(Canvas canvas, CharSequence source, int start, int end, float x, int top, int y, int bottom, Paint paint) {
+            canvas.drawText(text, x, y, paint);
         }
     }
     private static final class HiddenSyntaxSpan extends ReplacementSpan {

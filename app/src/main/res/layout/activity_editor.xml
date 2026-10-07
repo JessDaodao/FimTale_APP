@@ -6,12 +6,14 @@
     <com.google.android.material.button.MaterialButton android:id="@+id/editorRetry" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="重试加载" android:visibility="gone"/>
     <FrameLayout android:id="@+id/editorForm" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:visibility="gone">
         <LinearLayout android:id="@+id/editorWritingPanel" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-            <com.fimtale.editor.BbCodeEditText android:id="@+id/editorBody" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+            <com.fimtale.editor.BbCodeEditorLayout android:id="@+id/editorVisualLayout" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+            <com.fimtale.editor.BbCodeEditText android:id="@+id/editorBody" android:layout_width="match_parent" android:layout_height="match_parent"
                 android:layout_marginHorizontal="4dp" android:layout_marginVertical="4dp"
                 android:hint="@string/editor_start_writing" android:paddingHorizontal="16dp" android:paddingVertical="12dp" android:gravity="top|start"
                 android:background="@null" android:backgroundTint="@null" app:backgroundTint="@null"
                 android:inputType="textMultiLine|textCapSentences" android:imeOptions="flagNoExtractUi" android:textSize="18sp" android:lineSpacingExtra="6dp"
                 android:scrollbars="vertical" android:overScrollMode="always" android:saveEnabled="false"/>
+            </com.fimtale.editor.BbCodeEditorLayout>
             <LinearLayout android:id="@+id/editorFormatBar" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="8dp">
                 <HorizontalScrollView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
                     android:scrollbars="none" android:fillViewport="false">

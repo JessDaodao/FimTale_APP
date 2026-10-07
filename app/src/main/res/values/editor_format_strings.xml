@@ -9,4 +9,7 @@
     <item name="editorFormatInput3" type="id" />
     <item name="editorFormatChoice" type="id" />
     <item name="editorFormatHeaderRow" type="id" />
+    <item name="editorTableSizePicker" type="id" />
+    <item name="editorTableDimensions" type="id" />
+    <item name="editorTableCell" type="id" />
 </resources>

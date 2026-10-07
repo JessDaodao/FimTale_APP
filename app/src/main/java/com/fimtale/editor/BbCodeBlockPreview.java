@@ -21,7 +21,9 @@ import java.util.List;
 
 /** A read-only block drawn over source; moving the caret into it removes the decoration. */
 final class BbCodeBlockPreview extends ReplacementSpan implements AutoCloseable {
+    final android.graphics.RectF bounds = new android.graphics.RectF();
     private final TextView editor;
+    final String source;
     private final Runnable changed;
     private final Spanned rendered;
     private final List<AsyncDrawable> images = new ArrayList<>();
@@ -33,11 +35,24 @@ final class BbCodeBlockPreview extends ReplacementSpan implements AutoCloseable 
     private int color;
 
     BbCodeBlockPreview(TextView editor, Markwon renderer, String source, Runnable changed) {
-        this.editor = editor; this.changed = changed;
+        this.editor = editor; this.changed = changed; this.source = source;
         Spanned original = renderer.toMarkdown(BbCode.toMarkdown(source));
         for (AsyncDrawableSpan image : original.getSpans(0, original.length(), AsyncDrawableSpan.class)) images.add(image.getDrawable());
         rendered = BbCodeText.normalizeTables(original);
         prepare();
+    }
+    String editableSource() {
+        List<BbCodeSyntax.Node> nodes = BbCodeSyntax.parse(source);
+        if (!nodes.isEmpty() && nodes.get(0).name.equals("markdown")) {
+            BbCodeSyntax.Node markdown = nodes.get(0);
+            return MarkdownBbCode.convert(source.substring(markdown.contentStart, markdown.contentEnd));
+        }
+        StringBuilder normalized = new StringBuilder(source); boolean changed = false;
+        for (int i = nodes.size() - 1; i >= 0; i--) {
+            BbCodeSyntax.Node node = nodes.get(i);
+            if (node.name.equals("br")) { normalized.replace(node.start, node.end, "\n"); changed = true; }
+        }
+        return changed ? normalized.toString() : null;
     }
 
     private void invalidateLayout() {
@@ -89,6 +104,7 @@ final class BbCodeBlockPreview extends ReplacementSpan implements AutoCloseable 
         return width;
     }
     @Override public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
+        bounds.set(x, y - layout.getHeight(), x + width, y);
         canvas.save();
         canvas.translate(x, y - layout.getHeight());
         layout.draw(canvas);
