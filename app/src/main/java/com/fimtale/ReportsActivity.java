@@ -166,7 +166,8 @@ public abstract class ReportsActivity extends AppCompatActivity {
             TextView preview = new TextView(this); preview.setPadding(dp(20), dp(16), dp(20), dp(16));
             BbCodeRendering.setText(renderer, preview, model.draft());
             ScrollView scroll = new ScrollView(this); scroll.addView(preview);
-            new MaterialAlertDialogBuilder(this).setTitle("消息预览").setView(scroll).setPositiveButton("关闭", null).show();
+            SpoilerSpan.observe(new MaterialAlertDialogBuilder(this).setTitle("消息预览")
+                    .setView(scroll).setPositiveButton("关闭", null).show().getWindow());
         });
     }
     private void formatButton(LinearLayout bar, String label, String icon, Runnable action) {

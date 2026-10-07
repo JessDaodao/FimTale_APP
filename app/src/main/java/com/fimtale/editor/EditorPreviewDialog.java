@@ -6,6 +6,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import com.fimtale.R;
 import com.fimtale.utils.BbCodeRendering;
+import com.fimtale.utils.SpoilerSpan;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import io.noties.markwon.Markwon;
 
@@ -26,6 +27,7 @@ public final class EditorPreviewDialog {
             if (dialog.isShowing()) BbCodeRendering.setText(renderer, content, source);
         }));
         dialog.show();
+        SpoilerSpan.observe(dialog.getWindow());
         return dialog;
     }
 }

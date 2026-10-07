@@ -172,7 +172,8 @@ public final class BbCodeRendering {
         ScrollView scroll = new ScrollView(context); scroll.addView(text);
         Markwon renderer = create(context);
         setText(renderer, text, source);
-        new MaterialAlertDialogBuilder(context).setTitle(title).setView(scroll).setPositiveButton("关闭", null).show();
+        SpoilerSpan.observe(new MaterialAlertDialogBuilder(context).setTitle(title).setView(scroll)
+                .setPositiveButton("关闭", null).show().getWindow());
     }
 
     private static boolean alive(Context context) {

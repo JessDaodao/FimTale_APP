@@ -2,15 +2,20 @@ package com.fimtale.utils;
 
 import android.app.Application;
 import android.app.Activity;
+import android.app.Dialog;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Looper;
 import android.text.Layout;
 import android.text.Spanned;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import com.fimtale.ui.ImagePreview;
 import io.noties.markwon.Markwon;
@@ -34,7 +39,7 @@ public class SpoilerSpanTest {
     private Markwon renderer;
     private Activity context;
     @Before public void setup() {
-        context = Robolectric.buildActivity(Activity.class).setup().get();
+        context = Robolectric.buildActivity(Activity.class).setup().visible().get();
         renderer = BbCodeRendering.create(context);
     }
 
@@ -82,6 +87,32 @@ public class SpoilerSpanTest {
             for (int x = 0; x < bitmap.getWidth(); x++) if (bitmap.getPixel(x, y) == color) count++;
         return count;
     }
+    private void attach(Window window, View... children) {
+        FrameLayout content = new FrameLayout(context);
+        for (int i = 0; i < children.length; i++) {
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(320, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.leftMargin = 24; params.topMargin = 64 + i * 180;
+            content.addView(children[i], params);
+        }
+        window.setContentView(content);
+        shadowOf(Looper.getMainLooper()).idle();
+        View decor = window.getDecorView();
+        decor.measure(View.MeasureSpec.makeMeasureSpec(480, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(720, View.MeasureSpec.EXACTLY));
+        decor.layout(0, 0, 480, 720);
+    }
+    private void tapWindow(Window window, View target, float x, float y) {
+        int[] location = new int[2], root = new int[2];
+        target.getLocationOnScreen(location);
+        window.getDecorView().getLocationOnScreen(root);
+        for (int action : new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
+            MotionEvent event = MotionEvent.obtain(0, 20, action, location[0] + x, location[1] + y, 0);
+            event.offsetLocation(-root[0], -root[1]);
+            window.getCallback().dispatchTouchEvent(event);
+            event.recycle();
+        }
+        shadowOf(Looper.getMainLooper()).idle();
+    }
     private void tapMask(TextView view) {
         Bitmap bitmap = draw(view);
         for (int y = 0; y < bitmap.getHeight(); y++)
@@ -114,6 +145,79 @@ public class SpoilerSpanTest {
         assertEquals(height, view.getHeight());
         assertEquals(end, view.getLayout().getPrimaryHorizontal(8), 0.01f);
         assertEquals("前 secret 后", view.getText().toString());
+        tap(view, 0);
+        assertFalse(spoiler(view).isRevealed());
+        measure(view);
+        assertTrue(before.sameAs(draw(view)));
+        assertEquals(end, view.getLayout().getPrimaryHorizontal(8), 0.01f);
+        tap(view, 3);
+        assertTrue(pixels(draw(view), Color.RED) > 0);
+    }
+
+    @Test public void tappingAnotherSpoilerConcealsThePreviousOne() {
+        TextView view = view(render("[spoiler]first[/spoiler] [spoiler]second[/spoiler]"));
+        Spanned text = (Spanned) view.getText();
+        SpoilerSpan first = text.getSpans(1, 1, SpoilerSpan.class)[0];
+        SpoilerSpan second = text.getSpans(7, 7, SpoilerSpan.class)[0];
+        tap(view, 1);
+        assertTrue(first.isRevealed());
+        tap(view, 7);
+        assertFalse(first.isRevealed());
+        assertTrue(second.isRevealed());
+        tap(view, 7);
+        assertTrue(second.isRevealed());
+    }
+
+    @Test public void windowTouchesPreserveRevealedLinksAndConcealWhenAnotherControlIsTapped() {
+        TextView view = view(render("[spoiler][url=https://example.com/secret]secret[/url][/spoiler]"));
+        Button button = new Button(context); button.setText("Other control");
+        int[] clicks = {0}; button.setOnClickListener(v -> clicks[0]++);
+        Window window = context.getWindow();
+        attach(window, view, button);
+        SpoilerSpan.bind(view); // Binding again must not stack window callbacks.
+        tapWindow(window, view, 10, view.getHeight() / 2f);
+        assertTrue(spoiler(view).isRevealed());
+        assertNull(shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity());
+        tapWindow(window, view, 10, view.getHeight() / 2f);
+        assertTrue(spoiler(view).isRevealed());
+        assertEquals("https://example.com/secret",
+                shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity().getDataString());
+        tapWindow(window, button, 20, button.getHeight() / 2f);
+        assertFalse(spoiler(view).isRevealed());
+        assertEquals(1, clicks[0]);
+    }
+
+    @Test public void windowConcealsBeforeReaderGestureConsumesTheTouch() {
+        TextView view = view(render("[spoiler]secret[/spoiler] public"));
+        Window window = context.getWindow();
+        attach(window, view);
+        tapWindow(window, view, 10, view.getHeight() / 2f);
+        assertTrue(spoiler(view).isRevealed());
+        int[] touches = {0};
+        view.setOnTouchListener((v, event) -> { touches[0]++; return true; });
+        tapWindow(window, view, 310, view.getHeight() / 2f);
+        assertFalse(spoiler(view).isRevealed());
+        assertEquals(2, touches[0]);
+    }
+
+    @Test public void dialogTouchesKeepItsOwnSpoilerOpenAndConcealOutsideIt() {
+        TextView view = view(render("[spoiler][color=red]secret[/color][/spoiler]"));
+        Dialog dialog = new Dialog(context);
+        dialog.show();
+        try {
+            Window window = dialog.getWindow();
+            SpoilerSpan.observe(window);
+            attach(window, view);
+            tapWindow(window, view, 10, view.getHeight() / 2f);
+            assertTrue(spoiler(view).isRevealed());
+            // Consume the second touch so Movement cannot hide an observer coordinate error.
+            view.setOnTouchListener((v, event) -> true);
+            tapWindow(window, view, 10, view.getHeight() / 2f);
+            assertTrue(spoiler(view).isRevealed());
+            tapWindow(window, window.getDecorView(), 450, 650);
+            assertFalse(spoiler(view).isRevealed());
+            assertEquals(0, pixels(draw(view), Color.RED));
+        } finally { dialog.dismiss(); }
     }
 
     @Test public void hiddenLinksRevealBeforeOpeningTheirDestination() {
@@ -140,6 +244,12 @@ public class SpoilerSpanTest {
         assertEquals(lines, second.getLineCount());
         assertFalse(before.sameAs(draw(second)));
         assertEquals(text.toString(), first.getText().toString() + second.getText());
+        second.setPadding(0, 0, 0, 20); measure(second);
+        tap(second, 310, second.getHeight() - 1);
+        assertFalse(spoiler(first).isRevealed());
+        assertFalse(spoiler(second).isRevealed());
+        assertTrue(pixels(draw(first), 0xff333333) > 100);
+        assertTrue(pixels(draw(second), 0xff333333) > 100);
     }
 
     @Test public void nestedSpoilersRemainHiddenUntilTheirOwnRevealAndNewContentResets() {
@@ -148,6 +258,10 @@ public class SpoilerSpanTest {
         assertEquals(0, pixels(draw(view), Color.RED));
         tap(view, 8);
         assertTrue(pixels(draw(view), Color.RED) > 0);
+        tap(view, 1);
+        assertEquals(0, pixels(draw(view), Color.RED));
+        Spanned nested = (Spanned) view.getText();
+        assertTrue(nested.getSpans(1, 1, SpoilerSpan.class)[0].isRevealed());
         BbCodeRendering.setText(renderer, view, "[spoiler]new text[/spoiler]");
         assertFalse(spoiler(view).isRevealed());
     }
@@ -187,6 +301,9 @@ public class SpoilerSpanTest {
         assertTrue(cell.getText().toString().contains("secret"));
         tapMask(view);
         assertTrue(pixels(draw(view), Color.RED) > 0);
+        tap(view, row.cellWidth() + 20, view.getHeight() / 2f);
+        assertEquals(0, pixels(draw(view), Color.RED));
+        assertTrue(pixels(draw(view), 0xff333333) > 100);
     }
 
     @Test public void spoilerAroundTableMasksCellsUntilRevealed() {

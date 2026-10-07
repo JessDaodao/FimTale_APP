@@ -1,8 +1,12 @@
 package com.fimtale.utils;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.text.Layout;
 import android.text.Selection;
 import android.text.Spannable;
@@ -14,18 +18,23 @@ import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.TextView;
+import androidx.appcompat.view.WindowCallbackWrapper;
 import androidx.core.graphics.ColorUtils;
 import io.noties.markwon.ext.tables.TableRowSpan;
 import io.noties.markwon.image.AsyncDrawableSpan;
 import io.noties.markwon.utils.SpanUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 /** An inline mask: revealing it never replaces text or changes page offsets. */
 public final class SpoilerSpan extends ClickableSpan {
+    private static final WeakHashMap<SpoilerSpan, Boolean> revealedSpans = new WeakHashMap<>();
     private boolean revealed;
     private int maskColor = 0xcc000000;
     private final WeakHashMap<TextView, Object> views = new WeakHashMap<>();
@@ -44,7 +53,12 @@ public final class SpoilerSpan extends ClickableSpan {
     @Override public void onClick(View widget) {
         if (revealed) return;
         revealed = true;
+        revealedSpans.put(this, Boolean.TRUE);
         if (widget instanceof TextView) bind((TextView) widget);
+        refresh();
+    }
+
+    private void refresh() {
         // Page/paragraph slices share the same span, so refresh every bound slice.
         for (TextView view : new ArrayList<>(views.keySet())) {
             if (!(view.getText() instanceof Spannable)) continue;
@@ -81,8 +95,66 @@ public final class SpoilerSpan extends ClickableSpan {
 
     public static void bind(TextView view) {
         view.setMovementMethod(Movement.INSTANCE);
+        Context context = view.getContext();
+        while (context instanceof ContextWrapper) {
+            if (context instanceof Activity) {
+                observe(((Activity) context).getWindow());
+                break;
+            }
+            Context base = ((ContextWrapper) context).getBaseContext();
+            if (base == context) break;
+            context = base;
+        }
         if (!(view.getText() instanceof Spanned)) return;
         bind(view, (Spanned) view.getText(), null);
+    }
+
+    /** Observe before reader gestures or other controls consume the touch; never consume it here. */
+    public static void observe(Window window) {
+        if (window == null || window.getCallback() == null || window.getCallback() instanceof OutsideTouchObserver) return;
+        window.setCallback(new OutsideTouchObserver(window));
+    }
+
+    private static void concealExcept(Set<SpoilerSpan> touched) {
+        for (SpoilerSpan spoiler : new ArrayList<>(revealedSpans.keySet())) {
+            if (touched.contains(spoiler)) continue;
+            spoiler.revealed = false;
+            revealedSpans.remove(spoiler);
+            spoiler.refresh();
+        }
+    }
+
+    private static final class OutsideTouchObserver extends WindowCallbackWrapper {
+        private final Window window;
+
+        OutsideTouchObserver(Window window) {
+            super(window.getCallback());
+            this.window = window;
+        }
+
+        @Override public boolean dispatchTouchEvent(MotionEvent event) {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN && !revealedSpans.isEmpty()) {
+                Set<SpoilerSpan> touched = new HashSet<>();
+                Set<TextView> checked = new HashSet<>();
+                Rect visible = new Rect();
+                int[] location = new int[2];
+                int[] rootLocation = new int[2];
+                View root = window.getDecorView();
+                root.getLocationOnScreen(rootLocation);
+                for (SpoilerSpan spoiler : new ArrayList<>(revealedSpans.keySet())) {
+                    for (TextView view : new ArrayList<>(spoiler.views.keySet())) {
+                        if (!checked.add(view) || view.getRootView() != root
+                                || !view.isShown() || !view.getGlobalVisibleRect(visible)) continue;
+                        visible.offset(rootLocation[0], rootLocation[1]);
+                        if (!visible.contains((int) event.getRawX(), (int) event.getRawY())) continue;
+                        view.getLocationOnScreen(location);
+                        clickableAt(view, event.getRawX() - location[0], event.getRawY() - location[1], touched);
+                    }
+                }
+                concealExcept(touched);
+            }
+            return super.dispatchTouchEvent(event);
+        }
     }
 
     private static void bind(TextView view, Spanned text, Object anchor) {
@@ -110,14 +182,17 @@ public final class SpoilerSpan extends ClickableSpan {
 
     /** Hidden masks take precedence over the links they cover. */
     public static ClickableSpan clickableAt(TextView view, MotionEvent event) {
-        if (!(view.getText() instanceof Spanned) || view.getLayout() == null) return null;
-        Layout layout = view.getLayout();
-        float x = event.getX() - view.getTotalPaddingLeft() + view.getScrollX();
-        int y = (int) event.getY() - view.getTotalPaddingTop() + view.getScrollY();
-        return clickableAt(layout, x, y);
+        return clickableAt(view, event.getX(), event.getY(), null);
     }
 
-    private static ClickableSpan clickableAt(Layout layout, float x, int y) {
+    private static ClickableSpan clickableAt(TextView view, float x, float y, Set<SpoilerSpan> touched) {
+        if (!(view.getText() instanceof Spanned) || view.getLayout() == null) return null;
+        Layout layout = view.getLayout();
+        return clickableAt(layout, x - view.getTotalPaddingLeft() + view.getScrollX(),
+                (int) y - view.getTotalPaddingTop() + view.getScrollY(), touched);
+    }
+
+    private static ClickableSpan clickableAt(Layout layout, float x, int y, Set<SpoilerSpan> touched) {
         if (!(layout.getText() instanceof Spanned) || y < 0 || y >= layout.getHeight()) return null;
         int line = layout.getLineForVertical(y);
         if (x < layout.getLineLeft(line) || x >= layout.getLineRight(line)) return null;
@@ -136,6 +211,7 @@ public final class SpoilerSpan extends ClickableSpan {
             if (offset < start || offset >= end) continue;
             if (span instanceof SpoilerSpan) {
                 SpoilerSpan spoiler = (SpoilerSpan) span;
+                if (touched != null) touched.add(spoiler);
                 if (!spoiler.revealed && end - start > hiddenLength) { hidden = spoiler; hiddenLength = end - start; }
             } else if (link == null) link = span;
         }
@@ -150,7 +226,7 @@ public final class SpoilerSpan extends ClickableSpan {
             for (Layout item : cells(row)) height = Math.max(height, item.getHeight());
             int top = layout.getLineTop(line), bottom = layout.getLineBottom(line);
             ClickableSpan target = clickableAt(cell, rowX % row.cellWidth() - padding,
-                    y - top - padding - (bottom - top - height) / 4);
+                    y - top - padding - (bottom - top - height) / 4, touched);
             if (target != null) return target;
         }
         return link;
@@ -162,6 +238,11 @@ public final class SpoilerSpan extends ClickableSpan {
         @Override public boolean onTouchEvent(TextView view, Spannable text, MotionEvent event) {
             int action = event.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
+                if (action == MotionEvent.ACTION_DOWN && !revealedSpans.isEmpty()) {
+                    Set<SpoilerSpan> touched = new HashSet<>();
+                    clickableAt(view, event.getX(), event.getY(), touched);
+                    concealExcept(touched);
+                }
                 ClickableSpan span = clickableAt(view, event);
                 if (span != null) {
                     if (action == MotionEvent.ACTION_DOWN) {
