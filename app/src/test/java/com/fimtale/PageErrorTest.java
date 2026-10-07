@@ -69,6 +69,7 @@ public class PageErrorTest {
             String data = path.endsWith("get_timeline") || path.endsWith("get_review_entries")
                     || path.endsWith("list_tags") || path.endsWith("get_active_sessions") ? "[]" : "{\"items\":[],\"total\":0}";
             if (path.endsWith("get_user_auth")) data = "{\"user_id\":9,\"qualify_status\":1}";
+            if (path.endsWith("get_work")) data = "{\"work\":{\"id\":42,\"title\":\"测试文章\",\"preface\":\"正文\"},\"chapters\":[]}";
             if (path.endsWith("get_timeline_update_count")) data = "0";
             boolean auxiliary = path.equals("/update/") || path.endsWith("get_user_auth") || path.endsWith("get_timeline_update_count");
             int code = failing && !auxiliary ? 503 : 200;
@@ -174,6 +175,45 @@ public class PageErrorTest {
     @Test public void searchUsesRetryScreen() throws Exception { assertPageError(SearchActivity.class, new Intent(context, SearchActivity.class).putExtra(SearchActivity.EXTRA_QUERY, "小马")); }
     @Test public void profileDetailsUseRetryScreen() throws Exception { assertPageError(UserDetailActivity.class, new Intent(context, UserDetailActivity.class).putExtra(UserDetailActivity.EXTRA_USERNAME, "作者")); }
     @Test public void workDetailsUseRetryScreen() throws Exception { assertPageError(TopicDetailActivity.class, new Intent(context, TopicDetailActivity.class).putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, 42)); }
+    @Test public void workReadingActionsReturnAfterScrollingOutOfComments() throws Exception {
+        failing = false;
+        TopicDetailActivity activity = launch(TopicDetailActivity.class,
+                new Intent(context, TopicDetailActivity.class).putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, 42));
+        await(() -> activity.findViewById(R.id.detailLoadingSkeleton).getVisibility() == View.GONE);
+        controller.visible();
+        float density = context.getResources().getDisplayMetrics().density;
+        activity.findViewById(R.id.detailContentTextView).setMinimumHeight(Math.round(1600 * density));
+        View comments = activity.findViewById(R.id.workCommentsSection);
+        comments.setMinimumHeight(Math.round(500 * density));
+        View root = activity.getWindow().getDecorView();
+        int width = Math.round(360 * density), height = Math.round(800 * density);
+        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, width, height);
+        androidx.core.widget.NestedScrollView scroll = activity.findViewById(R.id.scrollView);
+        View reading = activity.findViewById(R.id.readingActionsBar);
+        View composer = activity.findViewById(R.id.commentComposerBar);
+        TextView draft = activity.findViewById(R.id.commentComposerInput);
+        draft.setText("尚未发送的评论");
+        for (int i = 0; i < 3; i++) {
+            scroll.scrollTo(0, comments.getTop());
+            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(200));
+            assertEquals(View.GONE, reading.getVisibility());
+            assertEquals(View.VISIBLE, composer.getVisibility());
+            // A fast scroll can skip the visibility threshold and hide the entire comments block.
+            scroll.scrollTo(0, 0);
+            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(200));
+            assertFalse(comments.getGlobalVisibleRect(new android.graphics.Rect()));
+            assertEquals(View.VISIBLE, reading.getVisibility());
+            assertEquals(1f, reading.getAlpha(), 0.01f);
+            assertEquals(View.GONE, composer.getVisibility());
+            assertEquals("尚未发送的评论", draft.getText().toString());
+        }
+        activity.findViewById(R.id.startReadingButton).performClick();
+        Intent reader = shadowOf(activity).getNextStartedActivity();
+        assertEquals(ReaderActivity.class.getName(), reader.getComponent().getClassName());
+        assertEquals(42, reader.getIntExtra(ReaderActivity.EXTRA_WORK_ID, -1));
+    }
     @Test public void accountSessionsUseRetryScreen() throws Exception { assertPageError(AccountSessionsActivity.class, new Intent(context, AccountSessionsActivity.class)); }
     @Test public void filtersUseRetryScreen() throws Exception { assertPageError(ContentFiltersActivity.class, new Intent(context, ContentFiltersActivity.class)); }
     @Test public void reviewsUseRetryScreen() throws Exception { assertPageError(ReviewQueueActivity.class, new Intent(context, ReviewQueueActivity.class)); }

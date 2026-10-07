@@ -929,10 +929,11 @@ public class TopicDetailActivity extends AppCompatActivity {
                 || scrollView.getVisibility() != View.VISIBLE) return;
         android.graphics.Rect viewport = new android.graphics.Rect();
         android.graphics.Rect comments = new android.graphics.Rect();
-        if (!scrollView.getGlobalVisibleRect(viewport) || !commentsRoot.getGlobalVisibleRect(comments)) return;
+        if (!scrollView.getGlobalVisibleRect(viewport)) return;
         int threshold = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24,
                 getResources().getDisplayMetrics());
-        setCommentMode(comments.top <= viewport.bottom - threshold);
+        setCommentMode(commentsRoot.getGlobalVisibleRect(comments)
+                && comments.top <= viewport.bottom - threshold);
     }
 
     private void setCommentMode(boolean showComposer) {
