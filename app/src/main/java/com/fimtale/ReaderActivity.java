@@ -7,7 +7,6 @@ import com.fimtale.utils.ReaderPagination;
 import android.widget.ScrollView;
 import android.text.SpannableStringBuilder;
 import android.text.SpannedString;
-import android.text.style.ClickableSpan;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,7 +17,6 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Layout;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.RelativeSizeSpan;
@@ -1546,15 +1544,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private static boolean touchesLink(TextView view, MotionEvent event) {
-        if (!(view.getText() instanceof Spanned) || view.getLayout() == null) return false;
-        Layout layout = view.getLayout();
-        float x = event.getX() - view.getTotalPaddingLeft() + view.getScrollX();
-        int y = (int) event.getY() - view.getTotalPaddingTop() + view.getScrollY();
-        if (y < 0 || y > layout.getHeight()) return false;
-        int line = layout.getLineForVertical(y);
-        if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) return false;
-        int offset = layout.getOffsetForHorizontal(line, x);
-        return ((Spanned) view.getText()).getSpans(offset, offset, ClickableSpan.class).length > 0;
+        return com.fimtale.utils.SpoilerSpan.clickableAt(view, event) != null;
     }
 
     private void toggleMenu() {
@@ -1817,6 +1807,7 @@ public class ReaderActivity extends AppCompatActivity {
                 if (textWidth <= 0) textWidth = getResources().getDisplayMetrics().widthPixels - (int) (48 * getResources().getDisplayMetrics().density);
                 BbCodeText.prepare(rendered, textHolder.textView.getPaint(), textWidth);
                 markwon.setParsedMarkdown(textHolder.textView, rendered);
+                com.fimtale.utils.SpoilerSpan.bind(textHolder.textView);
                 if (textHolder.itemView instanceof ScrollView) textHolder.itemView.scrollTo(0, 0);
                 textHolder.textView.setOnTouchListener(touchListener);
                 textHolder.itemView.setOnTouchListener(touchListener);

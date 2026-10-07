@@ -149,8 +149,13 @@ public class BbCodeEditTextRenderingTest {
         TextView content = dialog.findViewById(R.id.editorPreviewContent);
         Spanned preview = (Spanned) content.getText();
         assertEquals(2, preview.getSpans(0, preview.length(), io.noties.markwon.ext.tables.TableRowSpan.class).length);
-        assertFalse(preview.toString().contains("hidden"));
+        assertTrue(preview.toString().contains("hidden"));
         assertEquals(1, preview.getSpans(0, preview.length(), ClickableSpan.class).length);
+        com.fimtale.utils.SpoilerSpan spoiler = preview.getSpans(0, preview.length(), com.fimtale.utils.SpoilerSpan.class)[0];
+        assertFalse(spoiler.isRevealed());
+        spoiler.onClick(content);
+        assertTrue(spoiler.isRevealed());
+        assertTrue(dialog.isShowing());
         dialog.dismiss(); assertEquals(source, draft.toString()); activity.finish();
     }
 }

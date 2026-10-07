@@ -207,7 +207,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         Inbox.Message latest = conversation.latest_message;
         time.setText(latest == null ? "" : chatTime(latest.created_at));
         String content = latest == null || latest.message == null ? "暂无消息"
-                : renderer.toMarkdown(BbCode.toMarkdown(latest.message)).toString().replace('\n', ' ').replace("\uFFFC", "[图片]");
+                : com.fimtale.utils.BbCodeText.plainPreview(renderer.toMarkdown(BbCode.toMarkdown(latest.message)));
         boolean group = conversation.participants != null && conversation.participants.size() > 2;
         if (group && latest != null && latest.user != null) content = latest.user.getUserName() + "：" + content;
         preview.setText(content);

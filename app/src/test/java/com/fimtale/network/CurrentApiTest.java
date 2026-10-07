@@ -171,7 +171,7 @@ public class CurrentApiTest {
         assertTrue(text.contains("src=\"" + SiteUrls.SITE + "/img/a.png\""));
         assertTrue(text.contains("<strong>正文</strong> [b]字面[/b]"));
         assertTrue(text.contains("<pre><code>[img]literal[/img]</code></pre>"));
-        assertFalse(BbCode.toMarkdown("[spoiler]秘密[/spoiler]").contains("秘密"));
+        assertTrue(BbCode.toMarkdown("[spoiler]秘密[/spoiler]").contains("<span data-spoiler=\"true\">秘密</span>"));
     }
     @Test public void originsAndClassificationAreExplicit() {
         assertTrue(SiteUrls.isSite(SiteUrls.SITE + "/user/login"));

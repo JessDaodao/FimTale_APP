@@ -41,6 +41,7 @@ public final class BbCodeRendering {
         if (width <= 0) width = view.getResources().getDisplayMetrics().widthPixels - (int) (48 * view.getResources().getDisplayMetrics().density);
         BbCodeText.prepare(text, view.getPaint(), width);
         renderer.setParsedMarkdown(view, com.fimtale.ui.ImagePreview.images(text));
+        SpoilerSpan.bind(view);
     }
 
     public static Markwon create(Context context) {
@@ -66,6 +67,7 @@ public final class BbCodeRendering {
                         Integer background = cssColor(attrs.get("data-background"));
                         if (foreground != null) spans.add(new ForegroundColorSpan(foreground));
                         if (background != null) spans.add(new BackgroundColorSpan(background));
+                        if (attrs.containsKey("data-spoiler")) spans.add(new SpoilerSpan());
                         if (attrs.containsKey("data-size")) spans.add(new RelativeSizeSpan((float) Math.pow(1.2, Integer.parseInt(attrs.get("data-size")))));
                         if (attrs.containsKey("data-font")) spans.add(new TypefaceSpan(fontFamily(attrs.get("data-font"))));
                         String align = attrs.get("data-align");
@@ -241,7 +243,9 @@ public final class BbCodeRendering {
                     }
                     int gravity = align.equals("center") ? TableRowSpan.ALIGN_CENTER : align.equals("right") ? TableRowSpan.ALIGN_RIGHT : TableRowSpan.ALIGN_LEFT;
                     CharSequence contents = visitor.builder().subSequence(cell.start(), cell.end());
-                    cells.add(new TableRowSpan.Cell(gravity, new SpannableString(contents)));
+                    SpannableString styled = new SpannableString(contents);
+                    SpoilerSpan.prepare(styled);
+                    cells.add(new TableRowSpan.Cell(gravity, styled));
                     int colspan = count(cell, "colspan", 32 - column), rowspan = count(cell, "rowspan", 100);
                     for (int i = 0; i < colspan; i++) { occupied[column++] = rowspan; if (i > 0) cells.add(emptyCell()); }
                 }

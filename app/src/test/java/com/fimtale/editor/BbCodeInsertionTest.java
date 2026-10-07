@@ -91,7 +91,7 @@ public class BbCodeInsertionTest {
             assertFalse(format.name(), BbCodeSyntax.parse(fragment.text).isEmpty());
             String html = BbCode.toMarkdown(fragment.text);
             assertTrue(format.name(), format == EditorFormat.RULE ? html.contains("<hr>")
-                    : format == EditorFormat.SPOILER ? html.contains("data-hidden") : html.contains("正文"));
+                    : format == EditorFormat.SPOILER ? html.contains("data-spoiler") : html.contains("正文"));
             assertFalse(format.name(), html.contains("[/"));
         }
     }

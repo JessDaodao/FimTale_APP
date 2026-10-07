@@ -43,6 +43,12 @@ public class BbCodeTest {
         assertTrue(html.contains("a(b).png?q=1&amp;x=2"));
         assertTrue(html.contains("data-emoji=\"true\" width=\"1.2em\""));
     }
+    @Test public void spoilersKeepInlineTextAndNestedFormatting() {
+        assertEquals("<div>前<span data-spoiler=\"true\"><b>秘密</b></span>后</div>",
+                BbCode.toMarkdown("前[spoiler][b]秘密[/b][/spoiler]后"));
+        assertTrue(BbCode.toMarkdown("[spoiler]unfinished").contains("[spoiler]unfinished"));
+        assertFalse(BbCode.toMarkdown("[spoiler][/spoiler]").contains("data-hidden"));
+    }
     @Test public void hiddenBlocksRetainSourceWithoutLoadingImages() {
         String raw = "[b]秘密[/b][img]https://x.test/secret.png[/img]";
         String html = BbCode.toMarkdown("[collapse=说明][spoiler]" + raw + "[/spoiler][/collapse]");

@@ -41,11 +41,11 @@ public class BbCodeRenderingTest {
         assertTrue(segments.get(0).text.toString().contains("a :ftemoji_wahaha: b"));
         assertNotNull(segments.get(1).image); assertTrue(segments.get(2).text.toString().contains("after"));
     }
-    @Test public void hiddenContentIsClickableAndNotRenderedOrLoaded() {
-        Spanned text = render("[spoiler]secret[img]/secret.png[/img][/spoiler][collapse=Note][b]body[/b][/collapse]");
+    @Test public void collapsedContentIsClickableAndNotRenderedOrLoaded() {
+        Spanned text = render("[collapse=Note]secret[img]/secret.png[/img][b]body[/b][/collapse]");
         assertFalse(text.toString().contains("secret"));
         assertEquals(0, text.getSpans(0, text.length(), AsyncDrawableSpan.class).length);
-        assertEquals(2, text.getSpans(0, text.length(), ClickableSpan.class).length);
+        assertEquals(1, text.getSpans(0, text.length(), ClickableSpan.class).length);
     }
     @Test public void tablesHaveMeasuredAtomicRows() {
         Spanned text = render("before[table][tr][th colspan=2]Name[/th][/tr][tr][td][b]Alice[/b][/td][td]100[/td][/tr][/table]after");

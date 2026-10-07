@@ -21,6 +21,17 @@ public final class BbCodeText {
         Segment(CharSequence text, String image) { this.text = text; this.image = image; }
     }
 
+    /** Plain conversation summaries cannot retain spans, so keep concealed text covered. */
+    public static String plainPreview(Spanned text) {
+        StringBuilder result = new StringBuilder(text);
+        for (SpoilerSpan spoiler : text.getSpans(0, text.length(), SpoilerSpan.class)) {
+            for (int i = text.getSpanStart(spoiler); i < text.getSpanEnd(spoiler); i++) {
+                if (!Character.isWhitespace(result.charAt(i))) result.setCharAt(i, '\u2588');
+            }
+        }
+        return result.toString().replace('\n', ' ').replace("\ufffc", "[图片]");
+    }
+
     public static Spanned normalizeTables(Spanned rendered) {
         SpannableStringBuilder result = new SpannableStringBuilder(rendered);
         TableRowSpan[] rows = result.getSpans(0, result.length(), TableRowSpan.class);
@@ -31,11 +42,13 @@ public final class BbCodeText {
             result.removeSpan(row);
             // The cells have their own styled text; don't leave their images or links on the row marker.
             for (ReplacementSpan span : result.getSpans(start, end, ReplacementSpan.class)) result.removeSpan(span);
-            for (ClickableSpan span : result.getSpans(start, end, ClickableSpan.class)) result.removeSpan(span);
+            for (ClickableSpan span : result.getSpans(start, end, ClickableSpan.class))
+                if (!(span instanceof SpoilerSpan)) result.removeSpan(span);
             result.replace(start, end, "\ufffc");
             result.setSpan(row, start, start + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             if (start + 1 == result.length() || result.charAt(start + 1) != '\n') result.insert(start + 1, "\n");
         }
+        SpoilerSpan.prepare(result);
         return new SpannedString(result);
     }
 
@@ -48,7 +61,8 @@ public final class BbCodeText {
             int start = text.getSpanStart(image), end = text.getSpanEnd(image);
             String url = image.getDrawable().getDestination();
             // Emoji and images authored within a sentence remain in that sentence.
-            if (url.contains("/img/ftemoji/") || start < cursor || !isLineStart(text, start) || !isLineEnd(text, end)) continue;
+            if (url.contains("/img/ftemoji/") || start < cursor || text.getSpans(start, end, SpoilerSpan.class).length > 0
+                    || !isLineStart(text, start) || !isLineEnd(text, end)) continue;
             if (start > cursor) segments.add(new Segment(text.subSequence(cursor, start), null));
             segments.add(new Segment(null, url)); cursor = end;
         }

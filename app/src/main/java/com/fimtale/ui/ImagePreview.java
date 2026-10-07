@@ -9,6 +9,7 @@ import android.text.style.ClickableSpan;
 import android.view.View;
 import com.fimtale.ImagePreviewActivity;
 import com.fimtale.network.SiteUrls;
+import com.fimtale.utils.SpoilerSpan;
 import io.noties.markwon.image.AsyncDrawableSpan;
 
 /** Shared entry point for image views and inline BBCode images. */
@@ -35,8 +36,11 @@ public final class ImagePreview {
             String url = image.getDrawable().getDestination();
             int start = result.getSpanStart(image), end = result.getSpanEnd(image);
             // Preserve explicit links and don't turn inline emoticons into photo buttons.
-            if (end <= start || url.contains("/img/ftemoji/") || SiteUrls.media(url) == null
-                    || result.getSpans(start, end, ClickableSpan.class).length > 0) continue;
+            if (end <= start || url.contains("/img/ftemoji/") || SiteUrls.media(url) == null) continue;
+            boolean linked = false;
+            for (ClickableSpan span : result.getSpans(start, end, ClickableSpan.class))
+                if (!(span instanceof SpoilerSpan)) { linked = true; break; }
+            if (linked) continue;
             result.setSpan(new ClickableSpan() {
                 @Override public void onClick(View widget) { open(widget.getContext(), url); }
                 @Override public void updateDrawState(TextPaint paint) {}
