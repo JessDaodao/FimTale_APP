@@ -38,6 +38,7 @@ public final class BbCodeRendering {
         if (width <= 0) width = view.getResources().getDisplayMetrics().widthPixels - (int) (48 * view.getResources().getDisplayMetrics().density);
         BbCodeText.prepare(text, view.getPaint(), width);
         renderer.setParsedMarkdown(view, com.fimtale.ui.ImagePreview.images(text));
+        BbCodeText.bindWidth(view);
         SpoilerSpan.bind(view);
     }
 
@@ -250,7 +251,7 @@ public final class BbCodeRendering {
                 if (cells.isEmpty() || row.end() <= row.start()) continue;
                 while (cells.size() < columns) cells.add(emptyCell());
                 boolean header = !row.children().isEmpty() && row.children().get(0).name().equals("th");
-                SpannableBuilder.setSpans(visitor.builder(), new TableRowSpan(theme, cells, header, i % 2 != 0), row.start(), row.end());
+                SpannableBuilder.setSpans(visitor.builder(), new FittedTableRowSpan(theme, cells, header, i % 2 != 0), row.start(), row.end());
             }
         }
         private static int count(HtmlTag tag, String name, int max) {

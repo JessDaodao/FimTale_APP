@@ -216,6 +216,24 @@ public class PageErrorTest {
         assertEquals(ReaderActivity.class.getName(), reader.getComponent().getClassName());
         assertEquals(42, reader.getIntExtra(ReaderActivity.EXTRA_WORK_ID, -1));
     }
+
+    @Test public void detailTableFitsItsPaddedArticleColumn() throws Exception {
+        failing = false;
+        workContent = "[quote][table][tr]" + ("[td]" + "较长的表格内容".repeat(10) + "[/td]").repeat(3) + "[/tr][/table][/quote]";
+        TopicDetailActivity activity = launch(TopicDetailActivity.class,
+                new Intent(context, TopicDetailActivity.class).putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, 42));
+        await(() -> activity.findViewById(R.id.detailLoadingSkeleton).getVisibility() == View.GONE);
+        controller.visible(); layoutReader(activity); layoutReader(activity);
+        TextView view = activity.findViewById(R.id.detailContentTextView);
+        android.text.Spanned text = (android.text.Spanned) view.getText();
+        io.noties.markwon.ext.tables.TableRowSpan row = text.getSpans(0, text.length(), io.noties.markwon.ext.tables.TableRowSpan.class)[0];
+        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(600, view.getHeight(), android.graphics.Bitmap.Config.ARGB_8888);
+        view.draw(new android.graphics.Canvas(bitmap));
+        int start = text.getSpanStart(row), end = text.getSpanEnd(row);
+        assertTrue(view.getLayout().getPrimaryHorizontal(start) + row.getSize(view.getPaint(), text, start, end, null)
+                <= view.getWidth() - view.getTotalPaddingLeft() - view.getTotalPaddingRight());
+        bitmap.recycle();
+    }
     @Test public void accountSessionsUseRetryScreen() throws Exception { assertPageError(AccountSessionsActivity.class, new Intent(context, AccountSessionsActivity.class)); }
     @Test public void filtersUseRetryScreen() throws Exception { assertPageError(ContentFiltersActivity.class, new Intent(context, ContentFiltersActivity.class)); }
     @Test public void reviewsUseRetryScreen() throws Exception { assertPageError(ReviewQueueActivity.class, new Intent(context, ReviewQueueActivity.class)); }
@@ -277,6 +295,88 @@ public class PageErrorTest {
         root.measure(View.MeasureSpec.makeMeasureSpec(360, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY));
         root.layout(0, 0, 360, 800);
+    }
+
+    @Test @Config(qualifiers = "w360dp-h800dp")
+    public void collapseTapsWinOverAllReaderTapZones() throws Exception {
+        failing = false;
+        androidx.preference.PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putBoolean("has_shown_reader_guide", true).putBoolean("reader_is_vertical", false).commit();
+        workContent = ("[collapse=" + "展开按钮标题".repeat(6) + "]折叠正文[/collapse]\n").repeat(30);
+        ReaderActivity activity = launch(ReaderActivity.class, new Intent(context, ReaderActivity.class)
+                .putExtra(ReaderActivity.EXTRA_WORK_ID, 42).putExtra(ReaderActivity.EXTRA_CHAPTER_ID, 0));
+        Field ready = ReaderActivity.class.getDeclaredField("contentReady"); ready.setAccessible(true);
+        await(() -> { try { return ready.getBoolean(activity); } catch (Exception e) { throw new AssertionError(e); } });
+        controller.visible();
+        java.lang.reflect.Method mode = ReaderActivity.class.getDeclaredMethod("updatePageMode", boolean.class);
+        mode.setAccessible(true);
+        Field menu = ReaderActivity.class.getDeclaredField("isMenuVisible"); menu.setAccessible(true);
+        androidx.viewpager2.widget.ViewPager2 pager = activity.findViewById(R.id.viewPager);
+        androidx.recyclerview.widget.RecyclerView scroll = activity.findViewById(R.id.recyclerView);
+        for (boolean vertical : new boolean[]{false, true}) {
+            androidx.preference.PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean("reader_is_vertical", vertical).commit();
+            mode.invoke(activity, vertical);
+            layoutReader(activity);
+            if (!vertical) {
+                List<?> pages = readerPages(activity, "pages");
+                for (int i = 0; i < pages.size(); i++) {
+                    Field content = pages.get(i).getClass().getDeclaredField("content"); content.setAccessible(true);
+                    Object text = content.get(pages.get(i));
+                    if (text instanceof android.text.Spanned && ((android.text.Spanned) text)
+                            .getSpans(0, ((android.text.Spanned) text).length(), com.fimtale.utils.CollapseSpan.class).length > 0) {
+                        pager.setCurrentItem(i, false); break;
+                    }
+                }
+                layoutReader(activity);
+            }
+            for (int zone = 0; zone < 3; zone++) {
+                float[] point = readerButtonPoint(activity.findViewById(android.R.id.content), vertical, zone);
+                assertNotNull("Visible button in " + (vertical ? "vertical" : "paged") + " zone " + zone, point);
+                int page = pager.getCurrentItem();
+                int scrollOffset = scroll.computeVerticalScrollOffset();
+                long now = android.os.SystemClock.uptimeMillis();
+                for (int action : new int[]{android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP}) {
+                    android.view.MotionEvent event = android.view.MotionEvent.obtain(now, now + 10, action, point[0], point[1], 0);
+                    activity.dispatchTouchEvent(event); event.recycle();
+                }
+                layoutReader(activity);
+                android.app.Dialog sheet = org.robolectric.shadows.ShadowDialog.getLatestDialog();
+                assertTrue("Button must open its sheet", sheet instanceof com.google.android.material.bottomsheet.BottomSheetDialog && sheet.isShowing());
+                assertFalse("Reader menu must stay closed", menu.getBoolean(activity));
+                assertEquals("No page tap", page, pager.getCurrentItem());
+                assertEquals("No scroll tap", scrollOffset, scroll.computeVerticalScrollOffset());
+                sheet.dismiss(); layoutReader(activity);
+            }
+        }
+    }
+
+    private float[] readerButtonPoint(View view, boolean vertical, int zone) {
+        if (!view.isShown()) return null;
+        if (view instanceof TextView) {
+            TextView widget = (TextView) view;
+            if (widget.getText() instanceof android.text.Spanned && widget.getLayout() != null) {
+                android.text.Spanned text = (android.text.Spanned) widget.getText();
+                android.graphics.Rect visible = new android.graphics.Rect();
+                int[] location = new int[2]; widget.getLocationOnScreen(location);
+                if (widget.getGlobalVisibleRect(visible)) for (com.fimtale.utils.CollapseButtonSpan button : text.getSpans(0, text.length(), com.fimtale.utils.CollapseButtonSpan.class)) {
+                    int start = text.getSpanStart(button), end = text.getSpanEnd(button);
+                    android.text.Layout layout = widget.getLayout();
+                    android.graphics.Paint.FontMetricsInt metrics = new android.graphics.Paint.FontMetricsInt();
+                    int width = button.getSize(widget.getPaint(), text, start, end, metrics);
+                    float x = location[0] + widget.getTotalPaddingLeft() + layout.getPrimaryHorizontal(start)
+                            + width * (vertical ? .8f : new float[]{.1f, .5f, .9f}[zone]);
+                    float y = location[1] + widget.getTotalPaddingTop() + layout.getLineBaseline(layout.getLineForOffset(start)) + metrics.ascent / 2f;
+                    float fraction = vertical ? y / 800 : x / 360;
+                    int actualZone = fraction < .3f ? 0 : fraction > .7f ? 2 : 1;
+                    if (visible.contains((int) x, (int) y) && actualZone == zone) return new float[]{x, y};
+                }
+            }
+        }
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+            float[] result = readerButtonPoint(((ViewGroup) view).getChildAt(i), vertical, zone);
+            if (result != null) return result;
+        }
+        return null;
     }
     private TextView collapseView(View view) {
         if (view.getVisibility() != View.VISIBLE) return null;

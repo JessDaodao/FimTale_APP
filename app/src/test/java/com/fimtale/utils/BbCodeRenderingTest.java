@@ -104,6 +104,70 @@ public class BbCodeRenderingTest {
         assertTrue(fallback.toString().contains("last"));
         assertEquals(0, fallback.getSpans(0, fallback.length(), TableRowSpan.class).length);
     }
+
+    @Test public void tableWidthStaysInsideTheTextLayoutWhenDrawnOnAWiderCanvas() {
+        for (String wrapper : new String[]{"%s", "[quote]%s[/quote]", "[indent=2em]%s[/indent]", "[right]%s[/right]"}) {
+            Spanned text = render(String.format(wrapper, "[table][tr]" + "[td]long cell content[/td]".repeat(3) + "[/tr][/table]"));
+            TextPaint paint = new TextPaint(); paint.setTextSize(20);
+            BbCodeText.prepare(text, paint, 281);
+            StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, 281).build();
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(600, layout.getHeight() + 10, android.graphics.Bitmap.Config.ARGB_8888);
+            layout.draw(new android.graphics.Canvas(bitmap));
+            for (TableRowSpan row : text.getSpans(0, text.length(), TableRowSpan.class)) {
+                float left = layout.getPrimaryHorizontal(text.getSpanStart(row));
+                int width = row.getSize(paint, text, text.getSpanStart(row), text.getSpanEnd(row), null);
+                assertTrue(wrapper + ": left=" + left + ", width=" + width, left + width <= 281);
+                assertTrue(row.cellWidth() * 3 <= width);
+            }
+            for (int y = 0; y < bitmap.getHeight(); y++) for (int x = 281; x < bitmap.getWidth(); x++)
+                assertEquals("No table pixels outside the content width", 0, bitmap.getPixel(x, y));
+            bitmap.recycle();
+        }
+    }
+
+    @Test public void tablesReflowToMeasuredTextViewWidthAndAfterResizing() {
+        android.widget.TextView view = new android.widget.TextView(RuntimeEnvironment.getApplication());
+        view.setLayoutParams(new android.view.ViewGroup.LayoutParams(-1, -2));
+        view.setPadding(24, 0, 24, 0);
+        BbCodeRendering.setText(renderer, view, "[table][tr][td]" + "内容自动换行".repeat(10) + "[/td][td]第二列[/td][/tr][/table]");
+        for (int width : new int[]{360, 220, 500}) {
+            for (int pass = 0; pass < 2; pass++) {
+                view.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                        android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED));
+                view.layout(0, 0, width, view.getMeasuredHeight());
+            }
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(600, view.getHeight(), android.graphics.Bitmap.Config.ARGB_8888);
+            view.draw(new android.graphics.Canvas(bitmap));
+            Spanned text = (Spanned) view.getText();
+            TableRowSpan row = text.getSpans(0, text.length(), TableRowSpan.class)[0];
+            assertEquals(width - 48, row.getSize(view.getPaint(), text, text.getSpanStart(row), text.getSpanEnd(row), null));
+            assertTrue(row.findLayoutForHorizontalOffset(0).getLineCount() > 1);
+            assertEquals(width - 48, view.getLayout().getWidth());
+            bitmap.recycle();
+        }
+    }
+
+    @Test public void tableRemeasuresWhenACellImageFinishesLoading() {
+        Spanned text = render("[table][tr][td][img]/cell.png[/img][/td][td]文字[/td][/tr][/table]");
+        TextPaint paint = new TextPaint(); paint.setTextSize(20);
+        BbCodeText.prepare(text, paint, 281);
+        TableRowSpan row = text.getSpans(0, text.length(), TableRowSpan.class)[0];
+        Layout cell = row.findLayoutForHorizontalOffset(0);
+        Spanned cellText = (Spanned) cell.getText();
+        io.noties.markwon.image.AsyncDrawable drawable = cellText.getSpans(0, cellText.length(), AsyncDrawableSpan.class)[0].getDrawable();
+        int[] invalidations = {0};
+        row.invalidator(() -> invalidations[0]++);
+        drawable.initWithKnownDimensions(cell.getWidth(), paint.getTextSize());
+        android.graphics.drawable.ColorDrawable loaded = new android.graphics.drawable.ColorDrawable(Color.BLUE);
+        loaded.setBounds(0, 0, 80, 180);
+        drawable.setResult(loaded);
+        assertTrue(invalidations[0] > 0);
+        android.graphics.Paint.FontMetricsInt metrics = new android.graphics.Paint.FontMetricsInt();
+        assertEquals(281, row.getSize(paint, text, text.getSpanStart(row), text.getSpanEnd(row), metrics));
+        assertTrue(metrics.descent - metrics.ascent >= 180);
+        assertTrue(drawable.getBounds().width() <= row.findLayoutForHorizontalOffset(0).getWidth());
+        row.invalidator(null);
+    }
     @Test public void pageAndVerticalSlicesRetainCrossBoundaryFormatting() {
         Spanned text = render("[color=teal][b]" + "长段落用于验证跨页样式。".repeat(300) + "[/b][/color]");
         TextPaint paint = new TextPaint(); paint.setTextSize(24);

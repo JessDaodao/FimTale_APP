@@ -1684,7 +1684,14 @@ public class ReaderActivity extends AppCompatActivity {
                     if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                         textView.setTag(R.id.reader_link_touch, touchesLink(textView, event));
                     }
-                    if (Boolean.TRUE.equals(textView.getTag(R.id.reader_link_touch))) return false;
+                    if (Boolean.TRUE.equals(textView.getTag(R.id.reader_link_touch))) {
+                        if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_CANCEL)
+                            textView.setTag(R.id.reader_link_touch, null);
+                        // A button/link owns this whole tap, including its release outside the target.
+                        // Do not forward any part of it to the reader's page/scroll/menu detector.
+                        textView.onTouchEvent(event);
+                        return true;
+                    }
                 }
                 boolean handled = gestureDetector != null && gestureDetector.onTouchEvent(event);
                 return page.type != ReaderPage.TYPE_SCROLL_TEXT && handled;
@@ -1723,6 +1730,7 @@ public class ReaderActivity extends AppCompatActivity {
                 if (textWidth <= 0) textWidth = getResources().getDisplayMetrics().widthPixels - (int) (48 * getResources().getDisplayMetrics().density);
                 BbCodeText.prepare(rendered, textHolder.textView.getPaint(), textWidth);
                 markwon.setParsedMarkdown(textHolder.textView, rendered);
+                BbCodeText.bindWidth(textHolder.textView);
                 com.fimtale.utils.SpoilerSpan.bind(textHolder.textView);
                 if (textHolder.itemView instanceof ScrollView) textHolder.itemView.scrollTo(0, 0);
                 textHolder.textView.setOnTouchListener(touchListener);

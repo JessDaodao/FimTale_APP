@@ -18,6 +18,7 @@ import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.Window;
 import android.widget.TextView;
 import androidx.appcompat.view.WindowCallbackWrapper;
@@ -203,6 +204,19 @@ public final class SpoilerSpan extends ClickableSpan {
             float previous = layout.getPrimaryHorizontal(offset - 1), current = layout.getPrimaryHorizontal(offset);
             if (x >= Math.min(previous, current) && x < Math.max(previous, current)) offset--;
         }
+        // A button is one visual object, even when its source is a multi-character title.
+        // Nearest-caret lookup can jump to the following newline over its entire right half.
+        for (CollapseButtonSpan replacement : text.getSpans(layout.getLineStart(line), layout.getLineEnd(line), CollapseButtonSpan.class)) {
+            int start = text.getSpanStart(replacement), end = text.getSpanEnd(replacement);
+            float left = layout.getPrimaryHorizontal(start);
+            Paint.FontMetricsInt metrics = new Paint.FontMetricsInt();
+            int width = replacement.getSize(layout.getPaint(), text, start, end, metrics);
+            int baseline = layout.getLineBaseline(line);
+            if (x >= left && x < left + width && y >= baseline + metrics.ascent && y < baseline + metrics.descent) {
+                offset = start;
+                break;
+            }
+        }
         ClickableSpan link = null;
         SpoilerSpan hidden = null;
         int hiddenLength = -1;
@@ -234,33 +248,48 @@ public final class SpoilerSpan extends ClickableSpan {
 
     private static final class Movement extends LinkMovementMethod {
         static final Movement INSTANCE = new Movement();
+        private final WeakHashMap<TextView, Press> presses = new WeakHashMap<>();
+
+        private static final class Press {
+            final ClickableSpan span;
+            final float x, y;
+            boolean moved;
+            Press(ClickableSpan span, MotionEvent event) { this.span = span; x = event.getX(); y = event.getY(); }
+        }
 
         @Override public boolean onTouchEvent(TextView view, Spannable text, MotionEvent event) {
             int action = event.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
-                if (action == MotionEvent.ACTION_DOWN && !revealedSpans.isEmpty()) {
+            if (action == MotionEvent.ACTION_DOWN) {
+                presses.remove(view);
+                if (!revealedSpans.isEmpty()) {
                     Set<SpoilerSpan> touched = new HashSet<>();
                     clickableAt(view, event.getX(), event.getY(), touched);
                     concealExcept(touched);
                 }
                 ClickableSpan span = clickableAt(view, event);
                 if (span != null) {
-                    if (action == MotionEvent.ACTION_DOWN) {
-                        if (text.getSpanStart(span) >= 0)
-                            Selection.setSelection(text, text.getSpanStart(span), text.getSpanEnd(span));
-                    }
-                    else {
-                        span.onClick(view);
-                        Selection.removeSelection(text);
-                    }
+                    presses.put(view, new Press(span, event));
+                    if (text.getSpanStart(span) >= 0)
+                        Selection.setSelection(text, text.getSpanStart(span), text.getSpanEnd(span));
                     return true;
                 }
-                // Revealed spoilers are ordinary text, rather than dead links.
-                Selection.removeSelection(text);
-                return Touch.onTouchEvent(view, text, event);
             }
-            if (action == MotionEvent.ACTION_CANCEL) Selection.removeSelection(text);
-            return super.onTouchEvent(view, text, event);
+            Press press = presses.get(view);
+            if (press != null) {
+                int slop = ViewConfiguration.get(view.getContext()).getScaledTouchSlop();
+                if (Math.hypot(event.getX() - press.x, event.getY() - press.y) > slop
+                        || action == MotionEvent.ACTION_POINTER_DOWN) press.moved = true;
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    presses.remove(view);
+                    Selection.removeSelection(text);
+                    if (action == MotionEvent.ACTION_UP && !press.moved && clickableAt(view, event) == press.span)
+                        press.span.onClick(view);
+                }
+                // Keep the tap owned by the original link; parent scrolling can still intercept a drag.
+                return true;
+            }
+            Selection.removeSelection(text);
+            return Touch.onTouchEvent(view, text, event);
         }
     }
 

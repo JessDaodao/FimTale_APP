@@ -7,7 +7,11 @@ import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
+import android.text.style.LeadingMarginSpan;
 import android.text.style.ReplacementSpan;
+import android.view.View;
+import android.widget.TextView;
+import com.fimtale.R;
 import io.noties.markwon.core.spans.CodeBlockSpan;
 import io.noties.markwon.ext.tables.TableRowSpan;
 import io.noties.markwon.image.AsyncDrawableSpan;
@@ -115,13 +119,40 @@ public final class BbCodeText {
         return result;
     }
 
+    /** Reflow after the real column width is known, including narrower cards and window resizing. */
+    public static void bindWidth(TextView view) {
+        if (view.getTag(R.id.bbcode_width_listener) != null) return;
+        View.OnLayoutChangeListener listener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (right - left == oldRight - oldLeft) return;
+            CharSequence text = view.getText();
+            if (!(text instanceof Spanned) || ((Spanned) text).getSpans(0, text.length(), ReplacementSpan.class).length == 0) return;
+            int width = right - left - view.getTotalPaddingLeft() - view.getTotalPaddingRight();
+            if (width <= 1) return;
+            prepare(text, view.getPaint(), width);
+            // TextView caches replacement metrics; changing a span's width alone doesn't invalidate them.
+            view.setText(text);
+            SpoilerSpan.bind(view);
+        };
+        view.setTag(R.id.bbcode_width_listener, listener);
+        view.addOnLayoutChangeListener(listener);
+    }
+
     public static void prepare(CharSequence text, TextPaint paint, int width) {
         if (!(text instanceof Spanned) || width <= 1) return;
         Spanned spans = (Spanned) text;
         CollapseButtonSpan.prepare(text, width);
         for (BbCodeRendering.IndentSpan indent : spans.getSpans(0, spans.length(), BbCodeRendering.IndentSpan.class)) indent.prepare(paint.getTextSize(), width);
-        TableRowSpan[] rows = spans.getSpans(0, spans.length(), TableRowSpan.class);
-        if (rows.length == 0) return;
+        List<TableRowSpan> rows = new ArrayList<>();
+        for (TableRowSpan row : spans.getSpans(0, spans.length(), TableRowSpan.class)) {
+            if (row instanceof FittedTableRowSpan) {
+                int start = spans.getSpanStart(row), end = spans.getSpanEnd(row);
+                int margin = 0;
+                for (LeadingMarginSpan indent : spans.getSpans(start, end, LeadingMarginSpan.class))
+                    margin += indent.getLeadingMargin(true);
+                ((FittedTableRowSpan) row).prepare(paint, Math.max(1, width - margin));
+            } else rows.add(row);
+        }
+        if (rows.isEmpty()) return;
         // Markwon initializes table metrics during draw. Warm those metrics before StaticLayout,
         // including on font changes at the same width, so pagination sees the actual row height.
         Bitmap scratch = Bitmap.createBitmap(width + 1, 1, Bitmap.Config.ARGB_8888);

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="reader_link_touch" type="id" />
+    <item name="bbcode_width_listener" type="id" />
 </resources>

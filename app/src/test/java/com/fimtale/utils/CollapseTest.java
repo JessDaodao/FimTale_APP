@@ -141,6 +141,42 @@ public class CollapseTest {
         assertTrue(sheet().isShowing());
     }
 
+    @Test public void entireButtonIsClickableIncludingItsRightHalfAndWrappedTitle() {
+        for (String title : new String[]{"点击展开", "这是一段较长的展开按钮标题".repeat(5)}) {
+            render("before[collapse=" + title + "]secret[/collapse]after");
+            Spanned text = text(article);
+            CollapseButtonSpan button = text.getSpans(0, text.length(), CollapseButtonSpan.class)[0];
+            int start = text.getSpanStart(button), end = text.getSpanEnd(button);
+            Paint.FontMetricsInt metrics = new Paint.FontMetricsInt();
+            int width = button.getSize(article.getPaint(), text, start, end, metrics);
+            android.text.Layout layout = article.getLayout();
+            int baseline = layout.getLineBaseline(layout.getLineForOffset(start));
+            for (float fraction : new float[]{0.05f, 0.49f, 0.51f, 0.95f}) {
+                MotionEvent event = MotionEvent.obtain(0, 10, MotionEvent.ACTION_DOWN,
+                        layout.getPrimaryHorizontal(start) + width * fraction,
+                        baseline + metrics.ascent / 2f, 0);
+                assertSame("title=" + title + ", fraction=" + fraction, button(article), SpoilerSpan.clickableAt(article, event));
+                event.recycle();
+            }
+        }
+    }
+
+    @Test public void draggingOrCancellingAButtonPressDoesNotOpenItsSheet() {
+        render("[collapse=点击展开]secret[/collapse]");
+        for (boolean cancel : new boolean[]{true, false}) {
+            int[] actions = cancel ? new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP}
+                    : new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP};
+            for (int action : actions) {
+                float x = action == MotionEvent.ACTION_MOVE ? 250 : 16;
+                MotionEvent event = MotionEvent.obtain(0, 10, action, x, article.getLayout().getLineBaseline(0) - 16, 0);
+                article.dispatchTouchEvent(event); event.recycle();
+            }
+            assertNull(ShadowDialog.getLatestDialog());
+        }
+        tapButton(article);
+        assertTrue(sheet().isShowing());
+    }
+
     @Test public void nestedSheetsAndLongContentRemainScrollable() {
         render("[collapse=outer]" + "long body\n".repeat(200) + "[collapse=inner]nested[/collapse][/collapse]");
         tapButton(article);
