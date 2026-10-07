@@ -10,6 +10,18 @@ public final class BbCodeSyntax {
     private static final Pattern ATTRIBUTE = Pattern.compile("([\\w-]+)\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s]+))");
     private BbCodeSyntax() {}
 
+    private static final class NativeParser {
+        static final boolean AVAILABLE = load();
+        private static boolean load() {
+            try { System.loadLibrary("fimtale"); return true; }
+            catch (UnsatisfiedLinkError unavailable) { return false; }
+        }
+    }
+
+    // Package-visible for tests that must exercise JNI rather than the fallback.
+    static boolean nativeAvailable() { return NativeParser.AVAILABLE; }
+    private static native int[] parsePacked(String source);
+
     public static final class Node {
         public final String name, argument;
         public final Map<String, String> attributes;
@@ -22,6 +34,32 @@ public final class BbCodeSyntax {
     }
 
     public static List<Node> parse(String source) {
+        if (source == null || source.isEmpty()) return new ArrayList<>();
+        return nativeAvailable() ? parseNative(source) : parseJava(source);
+    }
+
+    static List<Node> parseNative(String source) {
+        if (!nativeAvailable()) throw new UnsatisfiedLinkError("Native BBCode parser is unavailable");
+        int[] packed = parsePacked(source);
+        List<Node> result = new ArrayList<>();
+        // See bbcode-syntax.h for the packed UTF-16 offset record format.
+        for (int i = 0; i < packed.length;) {
+            int start = packed[i++], contentStart = packed[i++], contentEnd = packed[i++], end = packed[i++];
+            String name = source.substring(packed[i++], packed[i++]).toLowerCase(Locale.ROOT);
+            String argument = source.substring(packed[i++], packed[i++]);
+            int count = packed[i++];
+            Map<String, String> attrs = new HashMap<>();
+            for (int a = 0; a < count; a++) {
+                String key = source.substring(packed[i++], packed[i++]).toLowerCase(Locale.ROOT);
+                attrs.put(key, source.substring(packed[i++], packed[i++]));
+            }
+            result.add(new Node(name, argument, Collections.unmodifiableMap(attrs), start, contentStart, contentEnd, end));
+        }
+        return result;
+    }
+
+    /** Compatibility reference and fallback on hosts without the native library. */
+    static List<Node> parseJava(String source) {
         List<Node> result = new ArrayList<>(), stack = new ArrayList<>();
         if (source == null || source.isEmpty()) return result;
         Matcher matcher = TAG.matcher(source);

@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
-import androidx.preference.SwitchPreferenceCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.annotation.NonNull;
 import android.content.Intent;
@@ -28,27 +27,6 @@ import android.widget.Toast;
 import androidx.preference.ListPreference;
 
 public class SettingsFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener {
-
-    private final Preference.OnPreferenceChangeListener gravityChangeListener = new Preference.OnPreferenceChangeListener() {
-        @Override
-        public boolean onPreferenceChange(@NonNull Preference preference, Object newValue) {
-            boolean enabled = (boolean) newValue;
-            if (enabled) {
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("警告")
-                        .setMessage("该模式仅为娱乐使用，可能会导致一系列意想不到的BUG！确定开启吗？")
-                        .setPositiveButton("确定", (dialog, which) -> {
-                            preference.setOnPreferenceChangeListener(null);
-                            ((SwitchPreferenceCompat) preference).setChecked(true);
-                            preference.setOnPreferenceChangeListener(this);
-                        })
-                        .setNegativeButton("取消", null)
-                        .show();
-                return false;
-            }
-            return true;
-        }
-    };
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -89,11 +67,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             return true;
         });
 
-        SwitchPreferenceCompat gravityPref = findPreference("gravity_mode");
-        if (gravityPref != null) {
-            gravityPref.setOnPreferenceChangeListener(gravityChangeListener);
-        }
-        
         Preference logoutPref = findPreference("logout");
         if (logoutPref != null) {
             if (UserPreferences.isLoggedIn(requireContext())) {
