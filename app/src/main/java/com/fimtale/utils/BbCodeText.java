@@ -8,6 +8,7 @@ import android.text.SpannedString;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
+import io.noties.markwon.core.spans.CodeBlockSpan;
 import io.noties.markwon.ext.tables.TableRowSpan;
 import io.noties.markwon.image.AsyncDrawableSpan;
 import java.util.*;
@@ -34,6 +35,7 @@ public final class BbCodeText {
 
     public static Spanned normalizeTables(Spanned rendered) {
         SpannableStringBuilder result = new SpannableStringBuilder(rendered);
+        normalizeLineBreaks(result);
         TableRowSpan[] rows = result.getSpans(0, result.length(), TableRowSpan.class);
         Arrays.sort(rows, Comparator.comparingInt(result::getSpanStart).reversed());
         for (TableRowSpan row : rows) {
@@ -50,6 +52,30 @@ public final class BbCodeText {
         }
         SpoilerSpan.prepare(result);
         return new SpannedString(result);
+    }
+
+    /** Marks an authored break, so block separators can be deduplicated without collapsing blank lines. */
+    static final class SourceLineBreak {}
+
+    static void normalizeLineBreaks(SpannableStringBuilder text) {
+        BitSet authored = new BitSet();
+        for (SourceLineBreak marker : text.getSpans(0, text.length(), SourceLineBreak.class)) {
+            // Markwon may insert a block separator before <br>; the last character is the authored break.
+            int offset = text.getSpanEnd(marker) - 1;
+            if (offset >= 0 && text.charAt(offset) == '\n') authored.set(offset);
+            text.removeSpan(marker);
+        }
+        BitSet redundant = new BitSet();
+        for (int offset = authored.nextSetBit(1); offset >= 0; offset = authored.nextSetBit(offset + 1)) {
+            int previous = offset - 1;
+            if (text.charAt(previous) == '\n' && !authored.get(previous)
+                    && text.getSpans(previous, offset, CodeBlockSpan.class).length == 0) {
+                redundant.set(previous);
+            }
+        }
+        // Delete before pagination, while all style/link/table ranges can still move together.
+        for (int offset = redundant.length() - 1; offset >= 0; offset = redundant.previousSetBit(offset - 1))
+            text.delete(offset, offset + 1);
     }
 
     public static List<Segment> segments(Spanned text) {

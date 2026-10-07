@@ -7,7 +7,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.text.Layout;
 import android.text.Spanned;
-import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.style.*;
 import android.view.View;
 import android.widget.ScrollView;
@@ -58,7 +58,7 @@ public final class BbCodeRendering {
                 })
                 .addHandler(new SimpleTagHandler() {
                     @Override public Collection<String> supportedTags() {
-                        return Arrays.asList("span", "div", "pre", "code", "hr", "th");
+                        return Arrays.asList("span", "div", "pre", "code", "br", "hr", "th");
                     }
                     @Override public Object getSpans(MarkwonConfiguration config, RenderProps props, HtmlTag tag) {
                         List<Object> spans = new ArrayList<>();
@@ -75,6 +75,7 @@ public final class BbCodeRendering {
                                 : align.equals("right") ? Layout.Alignment.ALIGN_OPPOSITE : Layout.Alignment.ALIGN_NORMAL));
                         if (attrs.containsKey("data-indent")) spans.add(new IndentSpan(attrs.get("data-indent"), context.getResources().getDisplayMetrics().density));
                         switch (tag.name()) {
+                            case "br": spans.add(new BbCodeText.SourceLineBreak()); break;
                             case "pre": spans.add(new CodeBlockSpan(config.theme())); break;
                             case "code":
                                 // pre already sets the monospace face and size; don't shrink it twice.
@@ -244,7 +245,8 @@ public final class BbCodeRendering {
                     }
                     int gravity = align.equals("center") ? TableRowSpan.ALIGN_CENTER : align.equals("right") ? TableRowSpan.ALIGN_RIGHT : TableRowSpan.ALIGN_LEFT;
                     CharSequence contents = visitor.builder().subSequence(cell.start(), cell.end());
-                    SpannableString styled = new SpannableString(contents);
+                    SpannableStringBuilder styled = new SpannableStringBuilder(contents);
+                    BbCodeText.normalizeLineBreaks(styled);
                     SpoilerSpan.prepare(styled);
                     cells.add(new TableRowSpan.Cell(gravity, styled));
                     int colspan = count(cell, "colspan", 32 - column), rowspan = count(cell, "rowspan", 100);

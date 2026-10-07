@@ -24,6 +24,43 @@ public class BbCodeRenderingTest {
     private Markwon renderer;
     @Before public void setup() { renderer = BbCodeRendering.create(RuntimeEnvironment.getApplication()); }
     private Spanned render(String source) { return BbCodeText.normalizeTables(renderer.toMarkdown(BbCode.toMarkdown(source))); }
+    @Test public void indentedParagraphsDoNotAddAnExtraBlankLine() {
+        Spanned text = render("[indent=28.0pt]第一段[/indent]\n\n[indent=28.0pt]第二段[/indent]");
+        assertEquals("第一段\n\n第二段", text.toString());
+        BbCodeRendering.IndentSpan[] indents = text.getSpans(0, text.length(), BbCodeRendering.IndentSpan.class);
+        assertEquals(2, indents.length);
+        java.util.Arrays.sort(indents, java.util.Comparator.comparingInt(text::getSpanStart));
+        assertEquals("第一段", text.subSequence(text.getSpanStart(indents[0]), text.getSpanEnd(indents[0])).toString());
+        assertEquals("第二段", text.subSequence(text.getSpanStart(indents[1]), text.getSpanEnd(indents[1])).toString());
+        assertEquals(text.toString(), BbCodeText.normalizeTables(text).toString());
+    }
+    @Test public void authoredBlankLinesSurviveStyledBlockBoundaries() {
+        for (int count = 1; count <= 5; count++) {
+            String gap = "\n".repeat(count);
+            assertEquals("before" + gap + "after", render("before" + gap + "after").toString());
+            assertEquals("before" + gap + "after", render("[indent]before[/indent]" + gap + "[indent]after[/indent]").toString());
+            assertEquals("before" + gap + "after", render("[p]before[/p][color=red][b]" + gap + "[/b][/color][p]after[/p]").toString().stripTrailing());
+        }
+        assertEquals("before\n\n\n\nafter", render("[indent]before\n\n[/indent]\n\n[indent]after[/indent]").toString());
+        assertEquals("first\nsecond", render("[indent]first[/indent][indent]second[/indent]").toString());
+    }
+    @Test public void codeWhitespaceAndStylesFollowingAParagraphArePreserved() {
+        Spanned code = render("[code]  first\n\n\n  second\n[/code]\n\nend");
+        assertEquals("  first\n\n\n  second\n\n\nend", code.toString());
+        Spanned text = render("[indent]before[/indent]\n\n[color=red][b][url=https://example.com]after[/url][/b][/color]");
+        int start = text.toString().indexOf("after");
+        assertEquals("before\n\nafter", text.toString());
+        assertEquals(1, text.getSpans(start, text.length(), StrongEmphasisSpan.class).length);
+        assertEquals(1, text.getSpans(start, text.length(), ClickableSpan.class).length);
+        assertEquals(Color.RED, text.getSpans(start, text.length(), ForegroundColorSpan.class)[0].getForegroundColor());
+    }
+    @Test public void tableCellsUseTheSameParagraphSpacing() {
+        Spanned text = render("[table][tr][td][indent]第一段[/indent]\n\n[indent]第二段[/indent][/td][/tr][/table]");
+        TextPaint paint = new TextPaint(); paint.setTextSize(20);
+        BbCodeText.prepare(text, paint, 320);
+        TableRowSpan row = text.getSpans(0, text.length(), TableRowSpan.class)[0];
+        assertEquals("第一段\n\n第二段", row.findLayoutForHorizontalOffset(0).getText().toString());
+    }
     @Test public void rendersLiteralTextStylesAndNewlines() {
         Spanned text = render("# *literal*\n[b]bold[/b]\n[color=teal]a[color=navy]b[/color]c[/color]\n[code]  [b]code[/b]\n  line2[/code]");
         assertTrue(text.toString(), text.toString().contains("# *literal*\nbold"));
