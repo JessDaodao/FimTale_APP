@@ -21,12 +21,12 @@ import java.nio.charset.StandardCharsets;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
-import com.fimtale.NativeRobolectricTestRunner;
+import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.*;
 import static org.junit.Assert.*;
 
-@RunWith(NativeRobolectricTestRunner.class)
+@RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class BbCodeEditTextRenderingTest {

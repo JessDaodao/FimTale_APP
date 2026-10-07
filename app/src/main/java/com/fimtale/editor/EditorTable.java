@@ -3,7 +3,7 @@ package com.fimtale.editor;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Cell coordinates and exact source ranges, decoded from the shared native BBCode parser. */
+/** Cell coordinates and exact source ranges from the shared BBCode parser. */
 final class EditorTable {
     static final class Cell {
         final BbCodeSyntax.Node node;

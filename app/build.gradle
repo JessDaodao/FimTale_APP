@@ -48,46 +48,6 @@ android {
         unitTests.includeAndroidResources = true
     }
 
-    externalNativeBuild {
-        cmake {
-            path "src/main/cpp/CMakeLists.txt"
-            version "3.22.1"
-        }
-    }
-}
-
-// Unit tests use the same JNI source as Android. CMake/Ninja and a host C++17
-// compiler are required only for local tests, not for APK assembly.
-def hostNativeDir = layout.buildDirectory.dir('host-native')
-def hostNativeLibrary = hostNativeDir.map { it.file(System.mapLibraryName('fimtale')) }
-def hostCmake = providers.gradleProperty('fimtaleHostCmake')
-        .orElse(providers.environmentVariable('CMAKE')).orElse('cmake')
-def hostToolchain = providers.gradleProperty('fimtaleHostToolchain')
-def configureHostNative = tasks.register('configureHostNative', Exec) {
-    inputs.file('src/main/cpp/CMakeLists.txt')
-    inputs.property('cmake', hostCmake)
-    outputs.file(hostNativeDir.map { it.file('CMakeCache.txt') })
-    environment 'JAVA_HOME', System.getProperty('java.home')
-    commandLine hostCmake.get(), '-S', file('src/main/cpp'), '-B', hostNativeDir.get().asFile,
-            '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release'
-    if (hostToolchain.isPresent()) {
-        inputs.file(file(hostToolchain.get()))
-        args "-DCMAKE_TOOLCHAIN_FILE=${file(hostToolchain.get()).absolutePath}"
-    }
-}
-def buildHostNative = tasks.register('buildHostNative', Exec) {
-    dependsOn configureHostNative
-    inputs.files(fileTree('src/main/cpp') { include '*.cpp', '*.h', 'CMakeLists.txt' })
-    outputs.file(hostNativeLibrary)
-    commandLine hostCmake.get(), '--build', hostNativeDir.get().asFile
-}
-tasks.withType(Test).configureEach {
-    dependsOn buildHostNative
-    inputs.file(hostNativeLibrary)
-    systemProperty 'java.library.path', hostNativeDir.get().asFile.absolutePath
-    // Use this with --tests '*BbCodeNativeTest' / '*BbCodeSyntaxTest'; the
-    // Robolectric graphics runtime has its own unrelated CheckJNI warnings.
-    if (providers.gradleProperty('fimtaleCheckJni').getOrElse('false').toBoolean()) jvmArgs '-Xcheck:jni'
 }
 
 dependencies {

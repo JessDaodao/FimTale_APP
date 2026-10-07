@@ -17,8 +17,8 @@ import com.google.gson.Gson;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/** Real host JNI tests; no Java parser or Android device is used. */
-public final class BbCodeNativeTest {
+/** Compatibility coverage for source offsets, malformed input and concurrent parsing. */
+public final class BbCodeSyntaxCompatibilityTest {
     private MessageDigest digest;
 
     @Test public void syntaxMatchesEstablishedCompatibilitySnapshot() throws Exception {
@@ -81,8 +81,8 @@ public final class BbCodeNativeTest {
         compare("[b]".repeat(1000) + "body" + "[/b]".repeat(1000));
         compare("[x " + "a='b' ".repeat(20000) + "]body[/x]");
         compare("[br]".repeat(20000));
-        // Recorded from the Java implementation before its removal. Includes
-        // every UTF-16 source unit, node field and sorted attribute entry.
+        // The established snapshot includes every UTF-16 source unit, node field
+        // and sorted attribute entry.
         StringBuilder actual = new StringBuilder();
         for (byte value : digest.digest()) actual.append(String.format(java.util.Locale.ROOT, "%02x", value));
         assertEquals("b655f50a55d75ecd53a8c39e7694daefc5ffec8dd208ddc2d55c634d746db3a3", actual.toString());

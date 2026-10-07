@@ -11,17 +11,17 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
 import androidx.appcompat.app.AppCompatActivity;
-import com.fimtale.NativeRobolectricTestRunner;
 import com.fimtale.R;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.*;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
-@RunWith(NativeRobolectricTestRunner.class)
+@RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class InlineTableEditorTest {
