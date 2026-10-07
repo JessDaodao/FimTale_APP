@@ -247,7 +247,17 @@ public class ReviewQueueTest {
             screen.getSupportFragmentManager().beginTransaction().add(android.R.id.content, profile).commitNow();
             View entry = screen.findViewById(R.id.btnReviewQueue);
             assertEquals(View.VISIBLE, entry.getVisibility());
-            assertNotSame(screen.findViewById(R.id.btnPublish).getParent(), entry.getParent());
+            View actions = (View) entry.getParent();
+            int width = Math.round(360 * context.getResources().getDisplayMetrics().density);
+            actions.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            actions.layout(0, 0, width, actions.getMeasuredHeight());
+            View publish = screen.findViewById(R.id.btnPublish);
+            assertEquals(publish.getTop(), screen.findViewById(R.id.btnMessages).getTop());
+            assertTrue(entry.getTop() > publish.getBottom());
+            assertEquals(publish.getLeft(), entry.getLeft());
+            assertEquals(width / 4f, entry.getWidth(), 1f);
+            assertEquals(entry.getWidth(), screen.findViewById(R.id.btnMyReports).getWidth());
             entry.performClick();
             assertEquals(ReviewQueueActivity.class.getName(), shadowOf(screen).getNextStartedActivity().getComponent().getClassName());
             UserPreferences.clearSession(context); host.pause().resume(); assertEquals(View.GONE, entry.getVisibility());

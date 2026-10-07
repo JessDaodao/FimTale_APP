@@ -69,18 +69,30 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:paddingTop="16dp"
             android:paddingBottom="16dp"
             android:background="?attr/colorSurface"
-            android:layout_marginTop="8dp"
-            android:baselineAligned="false">
+            android:layout_marginTop="8dp">
+
+            <androidx.constraintlayout.helper.widget.Flow
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:constraint_referenced_ids="btnPublish,btnFavorites,btnHistory,btnMessages,btnReviewQueue,btnMyReports"
+                app:flow_wrapMode="chain"
+                app:flow_maxElementsWrap="4"
+                app:flow_horizontalStyle="packed"
+                app:flow_horizontalBias="0"
+                app:flow_verticalGap="16dp" />
 
             <LinearLayout android:id="@+id/btnPublish" android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
+                app:layout_constraintWidth_percent="0.25" android:orientation="vertical" android:gravity="center" android:clickable="true"
                 android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp">
                 <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size" app:mdiIcon="pencil" app:tint="?attr/colorOnSurface"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="发表文章" android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
@@ -90,7 +102,7 @@
                 android:id="@+id/btnFavorites"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                app:layout_constraintWidth_percent="0.25"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:clickable="true"
@@ -117,7 +129,7 @@
                 android:id="@+id/btnHistory"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                app:layout_constraintWidth_percent="0.25"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:clickable="true"
@@ -140,38 +152,32 @@
                     android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
 
-        </LinearLayout>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="horizontal" android:baselineAligned="false" android:weightSum="3"
-            android:background="?attr/colorSurface">
             <LinearLayout android:id="@+id/btnMessages" android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
-                android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp"
-                android:layout_marginBottom="16dp">
+                app:layout_constraintWidth_percent="0.25" android:orientation="vertical" android:gravity="center" android:clickable="true"
+                android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp">
                 <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size"
                     app:mdiIcon="bell-outline" app:tint="?attr/colorOnSurface"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="消息"
                     android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
             <LinearLayout android:id="@+id/btnReviewQueue" android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
+                app:layout_constraintWidth_percent="0.25" android:orientation="vertical" android:gravity="center" android:clickable="true"
                 android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp"
-                android:layout_marginBottom="16dp" android:visibility="gone">
+                android:visibility="gone">
                 <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size"
                     app:mdiIcon="clipboard-text-outline" app:tint="?attr/colorOnSurface"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/review_queue_title"
                     android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
             <LinearLayout android:id="@+id/btnMyReports" android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:clickable="true"
-                android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp"
-                android:layout_marginBottom="16dp">
+                app:layout_constraintWidth_percent="0.25" android:orientation="vertical" android:gravity="center" android:clickable="true"
+                android:focusable="true" android:background="?attr/selectableItemBackgroundBorderless" android:padding="8dp">
                 <com.fimtale.ui.icons.MdiImageView android:layout_width="@dimen/mdi_icon_size" android:layout_height="@dimen/mdi_icon_size"
                     app:mdiIcon="flag-outline" app:tint="?attr/colorOnSurface"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/my_reports_title"
                     android:textSize="12sp" android:layout_marginTop="4dp" android:textColor="?attr/colorOnSurface"/>
             </LinearLayout>
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
