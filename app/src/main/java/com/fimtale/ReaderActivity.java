@@ -181,7 +181,6 @@ public class ReaderActivity extends AppCompatActivity {
     
     private float currentFontSize = 20f;
     private SharedPreferences prefs;
-    private Insets lastSystemBars = null;
     private Markwon markwon;
 
     private String fullChapterContent = "加载中...";
@@ -320,45 +319,7 @@ public class ReaderActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
 
-        ViewCompat.setOnApplyWindowInsetsListener(menuOverlay, (v, windowInsets) -> {
-            Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-            if (systemBars.top > 0 || systemBars.bottom > 0) {
-                lastSystemBars = systemBars;
-            }
-            
-            Insets insets = (lastSystemBars != null) ? lastSystemBars : systemBars;
-            
-            ViewGroup.MarginLayoutParams topParams = (ViewGroup.MarginLayoutParams) topToolbar.getLayoutParams();
-            topParams.topMargin = insets.top + (int)(4 * getResources().getDisplayMetrics().density);
-            topToolbar.setLayoutParams(topParams);
-            
-            ViewGroup.MarginLayoutParams bottomParams = (ViewGroup.MarginLayoutParams) bottomSheetContainer.getLayoutParams();
-            bottomParams.bottomMargin = insets.bottom + (int)(16 * getResources().getDisplayMetrics().density);
-            bottomSheetContainer.setLayoutParams(bottomParams);
-            
-            int headerTopPadding = insets.top + (int)(12 * getResources().getDisplayMetrics().density);
-            readerHeader.setPadding(
-                readerHeader.getPaddingLeft(),
-                headerTopPadding,
-                readerHeader.getPaddingRight(),
-                readerHeader.getPaddingBottom()
-            );
-
-            int footerBottomPadding = insets.bottom + (int)(8 * getResources().getDisplayMetrics().density);
-            readerFooter.setPadding(
-                readerFooter.getPaddingLeft(),
-                readerFooter.getPaddingTop(),
-                readerFooter.getPaddingRight(),
-                footerBottomPadding
-            );
-            
-            int bodyTopPadding = insets.top + (int)(50 * getResources().getDisplayMetrics().density);
-            int bodyBottomPadding = insets.bottom + (int)(30 * getResources().getDisplayMetrics().density);
-            viewPager.setPadding(0, bodyTopPadding, 0, bodyBottomPadding);
-            recyclerView.setPadding(0, bodyTopPadding, 0, bodyBottomPadding);
-            
-            return windowInsets;
-        });
+        installWindowInsets(findViewById(R.id.readerRoot));
 
         topToolbar.setNavigationOnClickListener(v -> finish());
         topToolbar.inflateMenu(R.menu.menu_reader);
@@ -1669,6 +1630,42 @@ public class ReaderActivity extends AppCompatActivity {
                 }).start();
         
         isMenuVisible = false;
+    }
+
+    static void installWindowInsets(View root) {
+        View header = root.findViewById(R.id.readerHeader);
+        View footer = root.findViewById(R.id.readerFooter);
+        View toolbar = root.findViewById(R.id.topToolbar);
+        View bottomSheet = root.findViewById(R.id.bottomSheetContainer);
+        View pager = root.findViewById(R.id.viewPager);
+        View scroller = root.findViewById(R.id.recyclerView);
+        float density = root.getResources().getDisplayMetrics().density;
+        // Keep a stable safe area even if the first dispatch occurs in immersive mode.
+        // Listen on the page itself, independently of the reading menu's visibility.
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsetsIgnoringVisibility(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            int side = Math.round(16 * density);
+            ViewGroup.MarginLayoutParams topParams = (ViewGroup.MarginLayoutParams) toolbar.getLayoutParams();
+            topParams.topMargin = insets.top + Math.round(4 * density);
+            topParams.leftMargin = insets.left + side;
+            topParams.rightMargin = insets.right + side;
+            toolbar.setLayoutParams(topParams);
+            ViewGroup.MarginLayoutParams bottomParams = (ViewGroup.MarginLayoutParams) bottomSheet.getLayoutParams();
+            bottomParams.bottomMargin = insets.bottom + side;
+            bottomParams.leftMargin = insets.left + side;
+            bottomParams.rightMargin = insets.right + side;
+            bottomSheet.setLayoutParams(bottomParams);
+            header.setPadding(insets.left, insets.top + Math.round(12 * density), insets.right, header.getPaddingBottom());
+            footer.setPadding(insets.left + side, footer.getPaddingTop(), insets.right + side,
+                    insets.bottom + Math.round(8 * density));
+            int bodyTop = insets.top + Math.round(50 * density);
+            int bodyBottom = insets.bottom + Math.round(30 * density);
+            pager.setPadding(insets.left, bodyTop, insets.right, bodyBottom);
+            scroller.setPadding(insets.left, bodyTop, insets.right, bodyBottom);
+            return windowInsets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     private void hideSystemUI() {
