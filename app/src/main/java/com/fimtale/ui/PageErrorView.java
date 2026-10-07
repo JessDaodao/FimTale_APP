@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.fimtale.R;
 
 /** Shared, retryable content error. Navigation and previously loaded data remain intact. */
@@ -32,9 +31,9 @@ public final class PageErrorView extends FrameLayout {
             hide(); dismissedMessage = message;
         });
     }
-    /** Wrap the refresh container too, preserving SwipeRefreshLayout's cached scrolling child. */
+    /** Wrap the refresh container too, keeping the error overlay outside the translated content. */
     public static PageErrorView wrap(View content) {
-        View anchor = content.getParent() instanceof SwipeRefreshLayout ? (View) content.getParent() : content;
+        View anchor = content.getParent() instanceof PullRefreshLayout ? (View) content.getParent() : content;
         ViewGroup parent = (ViewGroup) anchor.getParent();
         int index = parent.indexOfChild(anchor);
         ViewGroup.LayoutParams params = anchor.getLayoutParams();

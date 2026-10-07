@@ -135,7 +135,8 @@ public abstract class InboxActivity extends AppCompatActivity {
         Object anchor = first >= 0 && first < adapter.rows.size() ? adapter.rows.get(first) : null;
         View firstView = layout.findViewByPosition(first);
         int offset = firstView == null ? 0 : firstView.getTop() - list.getPaddingTop();
-        adapter.rebuild();
+        if (!model.loading) PullToRefresh.finish(list);
+        if (!model.loading || !PullToRefresh.isRefreshing(list)) adapter.rebuild();
         if (anchor instanceof Inbox.Message && bottomVersion == model.scrollToBottom) {
             long id = ((Inbox.Message) anchor).id;
             for (int i = 0; i < adapter.rows.size(); i++) if (adapter.rows.get(i) instanceof Inbox.Message && ((Inbox.Message) adapter.rows.get(i)).id == id) {

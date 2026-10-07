@@ -29,7 +29,7 @@ import com.fimtale.network.ApiErrors;
 import com.fimtale.network.RetrofitClient;
 import com.fimtale.network.SearchQuery;
 import com.fimtale.ui.ShimmerSkeletonView;
-import com.fimtale.ui.SkeletonRefreshLayout;
+import com.fimtale.ui.PullRefreshLayout;
 import com.fimtale.utils.UserPreferences;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -51,7 +51,7 @@ public class SearchActivity extends AppCompatActivity {
     private MaterialToolbar toolbar;
     private TextInputEditText searchInput;
     private MaterialButton searchButton;
-    private SkeletonRefreshLayout swipeRefreshLayout;
+    private PullRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerView;
     private RecyclerView historyRecyclerView;
     private View historyPanel;
@@ -164,7 +164,6 @@ public class SearchActivity extends AppCompatActivity {
         swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> isLoading
                 || (recyclerView.getVisibility() == View.VISIBLE && recyclerView.canScrollVertically(-1)));
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            swipeRefreshLayout.setRefreshing(false);
             if (!searchInput.getText().toString().trim().isEmpty()) loadTopics(1);
             else showHistory();
         });
@@ -212,6 +211,7 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void showHistory() {
+        swipeRefreshLayout.setRefreshing(false);
         pageError.hide();
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }
         isLoading = false;
@@ -235,9 +235,10 @@ public class SearchActivity extends AppCompatActivity {
         final int requestedPage = page;
         historyPanel.setVisibility(View.GONE);
         loadingStatus.setVisibility(View.GONE);
-        loadingSkeleton.setVisibility(page == 1 ? View.VISIBLE : View.GONE);
+        boolean replacing = page == 1 && !swipeRefreshLayout.isRefreshing();
+        loadingSkeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
         loadingFooter.setLoading(page > 1);
-        recyclerView.setVisibility(page == 1 ? View.INVISIBLE : View.VISIBLE);
+        recyclerView.setVisibility(replacing ? View.INVISIBLE : View.VISIBLE);
 
         topicsCall = RetrofitClient.getInstance().getTopicList(page,
                 SearchQuery.keywords(query), SearchQuery.rank(currentSortBy));

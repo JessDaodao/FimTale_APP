@@ -20,7 +20,6 @@ import androidx.annotation.Nullable;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ConcatAdapter;
@@ -48,7 +47,7 @@ public class ArticleFragment extends Fragment {
     private com.fimtale.ui.PageErrorView pageError;
 
     private TabLayout tabLayout;
-    private SwipeRefreshLayout swipeRefreshLayout;
+    private PullRefreshLayout swipeRefreshLayout;
     private FrameLayout contentContainer;
     private ShimmerSkeletonView loadingSkeleton;
     private LoadingCardAdapter loadingFooter;
@@ -168,7 +167,6 @@ public class ArticleFragment extends Fragment {
     private void setupSwipeRefresh() {
         swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> isLoading || recyclerView.canScrollVertically(-1));
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            swipeRefreshLayout.setRefreshing(false);
             currentPage = 1;
             loadTopics();
         });
@@ -214,10 +212,10 @@ public class ArticleFragment extends Fragment {
         isLoading = true;
         final int requestedPage = currentPage;
         tvNoResults.setVisibility(View.GONE);
-        swipeRefreshLayout.setRefreshing(false);
-        loadingSkeleton.setVisibility(requestedPage == 1 ? View.VISIBLE : View.GONE);
+        boolean replacing = requestedPage == 1 && !swipeRefreshLayout.isRefreshing();
+        loadingSkeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
         loadingFooter.setLoading(requestedPage > 1);
-        recyclerView.setVisibility(requestedPage == 1 ? View.INVISIBLE : View.VISIBLE);
+        recyclerView.setVisibility(replacing ? View.INVISIBLE : View.VISIBLE);
 
         topicsCall = RetrofitClient.getInstance().getTopicList(requestedPage,
                 null, com.fimtale.network.SearchQuery.rank(currentSortBy));

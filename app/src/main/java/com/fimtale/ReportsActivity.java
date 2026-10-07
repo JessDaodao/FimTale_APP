@@ -121,7 +121,8 @@ public abstract class ReportsActivity extends AppCompatActivity {
         long nextReport = detail ? model.selected.id : 0;
         if (nextReport != displayedReport && displayedReport == 0) listPosition = list.getLayoutManager().onSaveInstanceState();
         updateHeaderLayout();
-        adapter.rebuild();
+        if (!model.loading) PullToRefresh.finish(list);
+        if (!model.loading || !PullToRefresh.isRefreshing(list)) adapter.rebuild();
         if (nextReport != displayedReport || displayedPage != model.page || displayedStatus != model.status) {
             if (nextReport == 0 && displayedReport > 0 && listPosition != null && displayedPage == model.page && displayedStatus == model.status)
                 list.getLayoutManager().onRestoreInstanceState(listPosition);

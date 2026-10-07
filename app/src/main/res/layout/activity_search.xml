@@ -59,7 +59,7 @@
             app:iconTint="?attr/colorPrimary" />
     </LinearLayout>
 
-    <com.fimtale.ui.SkeletonRefreshLayout
+    <com.fimtale.ui.PullRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -131,6 +131,6 @@
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:visibility="gone" />
         </FrameLayout>
-    </com.fimtale.ui.SkeletonRefreshLayout>
+    </com.fimtale.ui.PullRefreshLayout>
 
 </LinearLayout>

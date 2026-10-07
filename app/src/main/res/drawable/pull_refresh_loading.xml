@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright (C) 2014 The Android Open Source Project
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ Android's progress_indeterminate_material and progress_indeterminate_rotation_material
+ timings/interpolators, with ring geometry matching PullRefreshLayout: radius 12, stroke 3,
+ viewport 27. Both states scale from the same pixel-rounded outer size, without drawable insets.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="@dimen/pull_refresh_ring_size"
+            android:height="@dimen/pull_refresh_ring_size"
+            android:viewportWidth="27"
+            android:viewportHeight="27">
+            <group android:name="root" android:translateX="13.5" android:translateY="13.5">
+                <path
+                    android:name="progressBar"
+                    android:fillColor="@android:color/transparent"
+                    android:strokeColor="@android:color/white"
+                    android:strokeWidth="3"
+                    android:strokeLineCap="round"
+                    android:pathData="M0,0 m0,-12 a12,12 0 1,1 0,24 a12,12 0 1,1 0,-24"
+                    android:trimPathStart="0"
+                    android:trimPathEnd="1"
+                    android:trimPathOffset="0" />
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="progressBar">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator android:propertyName="trimPathStart"
+                    android:duration="1333" android:repeatCount="-1"
+                    android:valueFrom="0" android:valueTo="0.75" android:valueType="floatType">
+                    <aapt:attr name="android:interpolator">
+                        <pathInterpolator android:pathData="L0.5,0 C0.7,0 0.6,1 1,1" />
+                    </aapt:attr>
+                </objectAnimator>
+                <objectAnimator android:propertyName="trimPathEnd"
+                    android:duration="1333" android:repeatCount="-1"
+                    android:valueFrom="0" android:valueTo="0.75" android:valueType="floatType">
+                    <aapt:attr name="android:interpolator">
+                        <pathInterpolator android:pathData="C0.2,0 0.1,1 0.5,1 L1,1" />
+                    </aapt:attr>
+                </objectAnimator>
+                <objectAnimator android:propertyName="trimPathOffset"
+                    android:duration="1333" android:repeatCount="-1"
+                    android:valueFrom="0" android:valueTo="0.25" android:valueType="floatType"
+                    android:interpolator="@android:anim/linear_interpolator" />
+            </set>
+        </aapt:attr>
+    </target>
+    <target android:name="root">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="rotation"
+                android:duration="4444" android:repeatCount="-1"
+                android:valueFrom="0" android:valueTo="720" android:valueType="floatType"
+                android:interpolator="@android:anim/linear_interpolator" />
+        </aapt:attr>
+    </target>
+</animated-vector>

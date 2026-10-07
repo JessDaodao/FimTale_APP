@@ -72,6 +72,7 @@ public class UserDetailActivity extends AppCompatActivity {
     private TextView tvMedalsTitle;
     private ChipGroup chipGroupMedals;
     private ShimmerSkeletonView loadingSkeleton, topicsSkeleton;
+    private boolean profileLoading;
     private TextView loadError, topicsStatus;
     private com.fimtale.ui.PageErrorView pageError;
     private Call<UserDetailResponse> profileCall;
@@ -123,7 +124,7 @@ public class UserDetailActivity extends AppCompatActivity {
         com.fimtale.ui.PullToRefresh.attach(scrollView, () -> {
             loadData(currentUsername);
             loadUserTopics(currentUsername, 1);
-        }, () -> !isLoading && loadingSkeleton.getVisibility() != View.VISIBLE);
+        }, () -> !isLoading && !profileLoading);
         loadData(username);
         loadUserTopics(username, 1);
     }
@@ -218,9 +219,11 @@ public class UserDetailActivity extends AppCompatActivity {
     private void loadData(String username) {
         pageError.hide();
         if (profileCall != null) profileCall.cancel();
-        loadingSkeleton.setVisibility(View.VISIBLE);
+        profileLoading = true;
+        boolean pulling = com.fimtale.ui.PullToRefresh.isRefreshing(scrollView);
+        loadingSkeleton.setVisibility(pulling ? View.GONE : View.VISIBLE);
         loadError.setVisibility(View.GONE);
-        scrollView.setVisibility(View.INVISIBLE);
+        scrollView.setVisibility(pulling ? View.VISIBLE : View.INVISIBLE);
         profileCall = RetrofitClient.getInstance().getUserDetail(username);
         profileCall.enqueue(new Callback<UserDetailResponse>() {
             @Override
@@ -230,6 +233,7 @@ public class UserDetailActivity extends AppCompatActivity {
                     UserDetailResponse data = response.body();
                     if (data.getId() > 0) {
                         bindData(data);
+                        finishProfileLoading();
                         loadingSkeleton.setVisibility(View.GONE);
                         scrollView.setVisibility(View.VISIBLE);
                     } else {
@@ -248,7 +252,13 @@ public class UserDetailActivity extends AppCompatActivity {
         });
     }
 
+    private void finishProfileLoading() {
+        profileLoading = false;
+        if (!isLoading) com.fimtale.ui.PullToRefresh.finish(scrollView);
+    }
+
     private void showProfileLoadError() {
+        finishProfileLoading();
         loadingSkeleton.setVisibility(View.GONE);
         loadError.setVisibility(View.GONE);
         scrollView.setVisibility(View.VISIBLE);
@@ -404,7 +414,7 @@ public class UserDetailActivity extends AppCompatActivity {
         isLoading = true;
         topicsStatus.setVisibility(View.GONE);
         tvUserTopicsTitle.setVisibility(View.VISIBLE);
-        topicsSkeleton.setVisibility(View.VISIBLE);
+        topicsSkeleton.setVisibility(com.fimtale.ui.PullToRefresh.isRefreshing(scrollView) ? View.GONE : View.VISIBLE);
         topicsCall = RetrofitClient.getInstance().getUserTopics(username, "work", page);
         topicsCall.enqueue(new Callback<com.fimtale.model.UserWorksResponse>() {
             @Override public void onResponse(Call<com.fimtale.model.UserWorksResponse> call, Response<com.fimtale.model.UserWorksResponse> response) {
@@ -434,6 +444,7 @@ public class UserDetailActivity extends AppCompatActivity {
 
     private void finishTopicsLoading() {
         isLoading = false;
+        if (!profileLoading) com.fimtale.ui.PullToRefresh.finish(scrollView);
         topicsSkeleton.setVisibility(View.GONE);
     }
 

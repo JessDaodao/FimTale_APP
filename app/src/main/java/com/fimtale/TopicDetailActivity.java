@@ -114,6 +114,7 @@ public class TopicDetailActivity extends AppCompatActivity {
     private LinearLayout authorLayout;
     private ChipGroup tagChipGroup;
     private ShimmerSkeletonView loadingSkeleton;
+    private boolean detailLoading;
     private TextView loadError;
     private com.fimtale.ui.PageErrorView pageError;
     private Call<TopicDetailResponse> detailCall;
@@ -207,7 +208,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         com.fimtale.ui.PullToRefresh.attach(scrollView, () -> {
             fetchTopicDetail(currentTopicId);
             commentsSection.refresh();
-        }, () -> loadingSkeleton.getVisibility() != View.VISIBLE && commentCall == null);
+        }, () -> !detailLoading && commentCall == null);
     }
 
     private void setupViews() {
@@ -568,9 +569,11 @@ public class TopicDetailActivity extends AppCompatActivity {
     private void fetchTopicDetail(int topicId) {
         pageError.hide();
         if (detailCall != null) detailCall.cancel();
-        loadingSkeleton.setVisibility(View.VISIBLE);
+        detailLoading = true;
+        boolean pulling = com.fimtale.ui.PullToRefresh.isRefreshing(scrollView);
+        loadingSkeleton.setVisibility(pulling ? View.GONE : View.VISIBLE);
         loadError.setVisibility(View.GONE);
-        scrollView.setVisibility(View.INVISIBLE);
+        scrollView.setVisibility(pulling ? View.VISIBLE : View.INVISIBLE);
         if (editableWork == null && getSupportActionBar() != null) getSupportActionBar().setTitle("文章详情");
         readingActionsBar.setVisibility(View.INVISIBLE);
         commentMode = false;
@@ -588,6 +591,8 @@ public class TopicDetailActivity extends AppCompatActivity {
                     TopicDetailResponse data = response.body();
                     updateUI(data);
                     workActions.bind(data, token);
+                    detailLoading = false;
+                    com.fimtale.ui.PullToRefresh.finish(scrollView);
                     loadingSkeleton.setVisibility(View.GONE);
                     scrollView.setVisibility(View.VISIBLE);
                     scrollView.post(() -> { if (!isFinishing() && !isDestroyed()) commentsSection.loadIfVisible(); });
@@ -605,6 +610,8 @@ public class TopicDetailActivity extends AppCompatActivity {
     }
 
     private void showDetailLoadError(String message) {
+        detailLoading = false;
+        com.fimtale.ui.PullToRefresh.finish(scrollView);
         loadingSkeleton.setVisibility(View.GONE);
         loadError.setVisibility(View.GONE);
         scrollView.setVisibility(View.VISIBLE);

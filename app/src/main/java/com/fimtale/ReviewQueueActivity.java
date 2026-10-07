@@ -97,9 +97,12 @@ public class ReviewQueueActivity extends AppCompatActivity {
     private void render() {
         if (isFinishing() || isDestroyed()) return;
         for (RecyclerView list : lists) if (list != null && list.isComputingLayout()) { pager.post(this::render); return; }
-        for (ReviewQueueAdapter adapter : adapters) adapter.rebuild();
-        loadingSkeleton.setVisibility(model.loading ? View.VISIBLE : View.GONE);
-        pager.setVisibility(model.loading ? View.INVISIBLE : View.VISIBLE);
+        if (!model.loading) PullToRefresh.finish(pager);
+        if (!PullToRefresh.isRefreshing(pager) || !model.loading)
+            for (ReviewQueueAdapter adapter : adapters) adapter.rebuild();
+        boolean replacing = model.loading && !PullToRefresh.isRefreshing(pager);
+        loadingSkeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
+        pager.setVisibility(replacing ? View.INVISIBLE : View.VISIBLE);
         if (!model.loading && !model.needsLogin && !model.error.isEmpty())
             pageError.show(model.error, model::refresh, !model.reviews.isEmpty());
         else pageError.hide();

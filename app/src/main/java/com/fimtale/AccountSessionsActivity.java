@@ -194,7 +194,11 @@ public class AccountSessionsActivity extends AppCompatActivity {
             android.widget.Toast.makeText(this, "Token 已复制", android.widget.Toast.LENGTH_SHORT).show(); }
     }
 
-    private void setLoading(boolean loading) { progress.setVisibility(loading ? View.VISIBLE : View.GONE); }
+    private void setLoading(boolean loading) {
+        View scroll = findViewById(R.id.accountScroll);
+        if (!loading) com.fimtale.ui.PullToRefresh.finish(scroll);
+        progress.setVisibility(loading && !com.fimtale.ui.PullToRefresh.isRefreshing(scroll) ? View.VISIBLE : View.GONE);
+    }
     private void animateHeader(boolean raised) {
         if (headerRaised == raised) return;
         headerRaised = raised;

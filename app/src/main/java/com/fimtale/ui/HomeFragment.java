@@ -12,7 +12,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ConcatAdapter;
@@ -40,7 +39,7 @@ import retrofit2.Response;
 public class HomeFragment extends Fragment {
     private com.fimtale.ui.PageErrorView pageError;
 
-    private SwipeRefreshLayout swipeRefreshLayout;
+    private PullRefreshLayout swipeRefreshLayout;
     private RecyclerView homeList;
     private LinearLayout emptyStateLayout;
     private LinearLayout quickAccessLayout;
@@ -162,7 +161,6 @@ public class HomeFragment extends Fragment {
     private void setupSwipeRefresh() {
         swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> pendingHomeRequests > 0 || homeList.canScrollVertically(-1));
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            swipeRefreshLayout.setRefreshing(false);
             fetchHomePageData();
         });
     }
@@ -248,10 +246,10 @@ public class HomeFragment extends Fragment {
         for (Call<?> call : homeCalls) call.cancel();
         homeCalls.clear(); pendingHomeRequests = 3; homeError = null; pendingBanners = null;
         stopBannerAutoScroll();
-        swipeRefreshLayout.setRefreshing(false);
-        loadingSkeleton.setVisibility(View.VISIBLE);
+        boolean pulling = swipeRefreshLayout.isRefreshing();
+        loadingSkeleton.setVisibility(pulling ? View.GONE : View.VISIBLE);
         errorTextView.setVisibility(View.GONE);
-        homeList.setVisibility(View.INVISIBLE);
+        homeList.setVisibility(pulling ? View.VISIBLE : View.INVISIBLE);
         homeList.scrollToPosition(0);
         quickAccessLayout.setVisibility(View.VISIBLE);
         viewMoreButton.setVisibility(View.VISIBLE);
@@ -313,6 +311,7 @@ public class HomeFragment extends Fragment {
     private void finishHomeRequest() {
         if (--pendingHomeRequests != 0) return;
         homeCalls.clear();
+        swipeRefreshLayout.setRefreshing(false);
         displaySelectedTopics();
         if (pendingBanners != null) {
             bannerList.clear(); bannerList.addAll(pendingBanners); pendingBanners = null;

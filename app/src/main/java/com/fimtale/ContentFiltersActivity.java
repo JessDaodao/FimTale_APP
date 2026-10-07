@@ -200,7 +200,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
         blockCall.enqueue(new Callback<List<BlockedUser>>() {
             @Override public void onResponse(@NonNull Call<List<BlockedUser>> call, @NonNull Response<List<BlockedUser>> response) {
                 if (!valid(call, blockCall)) return;
-                blockCall = null; if (response.isSuccessful()) { blockedUsers = response.body() == null ? new ArrayList<>() : response.body(); renderBlocked(); }
+                blockCall = null; setLoading(false); if (response.isSuccessful()) { blockedUsers = response.body() == null ? new ArrayList<>() : response.body(); renderBlocked(); }
                 else showLoadError(ApiErrors.message(response));
             }
             @Override public void onFailure(@NonNull Call<List<BlockedUser>> call, @NonNull Throwable error) {
@@ -335,7 +335,16 @@ public class ContentFiltersActivity extends AppCompatActivity {
         });
     }
     private boolean valid(Call<?> call, Call<?> current) { return !closed && !isFinishing() && !isDestroyed() && !call.isCanceled() && call == current; }
-    private void setLoading(boolean value) { progress.setVisibility(value ? android.view.View.VISIBLE : android.view.View.GONE); findViewById(R.id.filterApply).setEnabled(!value); findViewById(R.id.filterDefault).setEnabled(!value); findViewById(R.id.filterNone).setEnabled(!value); findViewById(R.id.filterSavePreset).setEnabled(!value); }
+    private void setLoading(boolean value) {
+        View scroll = findViewById(R.id.filterScroll);
+        if (!value && userCall == null && defaultCall == null && blockCall == null && saveCall == null)
+            com.fimtale.ui.PullToRefresh.finish(scroll);
+        progress.setVisibility(value && !com.fimtale.ui.PullToRefresh.isRefreshing(scroll) ? View.VISIBLE : View.GONE);
+        findViewById(R.id.filterApply).setEnabled(!value);
+        findViewById(R.id.filterDefault).setEnabled(!value);
+        findViewById(R.id.filterNone).setEnabled(!value);
+        findViewById(R.id.filterSavePreset).setEnabled(!value);
+    }
     private void animateHeader(boolean raised) {
         if (headerRaised == raised) return;
         headerRaised = raised;

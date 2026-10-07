@@ -22,7 +22,7 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <com.fimtale.ui.SkeletonRefreshLayout
+    <com.fimtale.ui.PullRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -75,6 +75,6 @@
                 
         </FrameLayout>
 
-    </com.fimtale.ui.SkeletonRefreshLayout>
+    </com.fimtale.ui.PullRefreshLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

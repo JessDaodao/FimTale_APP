@@ -118,9 +118,10 @@ public class TagListActivity extends AppCompatActivity {
         if (tagsCall != null) tagsCall.cancel();
         isLoading = true;
         loadingStatus.setVisibility(View.GONE);
-        loadingSkeleton.setVisibility(page == 1 ? View.VISIBLE : View.GONE);
+        boolean replacing = page == 1 && !com.fimtale.ui.PullToRefresh.isRefreshing(recyclerView);
+        loadingSkeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
         loadingFooter.setLoading(page > 1);
-        recyclerView.setVisibility(page == 1 ? View.INVISIBLE : View.VISIBLE);
+        recyclerView.setVisibility(replacing ? View.INVISIBLE : View.VISIBLE);
         tagsCall = RetrofitClient.getInstance().getTags(page, keyword);
         tagsCall.enqueue(new Callback<List<TagGroup>>() {
             @Override public void onResponse(Call<List<TagGroup>> call, Response<List<TagGroup>> response) {
@@ -153,6 +154,7 @@ public class TagListActivity extends AppCompatActivity {
     }
 
     private void finishLoading() {
+        com.fimtale.ui.PullToRefresh.finish(recyclerView);
         isLoading = false;
         loadingSkeleton.setVisibility(View.GONE);
         loadingFooter.setLoading(false);

@@ -123,9 +123,10 @@ public class ArticleListFragment extends Fragment {
         isLoading = true;
         final int requestedPage = currentPage;
         errorTextView.setVisibility(View.GONE);
-        loadingSkeleton.setVisibility(requestedPage == 1 ? View.VISIBLE : View.GONE);
+        boolean replacing = requestedPage == 1 && !com.fimtale.ui.PullToRefresh.isRefreshing(recyclerView);
+        loadingSkeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
         loadingFooter.setLoading(requestedPage > 1);
-        recyclerView.setVisibility(requestedPage == 1 ? View.INVISIBLE : View.VISIBLE);
+        recyclerView.setVisibility(replacing ? View.INVISIBLE : View.VISIBLE);
         topicsCall = RetrofitClient.getInstance().getTopicList(requestedPage, null, null);
         topicsCall.enqueue(new Callback<TopicListResponse>() {
             @Override public void onResponse(Call<TopicListResponse> call, Response<TopicListResponse> response) {
@@ -151,6 +152,7 @@ public class ArticleListFragment extends Fragment {
         });
     }
     private void finishLoading() {
+        com.fimtale.ui.PullToRefresh.finish(recyclerView);
         isLoading = false;
         loadingSkeleton.setVisibility(View.GONE); loadingFooter.setLoading(false);
         recyclerView.setVisibility(View.VISIBLE);

@@ -117,9 +117,10 @@ public class FavoritesActivity extends AppCompatActivity {
         if (isLoading) return;
         isLoading = true;
         loadingStatus.setVisibility(View.GONE);
-        loadingSkeleton.setVisibility(page == 1 ? View.VISIBLE : View.GONE);
+        boolean replacing = page == 1 && !com.fimtale.ui.PullToRefresh.isRefreshing(recyclerView);
+        loadingSkeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
         loadingFooter.setLoading(page > 1);
-        recyclerView.setVisibility(page == 1 ? View.INVISIBLE : View.VISIBLE);
+        recyclerView.setVisibility(replacing ? View.INVISIBLE : View.VISIBLE);
         activeCall = RetrofitClient.getInstance().getFavorites(page);
         activeCall.enqueue(new Callback<FavoritesResponse>() {
             @Override public void onResponse(Call<FavoritesResponse> call, Response<FavoritesResponse> response) {
@@ -151,6 +152,7 @@ public class FavoritesActivity extends AppCompatActivity {
     }
 
     private void finishLoading() {
+        com.fimtale.ui.PullToRefresh.finish(recyclerView);
         isLoading = false;
         loadingSkeleton.setVisibility(View.GONE);
         loadingFooter.setLoading(false);

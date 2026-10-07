@@ -89,6 +89,7 @@ public class SiteActivity extends AppCompatActivity {
                 pageError.hide();
             }
             @Override public void onPageFinished(WebView view, String url) {
+                com.fimtale.ui.PullToRefresh.finish(webView);
                 if (pageFailed) return;
                 pageLoaded = true;
                 if (isLoginUrl(url)) openNativeLogin();
@@ -125,6 +126,7 @@ public class SiteActivity extends AppCompatActivity {
                 || "/user/login/".equals(Uri.parse(url).getPath()));
     }
     private void showPageError(String url, String message) {
+        com.fimtale.ui.PullToRefresh.finish(webView);
         if (isFinishing() || isDestroyed()) return;
         pageFailed = true; pageLoaded = false; failedUrl = url;
         pageError.show(message, () -> {

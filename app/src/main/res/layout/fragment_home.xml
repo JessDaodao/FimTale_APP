@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.HomeFragment">
 
-    <com.fimtale.ui.SkeletonRefreshLayout
+    <com.fimtale.ui.PullRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -16,7 +16,7 @@
             android:layout_width="match_parent" android:layout_height="match_parent"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             android:clipToPadding="false" android:visibility="invisible"/>
-    </com.fimtale.ui.SkeletonRefreshLayout>
+    </com.fimtale.ui.PullRefreshLayout>
 
     <com.fimtale.ui.ShimmerSkeletonView
         android:id="@+id/loadingSkeleton"

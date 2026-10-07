@@ -107,8 +107,11 @@ public class DraftsActivity extends AppCompatActivity {
     }
     private void setDraftsLoading(boolean loading) {
         this.loading = loading;
-        loadingSkeleton.setVisibility(loading ? View.VISIBLE : View.GONE);
-        findViewById(R.id.draftsList).setVisibility(loading ? View.INVISIBLE : View.VISIBLE);
+        View list = findViewById(R.id.draftsList);
+        if (!loading) com.fimtale.ui.PullToRefresh.finish(list);
+        boolean replacing = loading && !com.fimtale.ui.PullToRefresh.isRefreshing(list);
+        loadingSkeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
+        list.setVisibility(replacing ? View.INVISIBLE : View.VISIBLE);
         findViewById(R.id.draftsEmpty).setVisibility(!loading && items.isEmpty() ? View.VISIBLE : View.GONE);
         findViewById(R.id.draftsCreate).setEnabled(!loading);
     }

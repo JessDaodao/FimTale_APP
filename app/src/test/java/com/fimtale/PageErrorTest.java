@@ -17,7 +17,7 @@ import com.fimtale.network.FimTaleApiService;
 import com.fimtale.network.RetrofitClient;
 import com.fimtale.network.SiteUrls;
 import com.fimtale.ui.PageErrorView;
-import com.fimtale.ui.SkeletonRefreshLayout;
+import com.fimtale.ui.PullRefreshLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -53,6 +53,7 @@ public class PageErrorTest {
     private Object originalApi, originalUpdate;
     private final List<Request> requests = new CopyOnWriteArrayList<>();
     private volatile boolean failing = true;
+    private volatile java.util.concurrent.CountDownLatch responseGate;
     private String workContent = "正文";
     private ActivityController<? extends Activity> controller;
 
@@ -74,6 +75,11 @@ public class PageErrorTest {
                     + new com.google.gson.Gson().toJson(workContent) + "},\"chapters\":[]}";
             if (path.endsWith("get_timeline_update_count")) data = "0";
             boolean auxiliary = path.equals("/update/") || path.endsWith("get_user_auth") || path.endsWith("get_timeline_update_count");
+            java.util.concurrent.CountDownLatch gate = responseGate;
+            if (!auxiliary && gate != null) {
+                try { if (!gate.await(5, java.util.concurrent.TimeUnit.SECONDS)) throw new java.io.IOException("Fixture timed out"); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new java.io.IOException(e); }
+            }
             int code = failing && !auxiliary ? 503 : 200;
             return new okhttp3.Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(code).message("Fixture")
                     .body(ResponseBody.create(MediaType.get("application/json"), "{\"data\":" + data + ",\"msg\":\"服务器暂时不可用\"}")).build();
@@ -85,6 +91,7 @@ public class PageErrorTest {
         service.set(null, api); updateService.set(null, api);
     }
     @After public void cleanup() throws Exception {
+        if (responseGate != null) responseGate.countDown();
         if (controller != null) controller.pause().stop().destroy();
         service.set(null, originalApi); updateService.set(null, originalUpdate);
     }
@@ -121,7 +128,7 @@ public class PageErrorTest {
     @Test public void wrapperKeepsRefreshChildAndContentWhileRetryFiresOnce() {
         Context themed = new ContextThemeWrapper(context, R.style.Theme_Fimtale);
         FrameLayout host = new FrameLayout(themed);
-        SkeletonRefreshLayout refresh = new SkeletonRefreshLayout(themed, null);
+        PullRefreshLayout refresh = new PullRefreshLayout(themed, null);
         TextView content = new TextView(themed); content.setText("已加载的内容");
         refresh.addView(content); host.addView(refresh);
         PageErrorView error = PageErrorView.wrap(content);
@@ -146,6 +153,31 @@ public class PageErrorTest {
         failing = false; shownError(root).findViewById(R.id.pageErrorRetry).performClick();
         await(() -> shownError(root) == null && activity.findViewById(R.id.loadingSkeleton).getVisibility() == View.GONE);
         assertEquals(View.VISIBLE, activity.findViewById(R.id.homeList).getVisibility());
+    }
+
+    @Test public void homePullKeepsContentAndSpinnerUntilSuccessOrFailure() throws Exception {
+        failing = false;
+        MainActivity activity = launch(MainActivity.class, new Intent(context, MainActivity.class));
+        await(() -> activity.findViewById(R.id.loadingSkeleton).getVisibility() == View.GONE);
+        controller.visible(); layoutReader(activity);
+        PullRefreshLayout refresh = activity.findViewById(R.id.swipeRefreshLayout);
+        View list = activity.findViewById(R.id.homeList);
+        for (boolean failure : new boolean[]{false, true}) {
+            responseGate = new java.util.concurrent.CountDownLatch(1);
+            refresh.onNestedScrollAccepted(list, list, androidx.core.view.ViewCompat.SCROLL_AXIS_VERTICAL, androidx.core.view.ViewCompat.TYPE_TOUCH);
+            refresh.onNestedScroll(list, 0, 0, 0, -600, androidx.core.view.ViewCompat.TYPE_TOUCH, new int[2]);
+            refresh.onStopNestedScroll(list, androidx.core.view.ViewCompat.TYPE_TOUCH);
+            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(300));
+            assertTrue(refresh.isRefreshing());
+            assertEquals(View.VISIBLE, list.getVisibility());
+            assertEquals(View.GONE, activity.findViewById(R.id.loadingSkeleton).getVisibility());
+            assertTrue(list.getTranslationY() > 0);
+            failing = failure; responseGate.countDown(); responseGate = null;
+            await(() -> !refresh.isRefreshing());
+            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(300));
+            assertEquals(0f, list.getTranslationY(), .01f);
+            assertEquals(failure, shownError(activity.findViewById(android.R.id.content)) != null);
+        }
     }
     @Test public void anEmptyInlineSectionStillMeasuresAnAccessibleErrorPanel() {
         Context themed = new ContextThemeWrapper(context, R.style.Theme_Fimtale);

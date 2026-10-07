@@ -43,7 +43,7 @@ public final class TimelineFragment extends Fragment {
     private long editorVersion = EditorChanges.version();
     private UserAuth auth;
     private RecyclerView list;
-    private SkeletonRefreshLayout refresh;
+    private PullRefreshLayout refresh;
     private ShimmerSkeletonView skeleton;
     private View state, composeCard;
     private TextView stateTitle, composeHint, footerText;
@@ -77,7 +77,6 @@ public final class TimelineFragment extends Fragment {
         list.setItemAnimator(null);
         refresh.setOnChildScrollUpCallback((parent, child) -> loading || list.canScrollVertically(-1));
         refresh.setOnRefreshListener(() -> {
-            refresh.setRefreshing(false);
             load(true);
             loadAuth();
         });
@@ -259,7 +258,8 @@ public final class TimelineFragment extends Fragment {
     private void render() {
         if (list == null) return;
         boolean guest = session == null || session.isEmpty();
-        boolean replacing = !guest && loading && failedReset;
+        if (!loading && !loadingAuth) refresh.setRefreshing(false);
+        boolean replacing = !guest && loading && failedReset && !refresh.isRefreshing();
         if (!guest && error != null && !loading)
             pageError.show(error, () -> load(failedReset), !feed.items.isEmpty());
         else if (!guest && authError != null && !loading)
