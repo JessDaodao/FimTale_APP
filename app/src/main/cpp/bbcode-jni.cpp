@@ -17,7 +17,7 @@ void throwJava(JNIEnv* env, const char* type, const char* message) {
 }
 
 extern "C" JNIEXPORT jintArray JNICALL
-Java_com_fimtale_editor_BbCodeSyntax_parsePacked(JNIEnv* env, jclass, jstring source) {
+Java_com_fimtale_editor_BbCodeNative_parse(JNIEnv* env, jclass, jstring source) {
     if (source == nullptr) return env->NewIntArray(0);
     try {
         const jsize length = env->GetStringLength(source);

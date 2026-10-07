@@ -10,13 +10,13 @@ import com.fimtale.R;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
-import org.robolectric.RobolectricTestRunner;
+import com.fimtale.NativeRobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.*;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
-@RunWith(RobolectricTestRunner.class)
+@RunWith(NativeRobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
