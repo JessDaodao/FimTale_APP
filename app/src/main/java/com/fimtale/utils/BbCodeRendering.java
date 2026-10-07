@@ -10,7 +10,6 @@ import android.text.Spanned;
 import android.text.SpannableStringBuilder;
 import android.text.style.*;
 import android.view.View;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.core.graphics.ColorUtils;
@@ -18,14 +17,12 @@ import com.fimtale.model.ChapterResponse;
 import com.fimtale.model.CommentResponse;
 import com.fimtale.network.RetrofitClient;
 import com.fimtale.network.SiteUrls;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import io.noties.markwon.*;
 import io.noties.markwon.core.spans.*;
 import io.noties.markwon.ext.tables.*;
 import io.noties.markwon.html.*;
 import io.noties.markwon.html.tag.SimpleTagHandler;
 import io.noties.markwon.image.glide.GlideImagesPlugin;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -85,12 +82,13 @@ public final class BbCodeRendering {
                             case "hr": spans.add(new ThematicBreakSpan(config.theme())); break;
                             case "th": spans.add(new StyleSpan(android.graphics.Typeface.BOLD)); break;
                         }
-                        if (attrs.containsKey("data-hidden")) spans.add(new ClickableSpan() {
-                            @Override public void onClick(View widget) {
-                                String raw = new String(Base64.getDecoder().decode(attrs.get("data-hidden")), StandardCharsets.UTF_8);
-                                showContent(widget.getContext(), attrs.get("data-title"), raw);
-                            }
-                        });
+                        if (attrs.containsKey("data-collapse")) {
+                            String title = attrs.getOrDefault("data-title", "点击展开");
+                            String source = new String(Base64.getDecoder().decode(attrs.get("data-collapse")),
+                                    java.nio.charset.StandardCharsets.UTF_8);
+                            spans.add(new CollapseSpan(title, source));
+                            spans.add(new CollapseButtonSpan(context, title));
+                        }
                         if (attrs.containsKey("data-ref")) spans.add(new ClickableSpan() {
                             @Override public void onClick(View widget) { openReference(widget.getContext(), attrs.get("data-ref")); }
                         });
@@ -163,18 +161,6 @@ public final class BbCodeRendering {
         @Override public int getLeadingMargin(boolean first) { return first ? firstMargin : 0; }
         @Override public void drawLeadingMargin(android.graphics.Canvas c, android.graphics.Paint p, int x, int dir,
                 int top, int baseline, int bottom, CharSequence text, int start, int end, boolean first, Layout layout) {}
-    }
-
-    private static void showContent(Context context, String title, String source) {
-        TextView text = new TextView(context);
-        int padding = (int) (20 * context.getResources().getDisplayMetrics().density);
-        text.setPadding(padding, padding, padding, padding);
-        text.setTextSize(16);
-        ScrollView scroll = new ScrollView(context); scroll.addView(text);
-        Markwon renderer = create(context);
-        setText(renderer, text, source);
-        SpoilerSpan.observe(new MaterialAlertDialogBuilder(context).setTitle(title).setView(scroll)
-                .setPositiveButton("关闭", null).show().getWindow());
     }
 
     private static boolean alive(Context context) {

@@ -72,8 +72,7 @@ public final class BbCode {
                 for (int i = stack.size() - 1; i >= match; i--) {
                     Tag tag = stack.remove(i);
                     tag.closed = i == match || tag.name.equals("*");
-                    if (tag.name.equals("collapse"))
-                        tag.body = source.substring(tag.bodyStart, matcher.start());
+                    if (tag.name.equals("collapse")) tag.body = source.substring(tag.bodyStart, matcher.start());
                 }
                 continue;
             }
@@ -140,13 +139,13 @@ public final class BbCode {
                 if (value.equalsIgnoreCase("smaller")) style.size = Math.max(-8, style.size - 1);
             }
             if (name.equals("font") && value.matches("[\\p{L} ,_-]{1,80}")) style.font = value;
-            if (name.equals("collapse")) {
-                String title = value.isEmpty() ? "点击展开" : value;
-                String encoded = Base64.getEncoder().encodeToString(tag.body.getBytes(StandardCharsets.UTF_8));
-                String control = "<span" + attribute("data-hidden", encoded) + attribute("data-title", title)
-                        + ">" + escape(title) + "</span>";
-                return "<p>" + control + "</p>";
-            }
+        }
+        if (tag.closed && name.equals("collapse")) {
+            String title = value.trim().isEmpty() ? "点击展开" : value.replace('\n', ' ');
+            String encoded = Base64.getEncoder().encodeToString(tag.body.getBytes(StandardCharsets.UTF_8));
+            // The body is rendered only in its bottom sheet, never in the surrounding article.
+            return "<p><span data-collapse=\"" + encoded + "\"" + attribute("data-title", title)
+                    + ">" + escape(title) + "</span></p>";
         }
         StringBuilder children = new StringBuilder();
         for (Tag child : tag.children) {

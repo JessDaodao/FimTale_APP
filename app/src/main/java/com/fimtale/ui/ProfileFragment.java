@@ -85,7 +85,6 @@ public class ProfileFragment extends Fragment {
 
         setupButtons();
         setupEmptyState();
-        PullToRefresh.attach(view.findViewById(R.id.profileScroll), this::loadContent, () -> isAdded());
         pageError = PageErrorView.wrap(view.findViewById(R.id.profileScroll));
 
         requireActivity().addMenuProvider(new MenuProvider() {

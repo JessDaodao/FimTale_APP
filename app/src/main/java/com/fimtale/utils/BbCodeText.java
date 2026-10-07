@@ -118,6 +118,7 @@ public final class BbCodeText {
     public static void prepare(CharSequence text, TextPaint paint, int width) {
         if (!(text instanceof Spanned) || width <= 1) return;
         Spanned spans = (Spanned) text;
+        CollapseButtonSpan.prepare(text, width);
         for (BbCodeRendering.IndentSpan indent : spans.getSpans(0, spans.length(), BbCodeRendering.IndentSpan.class)) indent.prepare(paint.getTextSize(), width);
         TableRowSpan[] rows = spans.getSpans(0, spans.length(), TableRowSpan.class);
         if (rows.length == 0) return;
@@ -125,7 +126,14 @@ public final class BbCodeText {
         // including on font changes at the same width, so pagination sees the actual row height.
         Bitmap scratch = Bitmap.createBitmap(width + 1, 1, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(scratch);
-        for (TableRowSpan row : rows) row.draw(canvas, new SpannedString(" "), 0, 1, 0, 0, 0, 0, paint);
+        for (TableRowSpan row : rows) {
+            row.draw(canvas, new SpannedString(" "), 0, 1, 0, 0, 0, 0, paint);
+            for (int x = 0; row.cellWidth() > 0; x += row.cellWidth()) {
+                android.text.Layout cell = row.findLayoutForHorizontalOffset(x);
+                if (cell == null) break;
+                CollapseButtonSpan.prepare(cell.getText(), Math.max(1, cell.getWidth() - 1));
+            }
+        }
         scratch.recycle();
         scratch = Bitmap.createBitmap(width, 1, Bitmap.Config.ARGB_8888); canvas = new Canvas(scratch);
         for (TableRowSpan row : rows) row.draw(canvas, new SpannedString(" "), 0, 1, 0, 0, 0, 0, paint);

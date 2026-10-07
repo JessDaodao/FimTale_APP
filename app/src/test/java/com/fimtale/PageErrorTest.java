@@ -53,6 +53,7 @@ public class PageErrorTest {
     private Object originalApi, originalUpdate;
     private final List<Request> requests = new CopyOnWriteArrayList<>();
     private volatile boolean failing = true;
+    private String workContent = "正文";
     private ActivityController<? extends Activity> controller;
 
     @Before public void setup() throws Exception {
@@ -69,7 +70,8 @@ public class PageErrorTest {
             String data = path.endsWith("get_timeline") || path.endsWith("get_review_entries")
                     || path.endsWith("list_tags") || path.endsWith("get_active_sessions") ? "[]" : "{\"items\":[],\"total\":0}";
             if (path.endsWith("get_user_auth")) data = "{\"user_id\":9,\"qualify_status\":1}";
-            if (path.endsWith("get_work")) data = "{\"work\":{\"id\":42,\"title\":\"测试文章\",\"preface\":\"正文\"},\"chapters\":[]}";
+            if (path.endsWith("get_work")) data = "{\"work\":{\"id\":42,\"title\":\"测试文章\",\"preface\":"
+                    + new com.google.gson.Gson().toJson(workContent) + "},\"chapters\":[]}";
             if (path.endsWith("get_timeline_update_count")) data = "0";
             boolean auxiliary = path.equals("/update/") || path.endsWith("get_user_auth") || path.endsWith("get_timeline_update_count");
             int code = failing && !auxiliary ? 503 : 200;
@@ -221,6 +223,89 @@ public class PageErrorTest {
     @Test public void editorLoadFailureUsesRetryScreen() throws Exception { assertPageError(EditorActivity.class, EditorActivity.workIntent(context, 42)); }
     @Test public void readerLoadFailureUsesRetryScreen() throws Exception { assertPageError(ReaderActivity.class,
             new Intent(context, ReaderActivity.class).putExtra(ReaderActivity.EXTRA_WORK_ID, 42).putExtra(ReaderActivity.EXTRA_CHAPTER_ID, 101)); }
+
+    @Test public void readerCollapseOpensASheetWithoutChangingEitherReadingMode() throws Exception {
+        failing = false;
+        workContent = "前文[collapse=展开标题]" + "长篇折叠正文。\n".repeat(150) + "[/collapse]尾文";
+        ReaderActivity activity = launch(ReaderActivity.class, new Intent(context, ReaderActivity.class)
+                .putExtra(ReaderActivity.EXTRA_WORK_ID, 42).putExtra(ReaderActivity.EXTRA_CHAPTER_ID, 0));
+        Field ready = ReaderActivity.class.getDeclaredField("contentReady"); ready.setAccessible(true);
+        await(() -> {
+            try { return ready.getBoolean(activity); }
+            catch (IllegalAccessException error) { throw new AssertionError(error); }
+        });
+        controller.visible();
+        java.lang.reflect.Method mode = ReaderActivity.class.getDeclaredMethod("updatePageMode", boolean.class);
+        mode.setAccessible(true); mode.invoke(activity, false);
+        layoutReader(activity);
+        int collapsedPages = readerPages(activity, "pages").size();
+        String originalPages = readerText(activity, "pages");
+        TextView titleView = collapseView(activity.findViewById(android.R.id.content));
+        assertNotNull(titleView);
+        clickCollapse(titleView);
+        layoutReader(activity);
+        android.app.Dialog sheet = org.robolectric.shadows.ShadowDialog.getLatestDialog();
+        assertTrue(sheet instanceof com.google.android.material.bottomsheet.BottomSheetDialog);
+        assertTrue(((TextView) sheet.findViewById(R.id.collapseSheetContent)).getText().toString().contains("长篇折叠正文"));
+        assertEquals(collapsedPages, readerPages(activity, "pages").size());
+        assertEquals(originalPages, readerText(activity, "pages"));
+        sheet.dismiss();
+        java.lang.reflect.Method font = ReaderActivity.class.getDeclaredMethod("updateFontSize", float.class);
+        Field fontSize = ReaderActivity.class.getDeclaredField("currentFontSize"); fontSize.setAccessible(true);
+        fontSize.setFloat(activity, 24f);
+        font.setAccessible(true); font.invoke(activity, 24f);
+        mode.invoke(activity, true); layoutReader(activity);
+        assertFalse(readerText(activity, "pages").contains("长篇折叠正文"));
+        titleView = collapseView(activity.findViewById(android.R.id.content));
+        assertNotNull(titleView);
+        clickCollapse(titleView); layoutReader(activity);
+        sheet = org.robolectric.shadows.ShadowDialog.getLatestDialog();
+        assertTrue(sheet instanceof com.google.android.material.bottomsheet.BottomSheetDialog);
+        assertTrue(sheet.isShowing());
+        assertFalse(readerText(activity, "pages").contains("长篇折叠正文"));
+        assertFalse(readerText(activity, "verticalPages").contains("长篇折叠正文"));
+        assertTrue(readerText(activity, "pages").contains("尾文"));
+        sheet.findViewById(R.id.collapseSheetClose).performClick();
+        assertFalse(sheet.isShowing());
+        mode.invoke(activity, false); layoutReader(activity);
+        assertEquals(collapsedPages, readerPages(activity, "pages").size());
+    }
+
+    private void layoutReader(Activity activity) {
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(100));
+        View root = activity.getWindow().getDecorView();
+        root.measure(View.MeasureSpec.makeMeasureSpec(360, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, 360, 800);
+    }
+    private TextView collapseView(View view) {
+        if (view.getVisibility() != View.VISIBLE) return null;
+        if (view instanceof TextView && ((TextView) view).getText() instanceof android.text.Spanned) {
+            android.text.Spanned text = (android.text.Spanned) ((TextView) view).getText();
+            if (text.getSpans(0, text.length(), com.fimtale.utils.CollapseSpan.class).length > 0) return (TextView) view;
+        }
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
+            TextView found = collapseView(((ViewGroup) view).getChildAt(i));
+            if (found != null) return found;
+        }
+        return null;
+    }
+    private void clickCollapse(TextView view) {
+        android.text.Spanned text = (android.text.Spanned) view.getText();
+        text.getSpans(0, text.length(), com.fimtale.utils.CollapseSpan.class)[0].onClick(view);
+    }
+    private List<?> readerPages(ReaderActivity activity, String name) throws Exception {
+        Field field = ReaderActivity.class.getDeclaredField(name); field.setAccessible(true);
+        return (List<?>) field.get(activity);
+    }
+    private String readerText(ReaderActivity activity, String name) throws Exception {
+        StringBuilder result = new StringBuilder();
+        for (Object page : readerPages(activity, name)) {
+            Field field = page.getClass().getDeclaredField("content"); field.setAccessible(true);
+            Object content = field.get(page); if (content != null) result.append(content);
+        }
+        return result.toString();
+    }
     @Test public void siteOnlyShowsMainFrameFailuresAndRetriesTheFailedUrl() {
         SiteActivity activity = launch(SiteActivity.class, new Intent(context, SiteActivity.class).putExtra(SiteActivity.EXTRA_PATH, "/channel/7"));
         android.webkit.WebView web = activity.findViewById(R.id.site_webview);

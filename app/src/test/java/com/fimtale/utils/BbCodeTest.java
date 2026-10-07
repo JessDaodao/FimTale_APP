@@ -49,15 +49,16 @@ public class BbCodeTest {
         assertTrue(BbCode.toMarkdown("[spoiler]unfinished").contains("[spoiler]unfinished"));
         assertFalse(BbCode.toMarkdown("[spoiler][/spoiler]").contains("data-hidden"));
     }
-    @Test public void hiddenBlocksRetainSourceWithoutLoadingImages() {
+    @Test public void hiddenBlocksRetainSourceForTheSheetWithoutRenderingTheirBody() {
         String raw = "[b]秘密[/b][img]https://x.test/secret.png[/img]";
-        String html = BbCode.toMarkdown("[collapse=说明][spoiler]" + raw + "[/spoiler][/collapse]");
+        String source = "[collapse=说明][spoiler]" + raw + "[/spoiler][/collapse]";
+        String html = BbCode.toMarkdown(source);
         assertFalse(html.contains("秘密"));
         assertFalse(html.contains("<img"));
-        Matcher encoded = Pattern.compile("data-hidden=\"([^\"]*)\"").matcher(html);
+        Matcher encoded = Pattern.compile("data-collapse=\"([^\"]*)\"").matcher(html);
         assertTrue(encoded.find());
-        assertEquals("[spoiler]" + raw + "[/spoiler]", new String(Base64.getDecoder().decode(encoded.group(1)), StandardCharsets.UTF_8));
         assertTrue(html.contains("说明</span>"));
+        assertEquals("[spoiler]" + raw + "[/spoiler]", new String(Base64.getDecoder().decode(encoded.group(1)), StandardCharsets.UTF_8));
     }
     @Test public void styleAttributesCannotInjectHtmlOrCss() {
         String html = BbCode.toMarkdown("[color=red;background:url(x)]a[/color][size=9999]b[/size][bg-color=orange]c[/bg-color][indent=21.0pt]d[/indent]");

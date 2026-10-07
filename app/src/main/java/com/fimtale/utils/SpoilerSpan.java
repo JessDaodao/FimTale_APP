@@ -195,6 +195,7 @@ public final class SpoilerSpan extends ClickableSpan {
     private static ClickableSpan clickableAt(Layout layout, float x, int y, Set<SpoilerSpan> touched) {
         if (!(layout.getText() instanceof Spanned) || y < 0 || y >= layout.getHeight()) return null;
         int line = layout.getLineForVertical(y);
+        Spanned text = (Spanned) layout.getText();
         if (x < layout.getLineLeft(line) || x >= layout.getLineRight(line)) return null;
         int offset = layout.getOffsetForHorizontal(line, x);
         // Android returns the nearest caret. Include the trailing half of each glyph.
@@ -202,7 +203,6 @@ public final class SpoilerSpan extends ClickableSpan {
             float previous = layout.getPrimaryHorizontal(offset - 1), current = layout.getPrimaryHorizontal(offset);
             if (x >= Math.min(previous, current) && x < Math.max(previous, current)) offset--;
         }
-        Spanned text = (Spanned) layout.getText();
         ClickableSpan link = null;
         SpoilerSpan hidden = null;
         int hiddenLength = -1;

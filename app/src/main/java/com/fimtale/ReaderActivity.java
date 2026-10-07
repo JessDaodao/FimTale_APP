@@ -183,19 +183,15 @@ public class ReaderActivity extends AppCompatActivity {
     private SharedPreferences prefs;
     private Markwon markwon;
 
-    private String fullChapterContent = "加载中...";
     private String chapterTitle = "";
     private List<ChapterMenuItem> chapterList = new ArrayList<>();
     private List<ChapterMenuItem> filteredChapterList = new ArrayList<>();
     private ChapterListAdapter chapterListAdapter;
     
     private boolean isLoadingChapter = false;
-    private Call<TopicDetailResponse> refreshWorkCall;
-    private Call<com.fimtale.model.ChapterResponse> refreshChapterCall;
     private boolean canTriggerChapterChange = false;
     private GestureDetector gestureDetector;
 
-    private List<ContentSegment> parsedSegments = new ArrayList<>();
     private BottomSheetDialog readerCommentsSheet;
     private ReaderCommentsPanel readerCommentsSheetPanel;
 
@@ -206,13 +202,11 @@ public class ReaderActivity extends AppCompatActivity {
     private static class LoadedChapter {
         final int id;
         final String title;
-        final String content;
         final List<ContentSegment> segments;
 
-        LoadedChapter(int id, String title, String content, List<ContentSegment> segments) {
+        LoadedChapter(int id, String title, List<ContentSegment> segments) {
             this.id = id;
             this.title = title == null ? "" : title;
-            this.content = content == null ? "" : content;
             this.segments = segments == null ? new ArrayList<>() : segments;
         }
     }
@@ -270,9 +264,6 @@ public class ReaderActivity extends AppCompatActivity {
 
         viewPager = findViewById(R.id.viewPager);
         recyclerView = findViewById(R.id.recyclerView);
-        com.fimtale.ui.PullToRefresh.attach(findViewById(R.id.readerContent), this::refreshReading,
-                () -> !isLoadingChapter && !isMenuVisible && refreshWorkCall == null && refreshChapterCall == null,
-                this::readerCanScrollUp);
         pageError = com.fimtale.ui.PageErrorView.wrap(findViewById(R.id.readerContent));
         menuOverlay = findViewById(R.id.menuOverlay);
         dimLayer = findViewById(R.id.dimLayer);
@@ -666,72 +657,6 @@ public class ReaderActivity extends AppCompatActivity {
         fetchChapterContent(topicId, false);
     }
 
-    private boolean readerCanScrollUp() {
-        if (recyclerView.getVisibility() == View.VISIBLE) return recyclerView.canScrollVertically(-1);
-        RecyclerView pagesView = (RecyclerView) viewPager.getChildAt(0);
-        RecyclerView.ViewHolder page = pagesView.findViewHolderForAdapterPosition(viewPager.getCurrentItem());
-        return page != null && page.itemView.canScrollVertically(-1);
-    }
-
-    private void refreshReading() {
-        pageError.hide();
-        final int chapterId = currentTopicId;
-        Toast.makeText(this, "正在刷新章节", Toast.LENGTH_SHORT).show();
-        refreshWorkCall = RetrofitClient.getInstance().getWork(rootTopicId);
-        refreshWorkCall.enqueue(new Callback<TopicDetailResponse>() {
-            @Override public void onResponse(Call<TopicDetailResponse> call, Response<TopicDetailResponse> response) {
-                if (isDestroyed() || isFinishing() || call != refreshWorkCall) return;
-                refreshWorkCall = null;
-                TopicDetailResponse data = response.body();
-                if (!response.isSuccessful() || data == null || data.getTopicInfo() == null) { refreshReadingFailed(); return; }
-                applyNavigation(data);
-                CacheManager.getInstance(ReaderActivity.this).cacheChapterMenu(rootTopicId, data);
-                if (chapterId == 0) {
-                    TopicInfo work = data.getTopicInfo();
-                    replaceRefreshedChapter(createLoadedChapter(0, work.getTitle(), work.getContent()));
-                    return;
-                }
-                refreshChapterCall = RetrofitClient.getInstance().getChapter(chapterId);
-                refreshChapterCall.enqueue(new Callback<com.fimtale.model.ChapterResponse>() {
-                    @Override public void onResponse(Call<com.fimtale.model.ChapterResponse> chapterCall, Response<com.fimtale.model.ChapterResponse> response) {
-                        if (isDestroyed() || isFinishing() || chapterCall != refreshChapterCall) return;
-                        refreshChapterCall = null;
-                        com.fimtale.model.ChapterResponse data = response.body();
-                        if (!response.isSuccessful() || data == null || data.chapter == null || data.chapter.workId != rootTopicId) {
-                            refreshReadingFailed(); return;
-                        }
-                        CacheManager.getInstance(ReaderActivity.this).cacheChapter(data.chapter.id, rootTopicId,
-                                data.chapter.id, data.chapter.title, data.chapter.content, null);
-                        replaceRefreshedChapter(createLoadedChapter(data.chapter.id, data.chapter.title, data.chapter.content));
-                    }
-                    @Override public void onFailure(Call<com.fimtale.model.ChapterResponse> call, Throwable error) {
-                        if (isDestroyed() || isFinishing() || call != refreshChapterCall) return;
-                        refreshChapterCall = null; refreshReadingFailed();
-                    }
-                });
-            }
-            @Override public void onFailure(Call<TopicDetailResponse> call, Throwable error) {
-                if (isDestroyed() || isFinishing() || call != refreshWorkCall) return;
-                refreshWorkCall = null; refreshReadingFailed();
-            }
-        });
-    }
-
-    private void replaceRefreshedChapter(LoadedChapter chapter) {
-        int position = indexOfLoadedChapter(chapter.id);
-        if (position < 0) return; // The reader may have navigated to a different branch during the request.
-        loadedChapters.set(position, chapter);
-        if (chapter.id == currentTopicId) {
-            contentReady = true;
-            chapterTitle = chapter.title; fullChapterContent = chapter.content; parsedSegments = chapter.segments;
-            topToolbar.setTitle(chapterTitle); tvChapterTitle.setText(chapterTitle);
-        }
-        rebuildReaderContent(true);
-    }
-
-    private void refreshReadingFailed() {
-        pageError.show("暂时无法刷新章节，已保留当前阅读内容。", this::refreshReading, contentReady);
-    }
     
     private TopicDetailResponse workData;
     private final com.fimtale.editor.AuthoringAccess editorAccess = new com.fimtale.editor.AuthoringAccess(this);
@@ -793,7 +718,6 @@ public class ReaderActivity extends AppCompatActivity {
         if (loadedChapters.isEmpty()) {
             isLoadingChapter = true;
             contentReady = false;
-            fullChapterContent = "加载中...";
             if (viewPager.getVisibility() == View.VISIBLE) calculatePages(); else prepareVerticalContent();
         }
         requestChapter(topicId, true, scrollToEnd);
@@ -805,9 +729,9 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private LoadedChapter createLoadedChapter(int id, String title, String content) {
-        String markdown = com.fimtale.utils.BbCode.toMarkdown(content == null ? "" : content);
-        if (markdown.isEmpty()) markdown = "无内容";
-        return new LoadedChapter(id, title, markdown, parseSegments(markdown));
+        String source = content == null || content.isEmpty() ? "无内容" : content;
+        Spanned rendered = BbCodeText.normalizeTables(markwon.toMarkdown(com.fimtale.utils.BbCode.toMarkdown(source)));
+        return new LoadedChapter(id, title, parseSegments(rendered));
     }
 
     private void requestChapter(int chapterId, boolean activate, boolean scrollToEnd) {
@@ -869,8 +793,6 @@ public class ReaderActivity extends AppCompatActivity {
         currentPostId = chapter.id;
         currentTopicId = chapter.id;
         currentProgress = 0;
-        fullChapterContent = chapter.content;
-        parsedSegments = chapter.segments;
         topToolbar.setTitle(chapterTitle);
         tvChapterTitle.setText(chapterTitle);
         rebuildReaderContent(false);
@@ -1037,8 +959,6 @@ public class ReaderActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if (refreshWorkCall != null) { refreshWorkCall.cancel(); refreshWorkCall = null; }
-        if (refreshChapterCall != null) { refreshChapterCall.cancel(); refreshChapterCall = null; }
         if (moreMenu != null) moreMenu.dismiss();
         if (readerCommentsSheetPanel != null) readerCommentsSheetPanel.close();
         if (readerCommentsSheet != null) readerCommentsSheet.dismiss();
@@ -1192,8 +1112,7 @@ public class ReaderActivity extends AppCompatActivity {
         prefs.edit().putFloat("reader_font_size", currentFontSize).apply();
     }
 
-    private List<ContentSegment> parseSegments(String html) {
-        Spanned rendered = BbCodeText.normalizeTables(markwon.toMarkdown(html));
+    private List<ContentSegment> parseSegments(Spanned rendered) {
         List<ContentSegment> segments = new ArrayList<>();
         for (BbCodeText.Segment segment : BbCodeText.segments(rendered)) {
             segments.add(new ContentSegment(segment.image == null ? ReaderPage.TYPE_TEXT : ReaderPage.TYPE_IMAGE,
@@ -1208,7 +1127,7 @@ public class ReaderActivity extends AppCompatActivity {
         chapterVerticalIndices.clear();
         cachedWeights = null;
         
-        if (fullChapterContent.equals("加载中...")) {
+        if (loadedChapters.isEmpty()) {
             verticalPages.add(new ReaderPage(ReaderPage.TYPE_LOADING, null, currentTopicId));
             if (recyclerAdapter != null) {
                 recyclerAdapter.notifyDataSetChanged();
@@ -1371,7 +1290,7 @@ public class ReaderActivity extends AppCompatActivity {
         int width = viewPager.getWidth();
         int height = viewPager.getHeight();
 
-        if (fullChapterContent.equals("加载中...")) {
+        if (loadedChapters.isEmpty()) {
             pages.clear();
             pages.add(new ReaderPage(ReaderPage.TYPE_LOADING, null, currentTopicId));
             if (adapter != null) {

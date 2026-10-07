@@ -123,7 +123,7 @@ public class ReportDeviceTest {
         try { Field field = instance.getClass().getDeclaredField(name); field.setAccessible(true); return field.get(instance); }
         catch (ReflectiveOperationException error) { throw new AssertionError(error); }
     }
-    @Test public void detailPagesAndReaderSupportPullRefreshAndKeepTextOnFailure() throws Exception {
+    @Test public void detailPagesSupportPullRefresh() throws Exception {
         Intent work = new Intent(instrumentation.getTargetContext(), TopicDetailActivity.class).putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, 71323);
         try (ActivityScenario<TopicDetailActivity> scenario = ActivityScenario.launch(work)) {
             await(scenario, activity -> "举报测试文章".contentEquals(activity.getSupportActionBar().getTitle()));
@@ -135,19 +135,6 @@ public class ReportDeviceTest {
             await(scenario, activity -> "测试用户".contentEquals(((TextView) activity.findViewById(R.id.tvUsername)).getText()));
             int before = userReads.get(); pull(scenario, R.id.scrollView);
             await(scenario, activity -> userReads.get() > before && activity.findViewById(R.id.scrollView).isShown());
-        }
-        Intent reader = new Intent(instrumentation.getTargetContext(), ReaderActivity.class)
-                .putExtra(ReaderActivity.EXTRA_WORK_ID, 71323).putExtra(ReaderActivity.EXTRA_CHAPTER_ID, 0);
-        try (ActivityScenario<ReaderActivity> scenario = ActivityScenario.launch(reader)) {
-            await(scenario, activity -> Boolean.TRUE.equals(field(activity, "contentReady")));
-            scenario.onActivity(activity -> activity.findViewById(R.id.guideOverlay).setVisibility(android.view.View.GONE));
-            preface = "刷新后的章节内容";
-            pull(scenario, R.id.readerContent);
-            await(scenario, activity -> String.valueOf(field(activity, "fullChapterContent")).contains(preface));
-            int before = workReads.get(); workStatus = 503;
-            pull(scenario, R.id.readerContent);
-            await(scenario, activity -> workReads.get() > before && field(activity, "refreshWorkCall") == null);
-            scenario.onActivity(activity -> assertTrue(String.valueOf(field(activity, "fullChapterContent")).contains(preface)));
         }
         assertTrue(submissions.isEmpty());
     }
