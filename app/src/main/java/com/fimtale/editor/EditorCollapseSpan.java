@@ -16,16 +16,18 @@ final class EditorCollapseSpan implements LeadingMarginSpan {
     final RectF bounds = new RectF();
     final RectF titleBounds = new RectF();
     final int headerHeight;
+    final BbCodeSyntax.Node node;
     private final BbCodeEditText editor;
     final int padding;
-    private final int headerOffset, sourceStart, sourceEnd;
+    private final int headerOffset;
     private final TextPaint titlePaint;
 
-    EditorCollapseSpan(BbCodeEditText editor, String title, int headerOffset, int sourceStart, int sourceEnd) {
+    EditorCollapseSpan(BbCodeEditText editor, BbCodeSyntax.Node node, int headerOffset) {
         this.editor = editor;
+        this.node = node;
+        String title = node.argument;
         this.title = title.trim().isEmpty() ? "点击展开" : VisualEditing.decodeEntities(title).replace('\n', ' ');
         this.headerOffset = headerOffset;
-        this.sourceStart = sourceStart; this.sourceEnd = sourceEnd;
         padding = Math.max(1, Math.round(12 * editor.getResources().getDisplayMetrics().density));
         titlePaint = new TextPaint(editor.getPaint());
         titlePaint.setTypeface(Typeface.create(editor.getTypeface(), Typeface.BOLD));
@@ -37,7 +39,7 @@ final class EditorCollapseSpan implements LeadingMarginSpan {
 
     @Override public void drawLeadingMargin(Canvas canvas, Paint paint, int x, int dir, int top, int baseline,
             int bottom, CharSequence text, int start, int end, boolean first, Layout layout) {
-        int from = sourceStart, to = sourceEnd;
+        int from = node.start, to = node.end;
         if (start >= to || end <= from) return;
         int firstLine = layout.getLineForOffset(from);
         int lastLine = layout.getLineForOffset(to - 1);
@@ -50,11 +52,6 @@ final class EditorCollapseSpan implements LeadingMarginSpan {
         Paint box = new Paint(Paint.ANTI_ALIAS_FLAG);
         box.setColor(ColorUtils.setAlphaComponent(editor.getCurrentTextColor(), 12));
         canvas.drawRoundRect(bounds, padding, padding, box);
-        box.setStyle(Paint.Style.STROKE);
-        box.setStrokeWidth(Math.max(1, editor.getResources().getDisplayMetrics().density));
-        box.setColor(ColorUtils.setAlphaComponent(editor.getCurrentTextColor(), 48));
-        canvas.drawRoundRect(bounds, padding, padding, box);
-        canvas.drawLine(bounds.left + padding, titleBounds.bottom, bounds.right - padding, titleBounds.bottom, box);
         titlePaint.setColor(editor.getCurrentTextColor());
         CharSequence label = TextUtils.ellipsize("▾ " + title, titlePaint,
                 Math.max(1, bounds.width() - padding * 2), TextUtils.TruncateAt.END);

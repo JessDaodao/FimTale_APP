@@ -10,6 +10,7 @@ import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.DrawableWrapper;
 import android.text.Editable;
 import android.text.Layout;
 import android.text.Spanned;
@@ -110,6 +111,8 @@ public final class BbCodeEditText extends AppCompatEditText {
 
     public BbCodeEditText(Context context, AttributeSet attrs) {
         super(context, attrs);
+        Drawable cursor = getTextCursorDrawable();
+        if (cursor != null) setTextCursorDrawable(new CollapseCursorDrawable(cursor));
         addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { scheduleRender(); }
@@ -546,6 +549,20 @@ public final class BbCodeEditText extends AppCompatEditText {
         super.onDraw(canvas);
         if (tableCellListener != null) tableCellListener.layoutChanged();
     }
+    @Override public int getOffsetForPosition(float x, float y) {
+        int offset = super.getOffsetForPosition(x, y);
+        if (sourceVisible || getText() == null || offset < 0) return offset;
+        x += getScrollX() - getTotalPaddingLeft(); y += getScrollY() - getTotalPaddingTop();
+        for (EditorCollapseSpan frame : getText().getSpans(0, length(), EditorCollapseSpan.class)) {
+            if (!frame.bounds.contains(x, y) || frame.titleBounds.contains(x, y)) continue;
+            BbCodeSyntax.Node node = frame.node;
+            // Hidden delimiters share the body's visual start/end. A tap inside the
+            // frame must place the caret inside them, including for an empty block.
+            if (offset >= node.start && offset <= node.end)
+                offset = Math.max(node.contentStart, Math.min(offset, node.contentEnd));
+        }
+        return offset;
+    }
     @Override public boolean onTouchEvent(MotionEvent event) {
         if (!sourceVisible && linkClickListener != null && isEnabled()) {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
@@ -728,14 +745,10 @@ public final class BbCodeEditText extends AppCompatEditText {
                     for (EditorCollapseSpan parent : text.getSpans(node.start, node.start, EditorCollapseSpan.class))
                         if (text.getSpanStart(parent) >= firstLine) headerOffset += parent.headerHeight;
                     int lastLine = source.indexOf('\n', node.end);
-                    EditorCollapseSpan frame = new EditorCollapseSpan(this, node.argument, headerOffset, node.start, node.end);
+                    EditorCollapseSpan frame = new EditorCollapseSpan(this, node, headerOffset);
                     span(text, frame, firstLine, lastLine < 0 ? source.length() : lastLine + 1);
-                    span(text, (LineHeightSpan) (value, from, to, top, vertical, metrics) -> {
-                        if (from <= node.start && to > node.start) { metrics.ascent -= frame.headerHeight; metrics.top -= frame.headerHeight; }
-                    }, node.start, node.contentStart);
-                    span(text, (LineHeightSpan) (value, from, to, top, vertical, metrics) -> {
-                        if (from < node.end && to >= node.end) { metrics.descent += frame.padding; metrics.bottom += frame.padding; }
-                    }, node.contentEnd, node.end);
+                    span(text, new CollapseSpacingSpan(node.start, frame.headerHeight, true), node.start, node.contentStart);
+                    span(text, new CollapseSpacingSpan(node.end, frame.padding, false), node.contentEnd, node.end);
                 }
                 break;
             case "*":
@@ -776,6 +789,42 @@ public final class BbCodeEditText extends AppCompatEditText {
             default: return false; // Unsupported/unfinished markup remains visible and round-trips unchanged.
         }
         return true;
+    }
+
+    private static final class CollapseSpacingSpan implements LineHeightSpan {
+        final int anchor, height;
+        final boolean header;
+        CollapseSpacingSpan(int anchor, int height, boolean header) {
+            this.anchor = anchor; this.height = height; this.header = header;
+        }
+        boolean affectsLine(int start, int end) {
+            return header ? start <= anchor && end > anchor : start < anchor && end >= anchor;
+        }
+        @Override public void chooseHeight(CharSequence text, int start, int end, int spanStart, int vertical, Paint.FontMetricsInt metrics) {
+            if (!affectsLine(start, end)) return;
+            if (header) { metrics.ascent -= height; metrics.top -= height; }
+            else { metrics.descent += height; metrics.bottom += height; }
+        }
+    }
+    /** Keep the themed cursor and native blinking, but exclude the container's title/padding. */
+    private final class CollapseCursorDrawable extends DrawableWrapper {
+        CollapseCursorDrawable(Drawable cursor) { super(cursor); }
+        @Override public void draw(@NonNull Canvas canvas) {
+            Rect bounds = getBounds();
+            int top = bounds.top, bottom = bounds.bottom;
+            Layout layout = getLayout(); Editable text = getText();
+            if (!sourceVisible && layout != null && text != null && getSelectionStart() >= 0) {
+                int line = layout.getLineForOffset(getSelectionStart());
+                int start = layout.getLineStart(line), end = layout.getLineEnd(line);
+                for (CollapseSpacingSpan spacing : text.getSpans(start, end, CollapseSpacingSpan.class)) {
+                    if (!spacing.affectsLine(start, end)) continue;
+                    if (spacing.header) top += spacing.height;
+                    else bottom -= spacing.height;
+                }
+            }
+            getDrawable().setBounds(bounds.left, top, bounds.right, Math.max(top + 1, bottom));
+            super.draw(canvas);
+        }
     }
 
     private final class InlineImage extends CustomTarget<Drawable> {

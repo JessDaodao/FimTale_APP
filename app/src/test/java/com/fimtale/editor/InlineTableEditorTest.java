@@ -53,6 +53,75 @@ public class InlineTableEditorTest {
             body.dispatchTouchEvent(event); event.recycle();
         }
     }
+    @Test public void focusingATableCellKeepsTheDocumentAtItsCurrentScrollPosition() {
+        String source = "正文段落\n".repeat(80) + BbCodeInsertion.table(2, 2, true, "表格内容").text + "\n尾部\n".repeat(30);
+        android.widget.ScrollView scroll = scrollingDocument(source);
+        int tableLine = body.getLayout().getLineForOffset(source.indexOf("[table]"));
+        scroll.scrollTo(0, body.getLayout().getLineTop(tableLine) - 100); drawScroll(scroll);
+        int before = scroll.getScrollY(); assertTrue(before > 500);
+        java.util.List<Integer> scrollPositions = new java.util.ArrayList<>();
+        java.util.List<Boolean> visibleFocusedCells = new java.util.ArrayList<>();
+        scroll.setOnScrollChangeListener((view, x, y, oldX, oldY) -> scrollPositions.add(y));
+        container.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            if (newFocus != null && newFocus.getId() == R.id.editorTableCell)
+                visibleFocusedCells.add(newFocus.getGlobalVisibleRect(new android.graphics.Rect()));
+        });
+        BbCodeEditText.TableHit hit = body.tableCellAtSource(source.indexOf("表格内容")); assertNotNull(hit);
+        assertNotNull("The visible table must be hit-testable: " + hit.bounds + ", scroll=" + before,
+                body.tableCellAt(hit.bounds.centerX(), hit.bounds.centerY()));
+        tap(hit);
+        assertTrue("Tapping must open the cell editor before layout", container.isEditingCell());
+        drawScroll(scroll);
+        assertTrue("Layout must keep the cell editor open", container.isEditingCell());
+        assertEquals("Tapping a visible cell must not jump to the document top", before, scroll.getScrollY());
+        assertTrue(container.activeEditor().hasFocus());
+        container.activeEditor().setSelection(0);
+        container.activeEditor().onCreateInputConnection(new EditorInfo()).commitText("编辑", 1); drawScroll(scroll);
+        assertEquals(before, scroll.getScrollY());
+        BbCodeEditText.TableHit updated = body.tableCellAtSource(body.getText().toString().indexOf("编辑"));
+        tap(body.tableCellAtSource(updated.tableStart + updated.table.cells.get(1).source.node.contentStart));
+        drawScroll(scroll);
+        assertEquals(before, scroll.getScrollY());
+        assertTrue("Focus changes must not briefly jump away and back: " + scrollPositions,
+                scrollPositions.stream().allMatch(y -> y == before));
+        assertFalse(visibleFocusedCells.isEmpty());
+        assertTrue("The focused cell must already be in the visible table", visibleFocusedCells.stream().allMatch(Boolean::booleanValue));
+    }
+    @Test public void theActiveCellRemainsVisibleWhenTheKeyboardShrinksTheViewport() {
+        String source = "正文段落\n".repeat(80) + BbCodeInsertion.table(2, 2, true, "表格内容").text + "\n尾部\n".repeat(30);
+        android.widget.ScrollView scroll = scrollingDocument(source);
+        int tableLine = body.getLayout().getLineForOffset(source.indexOf("[table]"));
+        scroll.scrollTo(0, body.getLayout().getLineTop(tableLine) - 300); drawScroll(scroll);
+        tap(body.tableCellAtSource(source.indexOf("表格内容"))); drawScroll(scroll);
+        int before = scroll.getScrollY();
+        scroll.setSmoothScrollingEnabled(false);
+        android.view.ViewGroup.LayoutParams params = scroll.getLayoutParams(); params.height = 250; scroll.setLayoutParams(params);
+        drawScroll(scroll);
+        assertTrue("Revealing the cell may scroll down, but never back to the document top", scroll.getScrollY() >= before);
+        BbCodeEditText cell = container.activeEditor(); assertTrue(cell.hasFocus());
+        android.graphics.Rect visible = new android.graphics.Rect();
+        assertTrue(cell.getGlobalVisibleRect(visible));
+        assertEquals("The input must stay above the keyboard", cell.getHeight(), visible.height());
+    }
+    private android.widget.ScrollView scrollingDocument(String source) {
+        android.widget.ScrollView scroll = new android.widget.ScrollView(controller.get()); scroll.setFillViewport(true);
+        ((android.view.ViewGroup) container.getParent()).removeView(container);
+        scroll.addView(container, new android.widget.ScrollView.LayoutParams(-1, -2));
+        controller.get().setContentView(scroll, new android.view.ViewGroup.LayoutParams(500, 500));
+        controller.visible().windowFocusChanged(true);
+        body.setText(source); body.setSourceVisible(false);
+        drawScroll(scroll);
+        return scroll;
+    }
+    private void drawScroll(android.widget.ScrollView scroll) {
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(100));
+        int height = scroll.getLayoutParams().height;
+        scroll.measure(View.MeasureSpec.makeMeasureSpec(500, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        scroll.layout(0, 0, 500, height);
+        Bitmap bitmap = Bitmap.createBitmap(500, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap); canvas.translate(-scroll.getScrollX(), -scroll.getScrollY());
+        scroll.draw(canvas); bitmap.recycle();
+    }
     @Test public void tappingCellEditsInDocumentWithImeAndPreservesOtherSource() {
         String original = "before\n[table]\n[tr][th colspan=2]Header[/th][/tr]\n[tr][td][b]first[/b][/td][td]second[/td][/tr]\n[/table]\nafter";
         body.setText(original); body.setSourceVisible(false); draw();

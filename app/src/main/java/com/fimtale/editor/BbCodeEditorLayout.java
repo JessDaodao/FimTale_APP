@@ -81,6 +81,7 @@ public final class BbCodeEditorLayout extends FrameLayout implements BbCodeEditT
                 MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary));
         cell.setBackground(background);
         cell.setText(content); cell.setSourceVisible(false);
+        cell.setSelection(cell.length());
         addView(cell, new FrameLayout.LayoutParams(1, 1));
         position(bounds);
         cell.addTextChangedListener(new TextWatcher() {
@@ -88,12 +89,21 @@ public final class BbCodeEditorLayout extends FrameLayout implements BbCodeEditT
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) { updateSource(s.toString()); }
         });
-        cell.requestFocus(); cell.setSelection(cell.length());
-        cell.post(() -> {
-            if (cell != null) {
-                revealActiveInput();
-                ((InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE))
-                        .showSoftInput(cell, InputMethodManager.SHOW_IMPLICIT);
+        BbCodeEditText input = cell;
+        // LayoutParams alone do not move a newly added view away from (0, 0).
+        // Focus/reveal only once it occupies the tapped cell in the document.
+        input.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override public void onLayoutChange(View view, int left, int top, int right, int bottom,
+                    int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                input.removeOnLayoutChangeListener(this);
+                if (cell != input) return;
+                input.requestFocus();
+                input.post(() -> {
+                    if (cell != input || !input.hasFocus()) return;
+                    revealActiveInput();
+                    ((InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE))
+                            .showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
+                });
             }
         });
     }
@@ -143,7 +153,7 @@ public final class BbCodeEditorLayout extends FrameLayout implements BbCodeEditT
         removeView(previous); expectedSource = null;
     }
     private void revealActiveInput() {
-        if (cell == null || cell.getSelectionEnd() < 0) return;
+        if (cell == null || !cell.isLaidOut() || !cell.hasFocus() || cell.getSelectionEnd() < 0) return;
         // Let the document's ScrollView reveal the caret without scrolling the body
         // independently of the table/block editor positioned over it.
         cell.bringPointIntoView(cell.getSelectionEnd());
