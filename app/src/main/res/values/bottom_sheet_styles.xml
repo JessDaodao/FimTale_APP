@@ -1,0 +1,14 @@
+<resources>
+    <style name="Widget.Fimtale.BottomSheetHeader" parent="">
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+    </style>
+
+    <style name="Widget.Fimtale.BottomSheetTitle" parent="">
+        <item name="android:textAppearance">?attr/textAppearanceTitleLarge</item>
+        <item name="android:accessibilityHeading">true</item>
+    </style>
+</resources>
