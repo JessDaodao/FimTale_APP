@@ -179,7 +179,7 @@
                 android:id="@+id/tvMedalsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="勋章"
+                android:text="@string/medal_title"
                 android:textStyle="bold"
                 android:layout_marginTop="24dp"
                 android:visibility="gone"/>
@@ -188,7 +188,9 @@
                 android:id="@+id/chipGroupMedals"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="8dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="8dp" />
 
             <TextView
                 android:id="@+id/tvUserTopicsTitle"

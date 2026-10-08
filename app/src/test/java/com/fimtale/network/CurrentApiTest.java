@@ -142,7 +142,9 @@ public class CurrentApiTest {
         assertEquals("work", request.get().url().queryParameter("tab"));
         assertEquals(42, user.content.getTopicArray().get(0).getId());
         CuratedResponse curated = api("{\"items\":[{\"id\":999,\"work\":" + WORK + ",\"reason\":\"推荐语\",\"user\":{\"username\":\"推荐者\"}}]}")
-                .getCuratedWorks(1).execute().body();
+                .getCuratedWorks(1, 5).execute().body();
+        assertEquals("1", request.get().url().queryParameter("page"));
+        assertEquals("5", request.get().url().queryParameter("per_page"));
         assertEquals(42, curated.items.get(0).getId());
         assertEquals("推荐者", curated.items.get(0).getRecommenderName());
         List<TagGroup> tags = api("[{\"name\":\"角色\",\"tags\":[{\"id\":1,\"name\":\"暮光\"}]}]").getTags(1, "暮光").execute().body();

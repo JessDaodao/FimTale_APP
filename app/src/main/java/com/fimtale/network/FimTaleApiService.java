@@ -66,7 +66,8 @@ public interface FimTaleApiService {
     @GET("search/search_works") Call<TopicListResponse> getTopicList(
             @Query("page") int page, @Query("query") String query, @Query("rank") String rank);
     @GET("search/work_feed") Call<TopicListResponse> getFeed(@Query("page") int page);
-    @GET("work/get_curated_works") Call<CuratedResponse> getCuratedWorks(@Query("page") int page);
+    @GET("work/get_curated_works") Call<CuratedResponse> getCuratedWorks(@Query("page") int page,
+            @Query("per_page") int perPage);
     @GET("work/get_work") Call<TopicDetailResponse> getWork(@Query("work_id") int workId);
     @GET("work/get_work") Call<TopicDetailResponse> getWorkViewer(@Header("Token") String token, @Query("work_id") int workId);
     @POST("work/do_work_vote") Call<Void> voteWork(@Header("Token") String token, @Body WorkInteractions.Vote vote);

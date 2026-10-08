@@ -5,7 +5,6 @@ import com.fimtale.utils.MdiIcons;
 import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.graphics.drawable.Drawable;
 import android.view.MenuItem;
 import android.view.Menu;
 import android.view.View;
@@ -14,8 +13,7 @@ import com.fimtale.ui.ShimmerSkeletonView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
@@ -34,14 +32,12 @@ import com.fimtale.model.UserDetailResponse;
 import com.fimtale.network.RetrofitClient;
 import com.fimtale.utils.UserPreferences;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.RequestManager;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -71,6 +67,7 @@ public class UserDetailActivity extends AppCompatActivity {
     private ChipGroup chipGroupBadges;
     private TextView tvMedalsTitle;
     private ChipGroup chipGroupMedals;
+    private AlertDialog medalPreviewDialog;
     private ShimmerSkeletonView loadingSkeleton, topicsSkeleton;
     private boolean profileLoading;
     private TextView loadError, topicsStatus;
@@ -320,70 +317,57 @@ public class UserDetailActivity extends AppCompatActivity {
             }
         }
 
+        for (int i = 0; i < chipGroupMedals.getChildCount(); i++) {
+            Glide.with(this).clear((ImageView) chipGroupMedals.getChildAt(i));
+        }
         chipGroupMedals.removeAllViews();
         if (info.medals != null && !info.medals.isEmpty()) {
             tvMedalsTitle.setVisibility(View.VISIBLE);
             for (UserDetailResponse.Medal medal : info.medals) {
-                addMedalChip(chipGroupMedals, medal);
+                addMedalImage(chipGroupMedals, medal);
             }
         } else {
             tvMedalsTitle.setVisibility(View.GONE);
         }
     }
 
-    private void addMedalChip(ChipGroup group, UserDetailResponse.Medal medal) {
-        String medalName = medal.name;
-        Chip chip = new Chip(this);
-        chip.setText(""); 
-        chip.setChipBackgroundColor(ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
-        chip.setEnsureMinTouchTargetSize(false);
-        chip.setChipMinHeight(0);
-        chip.setChipStartPadding(0);
-        chip.setChipEndPadding(0);
-        chip.setTextStartPadding(0);
-        chip.setTextEndPadding(0);
-        chip.setCloseIconVisible(false);
-        chip.setChipStrokeWidth(0);
-
+    private void addMedalImage(ChipGroup group, UserDetailResponse.Medal medal) {
+        String medalName = TextUtils.isEmpty(medal.name) ? getString(R.string.medal_title) : medal.name;
         String medalUrl = com.fimtale.network.SiteUrls.media(medal.image);
-        com.fimtale.ui.ImagePreview.bind(chip, medalUrl);
-        chip.setContentDescription(medalName);
-        int iconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 44, getResources().getDisplayMetrics());
-        chip.setChipIconSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40, getResources().getDisplayMetrics()));
+        ImageView image = (ImageView) getLayoutInflater().inflate(R.layout.item_user_medal, group, false);
+        image.setContentDescription(medalName);
+        image.setOnClickListener(v -> showMedalPreview(medalName, medalUrl));
+        group.addView(image);
 
         Glide.with(this)
                 .load(medalUrl)
-                .override(iconSize, iconSize)
-                .listener(new RequestListener<Drawable>() {
-                    @Override
-                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        chip.setText(medalName);
-                        chip.setChipBackgroundColor(ColorStateList.valueOf(resolveThemeColor(com.google.android.material.R.attr.colorSecondaryContainer)));
-                        chip.setTextColor(resolveThemeColor(com.google.android.material.R.attr.colorOnSecondaryContainer));
-                        float padding = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
-                        chip.setChipStartPadding(padding);
-                        chip.setChipEndPadding(padding);
-                        return false;
-                    }
+                .fitCenter()
+                .placeholder(MdiIcons.drawable(this, "medal-outline"))
+                .error(MdiIcons.drawable(this, "medal-outline"))
+                .into(image);
+    }
 
-                    @Override
-                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                        chip.setChipIcon(resource);
-                        chip.setChipIconVisible(true);
-                        return false;
-                    }
-                })
-                .into(new com.bumptech.glide.request.target.CustomTarget<Drawable>() {
-                    @Override
-                    public void onResourceReady(@NonNull Drawable resource, @Nullable com.bumptech.glide.request.transition.Transition<? super Drawable> transition) {
-                        chip.setChipIcon(resource);
-                        chip.setChipIconVisible(true);
-                    }
-                    @Override
-                    public void onLoadCleared(@Nullable Drawable placeholder) {}
-                });
-
-        group.addView(chip);
+    private void showMedalPreview(String name, String imageUrl) {
+        if (isFinishing() || isDestroyed()) return;
+        if (medalPreviewDialog != null) medalPreviewDialog.dismiss();
+        ImageView image = (ImageView) getLayoutInflater().inflate(R.layout.dialog_medal_preview, null);
+        image.setContentDescription(name);
+        RequestManager images = Glide.with(this);
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(name)
+                .setView(image)
+                .create();
+        dialog.setOnDismissListener(ignored -> {
+            images.clear(image);
+            if (medalPreviewDialog == dialog) medalPreviewDialog = null;
+        });
+        medalPreviewDialog = dialog;
+        dialog.show();
+        images.load(imageUrl)
+                .fitCenter()
+                .placeholder(MdiIcons.drawable(this, "medal-outline"))
+                .error(MdiIcons.drawable(this, "medal-outline"))
+                .into(image);
     }
 
     private void addChip(ChipGroup group, String text, int bgColor, int textColor) {
@@ -455,6 +439,7 @@ public class UserDetailActivity extends AppCompatActivity {
     }
 
     @Override protected void onDestroy() {
+        if (medalPreviewDialog != null) medalPreviewDialog.dismiss();
         if (moreMenu != null) moreMenu.dismiss();
         if (profileCall != null) { profileCall.cancel(); profileCall = null; }
         if (topicsCall != null) { topicsCall.cancel(); topicsCall = null; }

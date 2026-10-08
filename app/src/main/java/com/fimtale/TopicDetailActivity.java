@@ -1,6 +1,7 @@
 package com.fimtale;
 
 import com.fimtale.utils.MdiIcons;
+import com.fimtale.utils.TagChipLayout;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -455,6 +456,7 @@ public class TopicDetailActivity extends AppCompatActivity {
                     addShareTagChip(tagChipGroup, tag, false);
                 }
             }
+            TagChipLayout.alignHeights(tagChipGroup);
         }
 
         titleText.setText(currentTopicTitle != null ? currentTopicTitle : "");
@@ -693,6 +695,7 @@ public class TopicDetailActivity extends AppCompatActivity {
                         addTagChip(tag, false);
                     }
                 }
+                TagChipLayout.alignHeights(tagChipGroup);
 
                 updateCoverTags(tags);
             }
@@ -713,6 +716,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         // Preface belongs to the work; every directory entry is a real chapter.
         java.util.List<TopicDetailResponse.ChapterEdge> roots = com.fimtale.model.ChapterNavigation.choices(data, 0);
         firstChapterId = roots.size() == 1 && roots.get(0).to != null ? roots.get(0).to : 0;
+        findViewById(R.id.showChaptersButton).setVisibility(data.getMenu().isEmpty() ? View.GONE : View.VISIBLE);
         setCommentMode(false);
         readingActionsBar.setVisibility(View.VISIBLE);
     }
@@ -736,6 +740,8 @@ public class TopicDetailActivity extends AppCompatActivity {
 
     private void showChapters() {
         if (editableWork == null) return;
+        List<ChapterMenuItem> chapters = editableWork.getMenu();
+        if (chapters.isEmpty()) return;
         if (chaptersSheet != null && chaptersSheet.isShowing()) return;
         chaptersSheet = new BottomSheetDialog(this);
         BottomSheetDialog sheet = chaptersSheet;
@@ -743,7 +749,6 @@ public class TopicDetailActivity extends AppCompatActivity {
         sheet.setContentView(content);
         content.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 (int) (getResources().getDisplayMetrics().heightPixels * .82f)));
-        List<ChapterMenuItem> chapters = editableWork.getMenu();
         ((TextView) content.findViewById(R.id.workListTitle)).setText("章节目录（" + chapters.size() + "）");
         content.findViewById(R.id.workListSort).setVisibility(View.GONE);
         content.findViewById(R.id.workListPager).setVisibility(View.GONE);

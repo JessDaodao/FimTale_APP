@@ -149,7 +149,7 @@
                         android:layout_marginEnd="16dp"
                         android:textSize="11sp"
                         app:mdiDrawableStart="text-box-outline"
-                        android:drawablePadding="4dp"
+                        android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
                         tools:text="1.2万" />
 
@@ -160,7 +160,7 @@
                         android:layout_marginEnd="16dp"
                         android:textSize="11sp"
                         app:mdiDrawableStart="eye-outline"
-                        android:drawablePadding="4dp"
+                        android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
                         tools:text="1000" />
 
@@ -171,7 +171,7 @@
                         android:layout_marginEnd="16dp"
                         android:textSize="11sp"
                         app:mdiDrawableStart="comment-text-outline"
-                        android:drawablePadding="4dp"
+                        android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
                         tools:text="50" />
 
@@ -181,7 +181,7 @@
                         android:layout_height="wrap_content"
                         android:textSize="11sp"
                         app:mdiDrawableStart="bookmark"
-                        android:drawablePadding="4dp"
+                        android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
                         tools:text="20" />
                 </LinearLayout>
@@ -260,6 +260,7 @@
                 android:id="@+id/showChaptersButton" style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginStart="12dp" android:text="目录"
+                android:visibility="gone" tools:visibility="visible"
                 android:contentDescription="查看章节目录" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="book-open-page-variant"/>
         </LinearLayout>
 

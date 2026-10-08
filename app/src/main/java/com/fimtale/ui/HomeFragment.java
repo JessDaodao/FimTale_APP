@@ -288,7 +288,7 @@ public class HomeFragment extends Fragment {
                 homeError = "最近更新加载失败，点击重试"; finishHomeRequest();
             }
         });
-        Call<com.fimtale.model.CuratedResponse> curated = RetrofitClient.getInstance().getCuratedWorks(1);
+        Call<com.fimtale.model.CuratedResponse> curated = RetrofitClient.getInstance().getCuratedWorks(1, 5);
         homeCalls.add(curated);
         curated.enqueue(new Callback<com.fimtale.model.CuratedResponse>() {
             @Override public void onResponse(Call<com.fimtale.model.CuratedResponse> call, Response<com.fimtale.model.CuratedResponse> response) {

@@ -1,6 +1,7 @@
 package com.fimtale.adapter;
 
 import com.fimtale.utils.MdiIcons;
+import com.fimtale.utils.TagChipLayout;
 
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -51,13 +52,13 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         if (holder instanceof TopicViewHolder) {
             TopicViewHolder topicHolder = (TopicViewHolder) holder;
             TopicViewItem topic = topics.get(position);
+            Tags tags = topic.getTags();
             topicHolder.titleTextView.setText(topic.getTitle());
             topicHolder.authorTextView.setText(topic.getAuthorName());
 
             // 绑定分类标签
             if (topicHolder.tagChipGroup != null) {
                 topicHolder.tagChipGroup.removeAllViews();
-                Tags tags = topic.getTags();
                 if (tags != null) {
                     topicHolder.tagChipGroup.setVisibility(View.VISIBLE);
                     if (!TextUtils.isEmpty(tags.getStatus())) {
@@ -68,36 +69,33 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                             addTagChip(topicHolder.tagChipGroup, tagName, false);
                         }
                     }
-                    alignTagChipHeights(topicHolder.tagChipGroup);
+                    TagChipLayout.alignHeights(topicHolder.tagChipGroup);
                 } else {
                     topicHolder.tagChipGroup.setVisibility(View.GONE);
                 }
             }
             
             // 绑定图片层标签
-            if (topic.getTags() != null) {
-                if (topicHolder.tagType != null) topicHolder.tagType.setText(topic.getTags().getType());
-                if (topicHolder.tagSource != null) topicHolder.tagSource.setText(topic.getTags().getSource());
-                if (topicHolder.tagLength != null) topicHolder.tagLength.setText(topic.getTags().getLength());
-                if (topicHolder.tagRate != null) {
-                    String rating = topic.getTags().getRating();
-                    topicHolder.tagRate.setText(rating);
-
-                    int backgroundColor = 0x80000000;
-                    if (rating != null) {
-                        if (rating.equalsIgnoreCase("Everyone") || rating.equalsIgnoreCase("E")) {
-                            backgroundColor = 0xFF4CAF50;
-                        } else if (rating.equalsIgnoreCase("Teen") || rating.equalsIgnoreCase("T")) {
-                            backgroundColor = 0xFFFFC107;
-                        } else if (rating.equalsIgnoreCase("Restricted") || rating.equalsIgnoreCase("Mature") || rating.equalsIgnoreCase("M")) {
-                            backgroundColor = 0xFFF44336;
-                        }
+            bindCoverTag(topicHolder.tagType, tags == null ? null : tags.getType());
+            bindCoverTag(topicHolder.tagSource, tags == null ? null : tags.getSource());
+            bindCoverTag(topicHolder.tagLength, tags == null ? null : tags.getLength());
+            String rating = tags == null ? null : tags.getRating();
+            bindCoverTag(topicHolder.tagRate, rating);
+            if (topicHolder.tagRate != null) {
+                int backgroundColor = 0x80000000;
+                if (rating != null) {
+                    if (rating.equalsIgnoreCase("Everyone") || rating.equalsIgnoreCase("E")) {
+                        backgroundColor = 0xFF4CAF50;
+                    } else if (rating.equalsIgnoreCase("Teen") || rating.equalsIgnoreCase("T")) {
+                        backgroundColor = 0xFFFFC107;
+                    } else if (rating.equalsIgnoreCase("Restricted") || rating.equalsIgnoreCase("Mature") || rating.equalsIgnoreCase("M")) {
+                        backgroundColor = 0xFFF44336;
                     }
+                }
 
-                    Drawable background = topicHolder.tagRate.getBackground();
-                    if (background instanceof android.graphics.drawable.GradientDrawable) {
-                        ((android.graphics.drawable.GradientDrawable) background.mutate()).setColor(backgroundColor);
-                    }
+                Drawable background = topicHolder.tagRate.getBackground();
+                if (background instanceof android.graphics.drawable.GradientDrawable) {
+                    ((android.graphics.drawable.GradientDrawable) background.mutate()).setColor(backgroundColor);
                 }
             }
 
@@ -169,18 +167,11 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         super.onViewRecycled(holder);
     }
 
-    private void alignTagChipHeights(ChipGroup group) {
-        // ChipGroup uses the last chip's height for each row, so shorter labels can clip taller ones.
-        int measureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-        int height = 0;
-        for (int i = 0; i < group.getChildCount(); i++) {
-            View chip = group.getChildAt(i);
-            chip.measure(measureSpec, measureSpec);
-            height = Math.max(height, chip.getMeasuredHeight());
-        }
-        for (int i = 0; i < group.getChildCount(); i++) {
-            ((Chip) group.getChildAt(i)).setMinHeight(height);
-        }
+    private void bindCoverTag(@Nullable TextView view, @Nullable String text) {
+        if (view == null) return;
+        boolean hasText = text != null && TextUtils.getTrimmedLength(text) > 0;
+        view.setText(hasText ? text : null);
+        view.setVisibility(hasText ? View.VISIBLE : View.GONE);
     }
 
     private void addTagChip(ChipGroup group, String text, boolean isStatus) {
