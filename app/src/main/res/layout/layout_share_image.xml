@@ -180,7 +180,7 @@
             <com.fimtale.ui.icons.MdiImageView
                 android:layout_width="36px"
                 android:layout_height="36px"
-                app:mdiIcon="heart"
+                app:mdiIcon="heart-outline"
                 app:tint="#999999" />
 
             <TextView

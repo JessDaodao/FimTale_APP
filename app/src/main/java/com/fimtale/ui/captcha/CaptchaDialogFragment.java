@@ -186,7 +186,9 @@ public class CaptchaDialogFragment extends DialogFragment {
         // Reserve the measured native title, message and action row, including larger font sizes.
         int chrome = decor.getHeight() > 0 ? decor.getHeight() - web.getHeight() : (int) (160 * density);
         int maxHeight = Math.max(1, Math.min(availableHeight - chrome, (int) (540 * density)));
-        int height = interactive ? maxHeight : Math.min(maxHeight, Math.max(1, (int) Math.ceil(widgetHeight * density)));
+        // Turnstile's interactive checkbox stays inline; other providers need room for challenge panels.
+        boolean expandChallenge = interactive && !"turnstile".equals(provider);
+        int height = expandChallenge ? maxHeight : Math.min(maxHeight, Math.max(1, (int) Math.ceil(widgetHeight * density)));
         ViewGroup.LayoutParams params = web.getLayoutParams();
         if (height != params.height) { params.height = height; web.setLayoutParams(params); }
     }

@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import com.fimtale.ui.BottomSheetMenu;
 import com.fimtale.ui.ShimmerSkeletonView;
 import com.fimtale.ui.WorkActions;
 import com.fimtale.ui.WorkCommentsSection;
@@ -29,6 +30,7 @@ import android.animation.ObjectAnimator;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -129,6 +131,7 @@ public class TopicDetailActivity extends AppCompatActivity {
     private WorkActions workActions;
     private WorkCommentsSection commentsSection;
     private BottomSheetDialog chaptersSheet;
+    private BottomSheetMenu editorActionsSheet;
     private Call<Void> commentCall;
     private boolean commentSending;
     private boolean commentMode;
@@ -308,6 +311,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         if (workActions != null) workActions.close();
         if (commentsSection != null) commentsSection.close();
         if (chaptersSheet != null) chaptersSheet.dismiss();
+        if (editorActionsSheet != null) editorActionsSheet.dismiss();
         if (detailCall != null) { detailCall.cancel(); detailCall = null; }
         if (commentCall != null) { commentCall.cancel(); commentCall = null; }
         if (elevationAnimator != null) elevationAnimator.cancel();
@@ -316,21 +320,29 @@ public class TopicDetailActivity extends AppCompatActivity {
     }
 
     private void showEditorActions() {
-        if (!editorAccess.canEdit(currentAuthor)) return;
-        new MaterialAlertDialogBuilder(this).setTitle("编辑文章与章节")
-                .setItems(new String[]{"编辑作品信息与序言", "发表新章节", "编辑已有章节"}, (dialog, which) -> {
-                    if (which == 0) startActivity(EditorActivity.workIntent(this, currentTopicId));
-                    else if (which == 1) startActivity(EditorActivity.chapterIntent(this, currentTopicId, 0));
-                    else {
-                        List<ChapterMenuItem> chapters = editableWork.getMenu();
-                        if (chapters.isEmpty()) { Toast.makeText(this, "还没有章节，可先发表新章节", Toast.LENGTH_SHORT).show(); return; }
-                        String[] titles = new String[chapters.size()];
-                        for (int i = 0; i < titles.length; i++) titles[i] = chapters.get(i).getTitle();
-                        new MaterialAlertDialogBuilder(this).setTitle("选择要编辑的章节")
-                                .setItems(titles, (d, index) -> startActivity(EditorActivity.chapterIntent(this, currentTopicId, chapters.get(index).getId())))
-                                .setNegativeButton("取消", null).show();
-                    }
-                }).setNegativeButton("取消", null).show();
+        if (editableWork == null || !editorAccess.canEdit(currentAuthor)) return;
+        if (editorActionsSheet != null && editorActionsSheet.isShowing()) return;
+        editorActionsSheet = new BottomSheetMenu(this, R.menu.topic_edit_menu, item -> {
+            if (editableWork == null || !editorAccess.canEdit(currentAuthor)) return true;
+            if (item.getItemId() == R.id.action_edit_work_info) startActivity(EditorActivity.workIntent(this, currentTopicId));
+            else if (item.getItemId() == R.id.action_publish_chapter) startActivity(EditorActivity.chapterIntent(this, currentTopicId, 0));
+            else if (item.getItemId() == R.id.action_edit_chapter) showChapterEditorPicker();
+            else return false;
+            return true;
+        });
+        ViewCompat.setAccessibilityPaneTitle(editorActionsSheet.findViewById(R.id.bottomMenuItems), "编辑文章与章节");
+        editorActionsSheet.setOnDismissListener(dialog -> editorActionsSheet = null);
+        editorActionsSheet.show();
+    }
+
+    private void showChapterEditorPicker() {
+        List<ChapterMenuItem> chapters = editableWork.getMenu();
+        if (chapters.isEmpty()) { Toast.makeText(this, "还没有章节，可先发表新章节", Toast.LENGTH_SHORT).show(); return; }
+        String[] titles = new String[chapters.size()];
+        for (int i = 0; i < titles.length; i++) titles[i] = chapters.get(i).getTitle();
+        new MaterialAlertDialogBuilder(this).setTitle("选择要编辑的章节")
+                .setItems(titles, (dialog, index) -> startActivity(EditorActivity.chapterIntent(this, currentTopicId, chapters.get(index).getId())))
+                .setNegativeButton("取消", null).show();
     }
 
     @Override

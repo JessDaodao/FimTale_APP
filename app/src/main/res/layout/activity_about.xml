@@ -47,15 +47,23 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="100dp"
                 android:layout_height="100dp"
+                android:clipToOutline="true"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
+                app:cardPreventCornerOverlap="false"
                 app:strokeWidth="0dp">
 
+                <!-- Render the launcher layers with their adaptive-icon overscan inside our own shape. -->
                 <ImageView
                     android:id="@+id/ivAppIcon"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:src="@mipmap/ic_launcher" />
+                    android:background="@mipmap/ic_launcher_background"
+                    android:contentDescription="@string/app_name"
+                    android:scaleType="centerCrop"
+                    android:scaleX="1.5"
+                    android:scaleY="1.5"
+                    android:src="@mipmap/ic_launcher_foreground" />
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
