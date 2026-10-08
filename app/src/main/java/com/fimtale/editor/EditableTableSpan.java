@@ -36,6 +36,11 @@ final class EditableTableSpan extends ReplacementSpan implements AutoCloseable {
     private final Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final List<io.noties.markwon.image.AsyncDrawable> images = new ArrayList<>();
     private boolean scheduled;
+    private int leadingMargin;
+
+    void setLeadingMargin(int margin) {
+        if (leadingMargin != margin) { leadingMargin = margin; width = 0; }
+    }
 
     EditableTableSpan(BbCodeEditText editor, Markwon renderer, EditorTable table) {
         this.editor = editor; this.table = table;
@@ -52,7 +57,7 @@ final class EditableTableSpan extends ReplacementSpan implements AutoCloseable {
     void prepare() {
         int available = editor.getWidth() - editor.getCompoundPaddingLeft() - editor.getCompoundPaddingRight();
         if (available <= 0) available = editor.getResources().getDisplayMetrics().widthPixels - padding * 4;
-        available = Math.max(table.columns * 4, available);
+        available = Math.max(table.columns * 4, available - leadingMargin);
         if (width == available && textSize == editor.getTextSize() && color == editor.getCurrentTextColor()
                 && (scheduled || !editor.isAttachedToWindow())) return;
         width = available; textSize = editor.getTextSize(); color = editor.getCurrentTextColor();

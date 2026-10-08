@@ -117,6 +117,12 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         toolbar.setOnMenuItemClickListener(menuActions);
         moreMenu = new com.fimtale.ui.BottomSheetMenu(this, R.menu.editor_more_menu, menuActions::onMenuItemClick);
         title = findViewById(R.id.editorTitle); body = findViewById(R.id.editorBody);
+        body.setParagraphIndentEnabled(true);
+        body.setLinkClickListener((editor, link) -> {
+            if (canInsertFormat() && editor == formatBody() && !getSupportFragmentManager().isStateSaved()
+                    && getSupportFragmentManager().findFragmentByTag(EditorFormatDialog.TAG) == null)
+                EditorFormatDialog.editLink(this, link).showNow(getSupportFragmentManager(), EditorFormatDialog.TAG);
+        });
         body.setSourceVisible(state != null && state.getBoolean("source_visible"));
         updateSourceButton();
         intro = findViewById(R.id.editorIntro); cover = findViewById(R.id.editorCover);

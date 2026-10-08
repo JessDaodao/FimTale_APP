@@ -8,6 +8,13 @@ import java.util.List;
 final class VisualEditing {
     static final java.util.regex.Pattern ENTITIES = java.util.regex.Pattern.compile("&(?:#[0-9]+|#x[0-9a-fA-F]+|amp|lt|gt|quot|apos|nbsp);");
     private VisualEditing() {}
+    static String decodeEntities(String value) {
+        java.util.regex.Matcher entities = ENTITIES.matcher(value);
+        StringBuffer result = new StringBuffer();
+        while (entities.find()) entities.appendReplacement(result, java.util.regex.Matcher.quoteReplacement(
+                android.text.Html.fromHtml(entities.group(), android.text.Html.FROM_HTML_MODE_LEGACY).toString()));
+        entities.appendTail(result); return result.toString();
+    }
     static int[] deletion(String source, int caret, boolean backward) {
         List<BbCodeSyntax.Node> nodes = BbCodeSyntax.parse(source);
         int cursor = Math.max(0, Math.min(source.length(), caret));

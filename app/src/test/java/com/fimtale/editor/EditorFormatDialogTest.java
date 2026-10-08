@@ -26,6 +26,7 @@ public class EditorFormatDialogTest {
         @Override public void onCreate(Bundle state) {
             setTheme(R.style.Theme_Fimtale); super.onCreate(state);
             body = new BbCodeEditText(this, null); body.setId(R.id.editorBody);
+            body.setLinkClickListener((editor, link) -> EditorFormatDialog.editLink(this, link).showNow(getSupportFragmentManager(), EditorFormatDialog.TAG));
             setContentView(body); body.setText("前正文🐴后"); body.setSelection(1, 5);
         }
         @Override public BbCodeEditText formatBody() { return body; }
@@ -49,6 +50,65 @@ public class EditorFormatDialogTest {
     }
     private EditText input(int id) { return dialog().requireDialog().findViewById(id); }
     private void insert() { dialog().requireDialog().findViewById(R.id.editorFormatInsert).performClick(); shadowOf(Looper.getMainLooper()).idle(); }
+    private void tapLink(int offset, long duration, boolean drag) {
+        activity.body.setSourceVisible(activity.body.isSourceVisible());
+        activity.body.measure(android.view.View.MeasureSpec.makeMeasureSpec(500, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(900, android.view.View.MeasureSpec.EXACTLY));
+        activity.body.layout(0, 0, 500, 900);
+        android.text.Layout layout = activity.body.getLayout();
+        int line = layout.getLineForOffset(offset);
+        float x = activity.body.getTotalPaddingLeft() + layout.getPrimaryHorizontal(offset) + 2;
+        float y = activity.body.getTotalPaddingTop() + layout.getLineBaseline(line) - 2;
+        for (int action : drag ? new int[]{0, 2, 1} : new int[]{0, 1}) {
+            android.view.MotionEvent event = android.view.MotionEvent.obtain(0, action == 0 ? 0 : duration, action, x, y + (action != 0 && drag ? 100 : 0), 0);
+            activity.body.dispatchTouchEvent(event); event.recycle();
+        }
+        shadowOf(Looper.getMainLooper()).idle();
+    }
+    @Test public void tappingExistingLinkPrefillsTheWholeLinkAndUpdatesOnlyThatLink() {
+        String original = "前[url=\"https://example.org/old?a=1&amp;b=2\"][b]完整文字[/b][/url]后 [url]https://second.org/[/url]";
+        activity.body.setText(original);
+        tapLink(original.indexOf("整文字"), 20, false);
+        assertNotNull(dialog());
+        assertEquals("https://example.org/old?a=1&b=2", input(R.id.editorFormatInput0).getText().toString());
+        assertEquals("完整文字", input(R.id.editorFormatInput1).getText().toString());
+        assertEquals("编辑链接", ((android.widget.TextView) dialog().requireDialog().findViewById(R.id.editorFormatTitle)).getText().toString());
+        input(R.id.editorFormatInput0).setText("https://example.org/new"); insert();
+        assertEquals("前[url=\"https://example.org/new\"][b]完整文字[/b][/url]后 [url]https://second.org/[/url]", activity.body.getText().toString());
+    }
+    @Test public void bareUrlCanBeEditedAndLinkRemovalKeepsItsText() {
+        activity.body.setText("[url]https://example.org/[/url]");
+        tapLink(8, 20, false);
+        assertEquals("https://example.org/", input(R.id.editorFormatInput0).getText().toString());
+        assertEquals("https://example.org/", input(R.id.editorFormatInput1).getText().toString());
+        input(R.id.editorFormatInput1).setText("新[标题]"); insert();
+        assertEquals("[url=\"https://example.org/\"]新&#91;标题&#93;[/url]", activity.body.getText().toString());
+        String source = activity.body.getText().toString();
+        tapLink(source.indexOf("新"), 20, false);
+        dialog().requireDialog().findViewById(R.id.editorRemoveLink).performClick(); shadowOf(Looper.getMainLooper()).idle();
+        assertEquals("新&#91;标题&#93;", activity.body.getText().toString());
+    }
+    @Test public void scrollingLongPressAndSourceModeDoNotOpenLinkEditing() {
+        String source = "[url=https://example.org/]链接文字[/url]";
+        activity.body.setText(source);
+        tapLink(source.indexOf("链接"), 20, true); assertNull(dialog());
+        tapLink(source.indexOf("链接"), android.view.ViewConfiguration.getLongPressTimeout() + 20L, false); assertNull(dialog());
+        activity.body.setSourceVisible(true);
+        tapLink(source.indexOf("链接"), 20, false); assertNull(dialog());
+        assertEquals(source, activity.body.getText().toString());
+    }
+    @Test public void existingLinkEditSurvivesRotationAndRejectsAStaleRange() {
+        activity.body.setText("[url=https://example.org/]文字[/url]");
+        tapLink(activity.body.getText().toString().indexOf("文字"), 20, false);
+        input(R.id.editorFormatInput1).setText("新文字");
+        Configuration next = new Configuration(activity.getResources().getConfiguration()); next.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        controller.configurationChange(next); activity = controller.get(); shadowOf(Looper.getMainLooper()).idle();
+        assertEquals("新文字", input(R.id.editorFormatInput1).getText().toString());
+        activity.body.setText("[url=https://example.org/]已经改变[/url]");
+        insert();
+        assertEquals("[url=https://example.org/]已经改变[/url]", activity.body.getText().toString());
+        assertNotNull(dialog());
+    }
     @Test public void linkFormKeepsOriginalSelectionWhenInputFocusAndConfigurationChange() {
         open(EditorFormat.LINK); input(R.id.editorFormatInput0).setText("https://example.org/");
         assertEquals("正文🐴", input(R.id.editorFormatInput1).getText().toString());

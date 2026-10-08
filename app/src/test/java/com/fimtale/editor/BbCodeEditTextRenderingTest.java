@@ -40,6 +40,64 @@ public class BbCodeEditTextRenderingTest {
         editor.layout(0, 0, 400, 800);
     }
     private Editable render(String source) { editor.setText(source); editor.setSourceVisible(false); return editor.getText(); }
+    private Bitmap drawEditor() {
+        editor.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1000, View.MeasureSpec.AT_MOST));
+        editor.layout(0, 0, 400, editor.getMeasuredHeight());
+        Bitmap bitmap = Bitmap.createBitmap(400, Math.max(1, editor.getMeasuredHeight()), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap); canvas.drawColor(Color.WHITE); editor.draw(canvas); return bitmap;
+    }
+    @Test public void collapseTitleAndFrameSurroundTheEditableStyledContent() throws Exception {
+        String source = "前文\n[collapse=\"带标题的折叠框\"][b]第一行正文[/b]\n第二行正文[/collapse]\n后文";
+        Editable text = render(source);
+        Bitmap bitmap = drawEditor();
+        EditorCollapseSpan[] frames = text.getSpans(0, text.length(), EditorCollapseSpan.class);
+        assertEquals(1, frames.length); assertEquals("带标题的折叠框", frames[0].title);
+        int first = editor.getLayout().getLineForOffset(source.indexOf("第一行"));
+        int last = editor.getLayout().getLineForOffset(source.indexOf("第二行"));
+        assertTrue(editor.getLayout().getLineBaseline(first) + editor.getPaint().ascent() >= frames[0].titleBounds.bottom);
+        assertTrue(frames[0].bounds.bottom >= editor.getLayout().getLineBottom(last));
+        assertTrue(frames[0].bounds.bottom <= editor.getLayout().getLineTop(last + 1));
+        assertEquals(1, text.getSpans(source.indexOf("第一行"), source.indexOf("第一行") + 1, StyleSpan.class).length);
+        java.io.File capture = new java.io.File("build/reports/editor-collapse.png");
+        capture.getParentFile().mkdirs();
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(capture)) { bitmap.compress(Bitmap.CompressFormat.PNG, 100, output); }
+        bitmap.recycle();
+        int content = source.indexOf("第二行"); text.replace(content, content + 3, "直接编辑");
+        editor.setSourceVisible(false); drawEditor().recycle();
+        assertEquals(source.replace("第二行", "直接编辑"), text.toString());
+        editor.setSourceVisible(true);
+        assertEquals(0, text.getSpans(0, text.length(), EditorCollapseSpan.class).length);
+    }
+    @Test public void nestedCollapseTitlesHaveSeparateRowsAndEmptyBlocksStillHaveATitle() {
+        Editable text = render("[collapse=外层][collapse=内层]正文[/collapse][/collapse]\n[collapse][/collapse]");
+        drawEditor().recycle();
+        EditorCollapseSpan[] frames = text.getSpans(0, text.length(), EditorCollapseSpan.class);
+        assertEquals(3, frames.length);
+        assertTrue("outer=" + frames[0].titleBounds + " inner=" + frames[1].titleBounds,
+                frames[1].titleBounds.top >= frames[0].titleBounds.bottom);
+        assertTrue(frames[1].bounds.left > frames[0].bounds.left);
+        assertEquals("点击展开", frames[2].title);
+        assertTrue(frames[2].bounds.height() > frames[2].headerHeight);
+    }
+    @Test public void collapseFrameRemainsVisibleWhenItsTitleHasScrolledOffscreen() {
+        Editable text = render("[collapse=长内容]" + "正文\n".repeat(25) + "最后一行[/collapse]");
+        drawEditor().recycle();
+        int top = editor.getTotalPaddingTop() + editor.getLayout().getLineTop(8);
+        Bitmap bitmap = Bitmap.createBitmap(400, editor.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap); canvas.drawColor(Color.WHITE); canvas.clipRect(0, top, 400, top + 70);
+        editor.draw(canvas);
+        assertNotEquals(Color.WHITE, bitmap.getPixel(editor.getTotalPaddingLeft() + 3, top + 10));
+        assertEquals(1, text.getSpans(0, text.length(), EditorCollapseSpan.class).length);
+        bitmap.recycle();
+    }
+    @Test public void tablesInsideACollapseFitWithinItsFrame() {
+        Editable text = render("[collapse=表格]\n" + BbCodeInsertion.table(2, 2, true, "正文").text + "\n[/collapse]");
+        drawEditor().recycle();
+        EditorCollapseSpan frame = text.getSpans(0, text.length(), EditorCollapseSpan.class)[0];
+        EditableTableSpan table = text.getSpans(0, text.length(), EditableTableSpan.class)[0];
+        assertTrue(table.bounds.left > frame.bounds.left);
+        assertTrue("table=" + table.bounds + " frame=" + frame.bounds, table.bounds.right <= frame.bounds.right);
+    }
     @Test public void stylesUseReaderColorSizingAndIndentRules() {
         Editable text = render("[color=rgba(255,0,0,0.5)]red[/color][bg-color=hsl(120,100%,50%)]green[/bg-color]\n"
                 + "[indent=28.0pt]缩进正文[/indent]\n[code]  [b]literal[/b]\n  second[/code]");

@@ -4,8 +4,10 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
@@ -14,6 +16,7 @@ import android.text.Spanned;
 import android.text.TextWatcher;
 import android.text.style.AlignmentSpan;
 import android.text.style.BackgroundColorSpan;
+import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.LineHeightSpan;
@@ -63,6 +66,7 @@ public final class BbCodeEditText extends AppCompatEditText {
     private List<BbCodeSyntax.Node> nodes = new ArrayList<>();
     private String parsedSource;
     private boolean sourceVisible;
+    private boolean paragraphIndentEnabled;
     private Markwon blockRenderer;
     private final Map<String, BbCodeBlockPreview> previews = new HashMap<>();
     private final Map<String, EditableTableSpan> tables = new HashMap<>();
@@ -71,6 +75,12 @@ public final class BbCodeEditText extends AppCompatEditText {
     }
     private TableCellListener tableCellListener;
     void setTableCellListener(TableCellListener listener) { tableCellListener = listener; }
+    public interface LinkClickListener {
+        void edit(BbCodeEditText editor, BbCodeSyntax.Node link);
+    }
+    private LinkClickListener linkClickListener;
+    public void setLinkClickListener(LinkClickListener listener) { linkClickListener = listener; scheduleRender(); }
+    LinkClickListener getLinkClickListener() { return linkClickListener; }
     static final class TableHit {
         final EditableTableSpan table;
         final EditableTableSpan.Cell cell;
@@ -84,6 +94,7 @@ public final class BbCodeEditText extends AppCompatEditText {
     }
     private TableHit pressedCell;
     private BlockHit pressedBlock;
+    private EditableLinkSpan pressedLink;
     private float downX, downY;
     static final class BlockHit {
         final int start, end;
@@ -111,6 +122,66 @@ public final class BbCodeEditText extends AppCompatEditText {
         sourceVisible = visible; renderNow();
     }
     public boolean isSourceVisible() { return sourceVisible; }
+    public void setParagraphIndentEnabled(boolean enabled) { paragraphIndentEnabled = enabled; scheduleRender(); }
+    boolean isParagraphIndentEnabled() { return paragraphIndentEnabled; }
+
+    private int[] inputRange() {
+        int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
+        if (getText() != null) {
+            int composingStart = android.view.inputmethod.BaseInputConnection.getComposingSpanStart(getText());
+            int composingEnd = android.view.inputmethod.BaseInputConnection.getComposingSpanEnd(getText());
+            if (composingStart >= 0 && composingEnd > composingStart) { start = composingStart; end = composingEnd; }
+        }
+        return new int[]{start, end};
+    }
+
+    private void seedParagraph(CharSequence incoming) {
+        if (!paragraphIndentEnabled || sourceVisible || getText() == null
+                || android.view.inputmethod.BaseInputConnection.getComposingSpanStart(getText()) >= 0) return;
+        int[] range = inputRange();
+        String source = getText().toString();
+        if (range[0] == range[1] && range[0] >= 0
+                && ((range[0] > 0 && source.charAt(range[0] - 1) == ']') || (range[0] < source.length() && source.charAt(range[0]) == '['))) {
+            for (BbCodeSyntax.Node node : BbCodeSyntax.parse(source)) if (node.name.equals("indent")) {
+                if (range[0] == node.end) { setSelection(node.contentEnd); break; }
+                if (range[0] == node.start) { setSelection(node.contentStart); break; }
+            }
+            range = inputRange();
+        }
+        ParagraphEditing.Edit edit = ParagraphEditing.seed(source, range[0], range[1], incoming.toString());
+        if (edit != null) applyParagraphEdit(edit);
+    }
+    private void indentNewlines(int start, CharSequence inserted) {
+        if (!paragraphIndentEnabled || sourceVisible || getText() == null || start < 0 || inserted.toString().indexOf('\n') < 0) return;
+        applyParagraphEdit(ParagraphEditing.newlines(getText().toString(), start, start + inserted.length(), getSelectionStart(), getSelectionEnd()));
+    }
+    private void applyParagraphEdit(ParagraphEditing.Edit edit) {
+        Editable text = getText();
+        if (text == null || text.toString().equals(edit.source)) return;
+        // Keep unaffected spans and the IME's composing range on the original Editable.
+        int from = 0, oldEnd = text.length(), newEnd = edit.source.length();
+        while (from < oldEnd && from < newEnd && text.charAt(from) == edit.source.charAt(from)) from++;
+        while (oldEnd > from && newEnd > from && text.charAt(oldEnd - 1) == edit.source.charAt(newEnd - 1)) { oldEnd--; newEnd--; }
+        beginBatchEdit();
+        try {
+            text.replace(from, oldEnd, edit.source.substring(from, newEnd));
+            setSelection(Math.max(0, Math.min(length(), edit.selectionStart)), Math.max(0, Math.min(length(), edit.selectionEnd)));
+        } finally { endBatchEdit(); }
+    }
+    private CharSequence paragraphInput(CharSequence text) {
+        return paragraphIndentEnabled && !sourceVisible && text.toString().indexOf('\r') >= 0
+                ? text.toString().replace("\r\n", "\n").replace('\r', '\n') : text;
+    }
+    private void insertVisualText(CharSequence incoming) {
+        beginBatchEdit();
+        try {
+            incoming = paragraphInput(incoming); seedParagraph(incoming);
+            int start = Math.max(0, Math.min(getSelectionStart(), getSelectionEnd())), end = Math.max(start, Math.max(getSelectionStart(), getSelectionEnd()));
+            CharSequence replacement = VisualEditing.replacement(getText().toString(), start, end, incoming);
+            getText().replace(start, end, replacement); setSelection(start + replacement.length());
+            indentNewlines(start, replacement);
+        } finally { endBatchEdit(); }
+    }
 
     @Override public InputConnection onCreateInputConnection(EditorInfo info) {
         InputConnection connection = super.onCreateInputConnection(info);
@@ -118,14 +189,41 @@ public final class BbCodeEditText extends AppCompatEditText {
         return new InputConnectionWrapper(connection, false) {
             private CharSequence protectedText(CharSequence value) {
                 if (sourceVisible || getText() == null) return value;
-                int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
-                int composingStart = android.view.inputmethod.BaseInputConnection.getComposingSpanStart(getText());
-                int composingEnd = android.view.inputmethod.BaseInputConnection.getComposingSpanEnd(getText());
-                if (composingStart >= 0 && composingEnd > composingStart) { start = composingStart; end = composingEnd; }
-                return VisualEditing.replacement(getText().toString(), start, end, value);
+                int[] range = inputRange();
+                return VisualEditing.replacement(getText().toString(), range[0], range[1], value);
             }
-            @Override public boolean commitText(CharSequence text, int position) { return super.commitText(protectedText(text), position); }
-            @Override public boolean setComposingText(CharSequence text, int position) { return super.setComposingText(protectedText(text), position); }
+            private boolean commit(CharSequence text, java.util.function.Function<CharSequence, Boolean> write) {
+                BbCodeEditText.this.beginBatchEdit();
+                try {
+                    text = paragraphInput(text); seedParagraph(text);
+                    int start = inputRange()[0];
+                    CharSequence replacement = protectedText(text);
+                    boolean result = write.apply(replacement);
+                    if (result) indentNewlines(start, replacement);
+                    return result;
+                } finally { BbCodeEditText.this.endBatchEdit(); }
+            }
+            private boolean compose(CharSequence text, java.util.function.Function<CharSequence, Boolean> write) {
+                BbCodeEditText.this.beginBatchEdit();
+                try { seedParagraph(text); return write.apply(protectedText(text)); }
+                finally { BbCodeEditText.this.endBatchEdit(); }
+            }
+            @Override public boolean commitText(CharSequence text, int position) {
+                return commit(text, value -> super.commitText(value, position));
+            }
+            @Override public boolean setComposingText(CharSequence text, int position) {
+                if (paragraphIndentEnabled && !sourceVisible && paragraphInput(text).toString().indexOf('\n') >= 0) return commitText(text, position);
+                return compose(text, value -> super.setComposingText(value, position));
+            }
+            @androidx.annotation.RequiresApi(33)
+            @Override public boolean commitText(CharSequence text, int position, android.view.inputmethod.TextAttribute attribute) {
+                return commit(text, value -> super.commitText(value, position, attribute));
+            }
+            @androidx.annotation.RequiresApi(33)
+            @Override public boolean setComposingText(CharSequence text, int position, android.view.inputmethod.TextAttribute attribute) {
+                if (paragraphIndentEnabled && !sourceVisible && paragraphInput(text).toString().indexOf('\n') >= 0) return commitText(text, position, attribute);
+                return compose(text, value -> super.setComposingText(value, position, attribute));
+            }
             @Override public boolean deleteSurroundingText(int before, int after) {
                 if (!sourceVisible && ((before == 1 && after == 0) || (before == 0 && after == 1))) return deleteVisual(before == 1);
                 return super.deleteSurroundingText(before, after);
@@ -142,6 +240,10 @@ public final class BbCodeEditText extends AppCompatEditText {
         if (text == null || start < 0) return false;
         if (start == end) {
             int[] range = VisualEditing.deletion(text.toString(), start, backward); start = range[0]; end = range[1];
+            if (paragraphIndentEnabled && end == start + 1) {
+                ParagraphEditing.Edit joined = ParagraphEditing.join(text.toString(), start);
+                if (joined != null) { applyParagraphEdit(joined); return true; }
+            }
             text.delete(start, end);
         } else text.replace(start, end, VisualEditing.replacement(text.toString(), start, end, ""));
         setSelection(Math.min(start, text.length()));
@@ -150,6 +252,11 @@ public final class BbCodeEditText extends AppCompatEditText {
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (!sourceVisible && (keyCode == KeyEvent.KEYCODE_DEL || keyCode == KeyEvent.KEYCODE_FORWARD_DEL))
             return deleteVisual(keyCode == KeyEvent.KEYCODE_DEL);
+        if (!sourceVisible && paragraphIndentEnabled) {
+            if (keyCode == KeyEvent.KEYCODE_ENTER) { insertVisualText("\n"); return true; }
+            if (!event.isCtrlPressed() && !event.isAltPressed() && event.getUnicodeChar() != 0)
+                seedParagraph(new String(Character.toChars(event.getUnicodeChar() & android.view.KeyCharacterMap.COMBINING_ACCENT_MASK)));
+        }
         return super.onKeyDown(keyCode, event);
     }
     @Override public boolean onTextContextMenuItem(int id) {
@@ -169,8 +276,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                 if (i > 0) incoming.append('\n');
                 incoming.append(clip.getItemAt(i).coerceToText(getContext()));
             }
-            CharSequence replacement = VisualEditing.replacement(getText().toString(), start, end, incoming);
-            getText().replace(start, end, replacement); setSelection(start + replacement.length()); return true;
+            insertVisualText(incoming); return true;
         }
         return super.onTextContextMenuItem(id);
     }
@@ -221,6 +327,10 @@ public final class BbCodeEditText extends AppCompatEditText {
         try {
             for (Object span : decoration) text.removeSpan(span);
             decoration.clear();
+            if (paragraphIndentEnabled && !sourceVisible && source.isEmpty()) {
+                LeadingMarginSpan margin = new LeadingMarginSpan.Standard(Math.round(getTextSize() * 2), 0);
+                text.setSpan(margin, 0, 0, Spanned.SPAN_INCLUSIVE_INCLUSIVE); decoration.add(margin);
+            }
             int[] paragraph = BbCodeSyntax.activeParagraph(source, hasFocus() ? getSelectionStart() : -1, hasFocus() ? getSelectionEnd() : -1);
             previewRanges.clear();
             Set<String> usedPreviews = new HashSet<>();
@@ -243,7 +353,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                         }
                     }
                     if (table != null) {
-                        usedTables.add(key); table.prepare();
+                        usedTables.add(key); table.setLeadingMargin(leadingMargin(text, node.start)); table.prepare();
                         block(text, source, node, table);
                         continue;
                     }
@@ -267,10 +377,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                         preview = new BbCodeBlockPreview(this, blockRenderer, source.substring(node.start, node.end), this::scheduleRender);
                         previews.put(key, preview);
                     }
-                    int leadingMargin = 0;
-                    for (LeadingMarginSpan margin : text.getSpans(node.start, node.start + 1, LeadingMarginSpan.class))
-                        leadingMargin += margin.getLeadingMargin(true);
-                    preview.setLeadingMargin(leadingMargin);
+                    preview.setLeadingMargin(leadingMargin(text, node.start));
                     preview.prepare();
                     block(text, source, node, preview);
                     continue;
@@ -440,6 +547,21 @@ public final class BbCodeEditText extends AppCompatEditText {
         if (tableCellListener != null) tableCellListener.layoutChanged();
     }
     @Override public boolean onTouchEvent(MotionEvent event) {
+        if (!sourceVisible && linkClickListener != null && isEnabled()) {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                pressedLink = linkAt(event.getX(), event.getY());
+                downX = event.getX(); downY = event.getY();
+            } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+                int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (Math.abs(event.getX() - downX) > slop || Math.abs(event.getY() - downY) > slop) pressedLink = null;
+            } else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+                EditableLinkSpan link = pressedLink; pressedLink = null;
+                if (link != null && event.getEventTime() - event.getDownTime() < ViewConfiguration.getLongPressTimeout()) {
+                    super.onTouchEvent(event);
+                    link.onClick(this); return true;
+                }
+            } else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) pressedLink = null;
+        }
         if (!sourceVisible && tableCellListener != null && isEnabled()) {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                 pressedCell = tableCellAt(event.getX(), event.getY());
@@ -457,6 +579,36 @@ public final class BbCodeEditText extends AppCompatEditText {
             } else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) { pressedCell = null; pressedBlock = null; }
         }
         return super.onTouchEvent(event);
+    }
+
+    private EditableLinkSpan linkAt(float x, float y) {
+        Layout layout = getLayout(); Editable text = getText();
+        if (layout == null || text == null) return null;
+        x += getScrollX() - getTotalPaddingLeft(); y += getScrollY() - getTotalPaddingTop();
+        if (x < 0 || y < 0 || x >= layout.getWidth() || y >= layout.getHeight()) return null;
+        Path path = new Path(); Region hit = new Region();
+        Region clip = new Region(0, 0, layout.getWidth(), layout.getHeight());
+        for (EditorCollapseSpan collapse : text.getSpans(0, text.length(), EditorCollapseSpan.class))
+            if (collapse.titleBounds.contains(x, y)) return null;
+        for (EditableLinkSpan link : text.getSpans(0, text.length(), EditableLinkSpan.class)) {
+            path.reset();
+            layout.getSelectionPath(text.getSpanStart(link), text.getSpanEnd(link), path);
+            hit.setPath(path, clip);
+            if (hit.contains((int) x, (int) y)) return link;
+        }
+        return null;
+    }
+
+    private final class EditableLinkSpan extends ClickableSpan {
+        final BbCodeSyntax.Node node;
+        EditableLinkSpan(BbCodeSyntax.Node node) { this.node = node; }
+        @Override public void onClick(@NonNull android.view.View widget) {
+            if (!sourceVisible && isEnabled() && linkClickListener != null && getText() != null
+                    && getText().toString().equals(parsedSource)) linkClickListener.edit(BbCodeEditText.this, node);
+        }
+        @Override public void updateDrawState(@NonNull android.text.TextPaint paint) {
+            paint.setColor(getLinkTextColors().getDefaultColor()); paint.setUnderlineText(true);
+        }
     }
 
     private boolean insidePreview(int start, int end) {
@@ -503,7 +655,7 @@ public final class BbCodeEditText extends AppCompatEditText {
     }
 
     private void sizeImage(Drawable drawable, BbCodeSyntax.Node node) {
-        int available = Math.max(1, getWidth() - getCompoundPaddingLeft() - getCompoundPaddingRight());
+        int available = Math.max(1, getWidth() - getCompoundPaddingLeft() - getCompoundPaddingRight() - leadingMargin(getText(), node.start));
         float intrinsicWidth = Math.max(1, drawable.getIntrinsicWidth()), intrinsicHeight = Math.max(1, drawable.getIntrinsicHeight());
         float width = dimension(node.attributes.get("width"), available), height = dimension(node.attributes.get("height"), available);
         if (width <= 0 && height <= 0) { width = intrinsicWidth; height = intrinsicHeight; }
@@ -511,6 +663,12 @@ public final class BbCodeEditText extends AppCompatEditText {
         else if (height <= 0) height = width * intrinsicHeight / intrinsicWidth;
         float scale = Math.min(1f, Math.min(available / width, dp(320) / height));
         drawable.setBounds(0, 0, Math.max(1, Math.round(width * scale)), Math.max(1, Math.round(height * scale)));
+    }
+    private int leadingMargin(Editable text, int start) {
+        int total = 0;
+        for (LeadingMarginSpan margin : text.getSpans(start, Math.min(text.length(), start + 1), LeadingMarginSpan.class))
+            total += margin.getLeadingMargin(true);
+        return total;
     }
     private float dimension(String value, int available) {
         if (value == null || !value.matches("\\d{1,4}(?:\\.\\d{1,2})?(?:px|%|em)?")) return 0;
@@ -542,7 +700,11 @@ public final class BbCodeEditText extends AppCompatEditText {
             case "sup": span(text, new SuperscriptSpan(), start, end); span(text, new RelativeSizeSpan(.8f), start, end); break;
             case "url": case "mention": case "hash": case "ref":
                 span(text, new ForegroundColorSpan(getLinkTextColors().getDefaultColor()), start, end);
-                span(text, new UnderlineSpan(), start, end); break;
+                span(text, new UnderlineSpan(), start, end);
+                if (node.name.equals("url") && !sourceVisible && linkClickListener != null
+                        && !insideNode("spoiler", node.start, node.end))
+                    span(text, new EditableLinkSpan(node), start, end);
+                break;
             case "font": span(text, new TypefaceSpan(BbCodeRendering.fontFamily(node.argument)), start, end); break;
             case "code": case "markdown": case "handbook":
                 span(text, new TypefaceSpan("monospace"), start, end);
@@ -560,7 +722,22 @@ public final class BbCodeEditText extends AppCompatEditText {
             case "table": case "tr": case "td": case "list": case "p": break;
             case "th": span(text, new StyleSpan(Typeface.BOLD), start, end); break;
             case "collapse":
-                span(text, new BackgroundColorSpan(ColorUtils.setAlphaComponent(getCurrentTextColor(), 12)), start, end); break;
+                if (!sourceVisible && !insideNode("spoiler", node.start, node.end)) {
+                    int headerOffset = 0;
+                    int firstLine = node.start == 0 ? 0 : source.lastIndexOf('\n', node.start - 1) + 1;
+                    for (EditorCollapseSpan parent : text.getSpans(node.start, node.start, EditorCollapseSpan.class))
+                        if (text.getSpanStart(parent) >= firstLine) headerOffset += parent.headerHeight;
+                    int lastLine = source.indexOf('\n', node.end);
+                    EditorCollapseSpan frame = new EditorCollapseSpan(this, node.argument, headerOffset, node.start, node.end);
+                    span(text, frame, firstLine, lastLine < 0 ? source.length() : lastLine + 1);
+                    span(text, (LineHeightSpan) (value, from, to, top, vertical, metrics) -> {
+                        if (from <= node.start && to > node.start) { metrics.ascent -= frame.headerHeight; metrics.top -= frame.headerHeight; }
+                    }, node.start, node.contentStart);
+                    span(text, (LineHeightSpan) (value, from, to, top, vertical, metrics) -> {
+                        if (from < node.end && to >= node.end) { metrics.descent += frame.padding; metrics.bottom += frame.padding; }
+                    }, node.contentEnd, node.end);
+                }
+                break;
             case "*":
                 if (!sourceVisible) {
                     int number = 1; boolean ordered = false;

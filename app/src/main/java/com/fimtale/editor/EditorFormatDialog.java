@@ -64,9 +64,23 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         args.putInt("start", start); args.putInt("end", end); args.putInt("version", host.formatVersion());
         dialog.setArguments(args); return dialog;
     }
+    public static EditorFormatDialog editLink(Host host, BbCodeSyntax.Node link) {
+        EditorFormatDialog dialog = create(host);
+        String source = host.formatBody().getText().toString();
+        Bundle args = dialog.requireArguments();
+        args.putInt("start", link.start); args.putInt("end", link.end);
+        args.putString("link_source", source.substring(link.start, link.end));
+        String content = source.substring(link.contentStart, link.contentEnd);
+        args.putString("link_content", content);
+        args.putString("link_text", VisualEditing.decodeEntities(VisualEditing.selectedText(content, 0, content.length())));
+        args.putString("link_url", link.argument.isEmpty() ? args.getString("link_text") : VisualEditing.decodeEntities(link.argument));
+        return dialog;
+    }
+    private boolean editingLink() { return requireArguments().containsKey("link_source"); }
     private Host host() { return (Host) requireActivity(); }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     @NonNull @Override public Dialog onCreateDialog(Bundle state) {
+        if (editingLink()) format = EditorFormat.LINK;
         if (state != null) {
             String name = state.getString("format");
             if (name != null) try { format = EditorFormat.valueOf(name); } catch (IllegalArgumentException ignored) {}
@@ -105,9 +119,11 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
     private void render() {
         if (root == null) return;
         content.removeAllViews(); inputs.clear(); choice = null; headerRow = null; error("");
-        root.findViewById(R.id.editorFormatBack).setVisibility(format == null ? View.GONE : View.VISIBLE);
+        root.findViewById(R.id.editorFormatBack).setVisibility(format == null || editingLink() ? View.GONE : View.VISIBLE);
         root.findViewById(R.id.editorFormatInsert).setVisibility(format == null ? View.GONE : View.VISIBLE);
-        ((TextView) root.findViewById(R.id.editorFormatTitle)).setText(format == null ? getString(R.string.editor_more_formats) : format.label);
+        ((TextView) root.findViewById(R.id.editorFormatInsert)).setText(editingLink() ? R.string.editor_format_save : R.string.editor_format_insert);
+        ((TextView) root.findViewById(R.id.editorFormatTitle)).setText(editingLink() ? getString(R.string.editor_edit_link)
+                : format == null ? getString(R.string.editor_more_formats) : format.label);
         if (format == null) palette(); else form();
         if (restoredValues != null) {
             for (int i = 0; i < inputs.size() && i < restoredValues.length; i++) inputs.get(i).setText(restoredValues[i]);
@@ -161,7 +177,16 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
     private void form() {
         int text = InputType.TYPE_CLASS_TEXT, url = text | InputType.TYPE_TEXT_VARIATION_URI;
         switch (format) {
-            case LINK: field("链接网址", "https://", url); field("链接文字（可选）", selected(), text); break;
+            case LINK:
+                field("链接网址", editingLink() ? requireArguments().getString("link_url") : "https://", url);
+                field("链接文字（可选）", editingLink() ? requireArguments().getString("link_text") : selected(), text);
+                if (editingLink()) {
+                    com.google.android.material.button.MaterialButton remove = new com.google.android.material.button.MaterialButton(content.getContext());
+                    remove.setId(R.id.editorRemoveLink); remove.setText(R.string.editor_remove_link);
+                    remove.setOnClickListener(v -> apply(BbCodeInsertion.atom(requireArguments().getString("link_content"), false)));
+                    content.addView(remove);
+                }
+                break;
             case IMAGE:
                 field("图片网址", "https://", url); field("宽度（可选，像素）", "", InputType.TYPE_CLASS_NUMBER);
                 field("高度（可选，像素）", "", InputType.TYPE_CLASS_NUMBER); field("图片说明（可选）", "", text); break;
@@ -216,7 +241,11 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         if (lookup != null) return;
         try {
             switch (format) {
-                case LINK: apply(BbCodeInsertion.link(value(0), value(1))); break;
+                case LINK:
+                    String label = value(1);
+                    if (editingLink()) label = label.equals(requireArguments().getString("link_text"))
+                            ? requireArguments().getString("link_content") : BbCodeInsertion.literal(label);
+                    apply(BbCodeInsertion.link(value(0), label)); break;
                 case IMAGE: apply(BbCodeInsertion.image(value(0), value(1), value(2), value(3))); break;
                 case COLOR: case BACKGROUND:
                     String color = value(0).trim();
@@ -267,6 +296,9 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         BbCodeEditText body = host().formatBody();
         int start = requireArguments().getInt("start"), end = requireArguments().getInt("end");
         if (end > body.length()) { error("正文已变化，请重新选择插入位置"); return; }
+        if (editingLink() && !body.getText().subSequence(start, end).toString().equals(requireArguments().getString("link_source"))) {
+            error("链接已变化，请关闭面板后重新选择"); return;
+        }
         applied = true;
         host().applyFormat(BbCodeInsertion.at(body.getText().toString(), start, end, fragment)); dismiss();
     }
