@@ -117,8 +117,6 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         toolbar.setOnMenuItemClickListener(menuActions);
         moreMenu = new com.fimtale.ui.BottomSheetMenu(this, R.menu.editor_more_menu, menuActions::onMenuItemClick);
         title = findViewById(R.id.editorTitle); body = findViewById(R.id.editorBody);
-        body.setNestedScrollingEnabled(true);
-        body.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
         body.setSourceVisible(state != null && state.getBoolean("source_visible"));
         updateSourceButton();
         intro = findViewById(R.id.editorIntro); cover = findViewById(R.id.editorCover);

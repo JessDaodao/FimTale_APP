@@ -141,11 +141,10 @@ public final class BbCodeEditorLayout extends FrameLayout implements BbCodeEditT
         removeView(previous); expectedSource = null;
     }
     private void revealActiveInput() {
-        if (cell == null || body.getHeight() == 0) return;
-        int available = body.getHeight() - body.getTotalPaddingBottom();
-        int top = cell.getTop() - body.getTop(), bottom = cell.getBottom() - body.getTop();
-        int delta = top < 0 ? top : bottom > available ? Math.min(top, bottom - available) : 0;
-        if (delta != 0) body.scrollBy(0, delta);
+        if (cell == null || cell.getSelectionEnd() < 0) return;
+        // Let the document's ScrollView reveal the caret without scrolling the body
+        // independently of the table/block editor positioned over it.
+        cell.bringPointIntoView(cell.getSelectionEnd());
     }
     @Override protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
