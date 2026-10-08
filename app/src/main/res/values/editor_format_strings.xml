@@ -2,7 +2,6 @@
     <string name="editor_more_formats">更多格式</string>
     <string name="editor_format_insert">插入</string>
     <string name="editor_format_back">返回格式列表</string>
-    <string name="editor_format_close">关闭格式面板</string>
     <item name="editorFormatInput0" type="id" />
     <item name="editorFormatInput1" type="id" />
     <item name="editorFormatInput2" type="id" />

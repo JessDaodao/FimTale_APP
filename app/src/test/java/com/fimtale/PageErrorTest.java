@@ -315,7 +315,7 @@ public class PageErrorTest {
         assertFalse(readerText(activity, "pages").contains("长篇折叠正文"));
         assertFalse(readerText(activity, "verticalPages").contains("长篇折叠正文"));
         assertTrue(readerText(activity, "pages").contains("尾文"));
-        sheet.findViewById(R.id.collapseSheetClose).performClick();
+        sheet.cancel();
         assertFalse(sheet.isShowing());
         mode.invoke(activity, false); layoutReader(activity);
         assertEquals(collapsedPages, readerPages(activity, "pages").size());

@@ -126,7 +126,7 @@ public class CollapseTest {
         assertEquals(0, text(content).getSpans(0, content.length(), LineBackgroundSpan.class).length);
         assertEquals(before, article.getText().toString());
         assertEquals(height, article.getLayout().getHeight());
-        sheet.findViewById(R.id.collapseSheetClose).performClick();
+        sheet.cancel();
         assertFalse(sheet.isShowing());
         tapButton(article);
         assertTrue(sheet().isShowing());

@@ -76,7 +76,6 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
         root = LayoutInflater.from(dialog.getContext()).inflate(R.layout.dialog_editor_formats, null);
         content = root.findViewById(R.id.editorFormatContent);
-        root.findViewById(R.id.editorFormatClose).setOnClickListener(v -> dismiss());
         root.findViewById(R.id.editorFormatBack).setOnClickListener(v -> {
             cancelLookup(); format = null; restoredValues = null; render();
         });

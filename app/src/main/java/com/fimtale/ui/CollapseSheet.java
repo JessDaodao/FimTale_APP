@@ -32,7 +32,6 @@ public final class CollapseSheet {
         heading.setText(title);
         content.setTextSize(TypedValue.COMPLEX_UNIT_PX, owner.getTextSize());
         content.setLineSpacing(owner.getLineSpacingExtra(), owner.getLineSpacingMultiplier());
-        sheet.findViewById(R.id.collapseSheetClose).setOnClickListener(view -> sheet.dismiss());
         ViewCompat.setAccessibilityPaneTitle(root, title);
         View surface = sheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
         surface.setBackgroundResource(R.drawable.bg_bottom_sheet_rounded);

@@ -64,7 +64,8 @@ public class EditorFormatDialogTest {
         open(EditorFormat.IMAGE); input(R.id.editorFormatInput0).setText("not a url"); insert();
         assertEquals("前正文🐴后", activity.body.getText().toString());
         assertEquals(android.view.View.VISIBLE, dialog().requireDialog().findViewById(R.id.editorFormatError).getVisibility());
-        dialog().requireDialog().findViewById(R.id.editorFormatClose).performClick(); shadowOf(Looper.getMainLooper()).idle();
+        dialog().requireDialog().cancel(); shadowOf(Looper.getMainLooper()).idle();
+        assertNull(dialog());
         assertEquals("前正文🐴后", activity.body.getText().toString());
     }
     @Test public void sourceReplacementInvalidatesOldInsertionRanges() {
