@@ -25,13 +25,6 @@
             android:textColor="?attr/colorOnBackground" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/readerCommentsRefresh"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="刷新" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/readerCommentsSort"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
@@ -47,29 +40,41 @@
         android:text="查看评论"
         android:visibility="gone" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/readerCommentsList"
+    <com.fimtale.ui.PullRefreshLayout
+        android:id="@+id/readerCommentsRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:nestedScrollingEnabled="true"
-        android:clipToPadding="false"
-        android:paddingBottom="8dp" />
+        android:layout_weight="1">
 
-    <com.fimtale.ui.ShimmerSkeletonView
-        android:id="@+id/readerCommentsSkeleton"
-        android:layout_width="match_parent"
-        android:layout_height="260dp"
-        android:visibility="gone" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/readerCommentsStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:padding="16dp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:visibility="gone" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/readerCommentsList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:nestedScrollingEnabled="true"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp" />
+
+            <com.fimtale.ui.ShimmerSkeletonView
+                android:id="@+id/readerCommentsSkeleton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/readerCommentsStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="16dp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone" />
+        </FrameLayout>
+    </com.fimtale.ui.PullRefreshLayout>
 
     <LinearLayout
         android:id="@+id/readerCommentsPager"

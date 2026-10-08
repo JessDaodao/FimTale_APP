@@ -271,4 +271,19 @@ public class CurrentApiTest {
         assertTrue(empty.getItems().isEmpty()); assertEquals(1, empty.totalPages(16));
     }
 
+    @Test public void readerCommentsRequestTheCurrentChapterWithPaginationAndSort() throws Exception {
+        api("{\"items\":[],\"total\":0}").getWorkComments(42, 101, 2, 16, "created_at", "desc").execute();
+        assertEquals("GET", request.get().method());
+        assertEquals("/api/work/get_comments", request.get().url().encodedPath());
+        assertEquals("42", request.get().url().queryParameter("work_id"));
+        assertEquals("101", request.get().url().queryParameter("chapter_id"));
+        assertEquals("2", request.get().url().queryParameter("page"));
+        assertEquals("16", request.get().url().queryParameter("per_page"));
+        assertEquals("created_at", request.get().url().queryParameter("order_by"));
+        assertEquals("desc", request.get().url().queryParameter("order_option"));
+
+        api("{\"items\":[],\"total\":0}").getWorkComments(42, null, 1, 16, "created_at", "asc").execute();
+        assertNull(request.get().url().queryParameter("chapter_id"));
+    }
+
 }

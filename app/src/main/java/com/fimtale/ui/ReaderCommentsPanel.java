@@ -42,16 +42,18 @@ public final class ReaderCommentsPanel {
     private final CommentAdapter adapter;
     private final ShimmerSkeletonView skeleton;
     private final TextView title, status, pageLabel;
-    private final MaterialButton refresh, sort, previous, next, send, emoji;
+    private final PullRefreshLayout refresh;
+    private final MaterialButton sort, previous, next, send, emoji;
     private final TextInputEditText input;
     private final View pager;
     private PageErrorView pageError;
     private Call<WorkCommentsResponse> activeCall;
     private Call<Void> commentCall;
-    private int chapterId;
+    private int chapterId = -1;
     private int page = 1;
     private int totalPages = 1;
     private boolean descending;
+    private boolean loading;
     private boolean sending;
     private boolean closed;
 
@@ -72,7 +74,7 @@ public final class ReaderCommentsPanel {
         status = root.findViewById(R.id.readerCommentsStatus);
         pageLabel = root.findViewById(R.id.readerCommentsPage);
         pager = root.findViewById(R.id.readerCommentsPager);
-        refresh = root.findViewById(R.id.readerCommentsRefresh);
+        refresh = root.findViewById(R.id.readerCommentsRefreshLayout);
         sort = root.findViewById(R.id.readerCommentsSort);
         previous = root.findViewById(R.id.readerCommentsPrevious);
         next = root.findViewById(R.id.readerCommentsNext);
@@ -80,7 +82,8 @@ public final class ReaderCommentsPanel {
         emoji = root.findViewById(R.id.readerCommentComposerEmoji);
         send = root.findViewById(R.id.readerCommentComposerSend);
 
-        refresh.setOnClickListener(v -> load(1));
+        refresh.setOnChildScrollUpCallback((parent, child) -> closed || loading || list.canScrollVertically(-1));
+        refresh.setOnRefreshListener(() -> load(1));
         sort.setOnClickListener(v -> {
             descending = !descending;
             sort.setText(descending ? "从晚到早" : "从早到晚");
@@ -101,8 +104,21 @@ public final class ReaderCommentsPanel {
     }
 
     public void bind(int chapterId) {
+        if (closed || chapterId < 0) return;
+        if (this.chapterId != chapterId) {
+            if (commentCall != null) { commentCall.cancel(); finishSubmit(); }
+            adapter.updateData(new ArrayList<>());
+        }
+        // A recycled view may get a new panel while still showing the same chapter.
+        Object previousChapter = root.getTag(R.id.readerCommentsRoot);
+        if (previousChapter != null && !Integer.valueOf(chapterId).equals(previousChapter)) input.setText("");
+        root.setTag(R.id.readerCommentsRoot, chapterId);
         this.chapterId = chapterId;
+        page = 1;
+        totalPages = 1;
+        refresh.setRefreshing(false);
         title.setText("评论");
+        sort.setText(descending ? "从晚到早" : "从早到晚");
         load(1);
     }
 
@@ -112,14 +128,15 @@ public final class ReaderCommentsPanel {
     }
 
     private void load(int requestedPage) {
-        pageError.hide();
         if (closed || requestedPage < 1) return;
+        pageError.hide();
         if (activeCall != null) activeCall.cancel();
         updatePager(true);
         status.setVisibility(View.GONE);
-        list.setVisibility(View.GONE);
-        skeleton.setVisibility(View.VISIBLE);
-        activeCall = RetrofitClient.getInstance().getWorkComments(workId, requestedPage, PER_PAGE,
+        boolean pulling = refresh.isRefreshing();
+        list.setVisibility(pulling ? View.VISIBLE : View.INVISIBLE);
+        skeleton.setVisibility(pulling ? View.GONE : View.VISIBLE);
+        activeCall = RetrofitClient.getInstance().getWorkComments(workId, chapterId > 0 ? chapterId : null, requestedPage, PER_PAGE,
                 "created_at", descending ? "desc" : "asc");
         activeCall.enqueue(new Callback<WorkCommentsResponse>() {
             @Override public void onResponse(Call<WorkCommentsResponse> call, Response<WorkCommentsResponse> response) {
@@ -130,14 +147,12 @@ public final class ReaderCommentsPanel {
                     if (requestedPage > totalPages) { load(totalPages); return; }
                     page = requestedPage;
                     adapter.updateData(result.getItems());
+                    list.scrollToPosition(0);
                     title.setText("评论（" + result.total + "）");
-                    skeleton.setVisibility(View.GONE);
-                    list.setVisibility(View.VISIBLE);
-                    updatePager(false);
+                    finishLoading();
                     if (result.getItems().isEmpty()) {
-                        status.setText("暂无评论，点击刷新");
+                        status.setText("暂无评论，下拉刷新");
                         status.setVisibility(View.VISIBLE);
-                        status.setOnClickListener(v -> load(1));
                     }
                 } else showError(requestedPage, ApiErrors.message(response));
             }
@@ -149,18 +164,23 @@ public final class ReaderCommentsPanel {
     }
 
     private void showError(int requestedPage, String message) {
-        skeleton.setVisibility(View.GONE);
-        list.setVisibility(View.VISIBLE);
-        updatePager(false);
+        finishLoading();
         status.setVisibility(View.GONE);
         pageError.show(message, () -> load(requestedPage), adapter.getItemCount() > 0);
     }
 
+    private void finishLoading() {
+        refresh.setRefreshing(false);
+        skeleton.setVisibility(View.GONE);
+        list.setVisibility(View.VISIBLE);
+        updatePager(false);
+    }
+
     private void updatePager(boolean loading) {
+        this.loading = loading;
         pager.setVisibility(totalPages > 1 ? View.VISIBLE : View.GONE);
         previous.setEnabled(!loading && page > 1);
         next.setEnabled(!loading && page < totalPages);
-        refresh.setEnabled(!loading);
         sort.setEnabled(!loading);
         pageLabel.setText(page + " / " + totalPages);
     }
@@ -240,7 +260,10 @@ public final class ReaderCommentsPanel {
     public void close() {
         closed = true;
         if (activeCall != null) activeCall.cancel();
-        if (commentCall != null) commentCall.cancel();
+        if (commentCall != null) { commentCall.cancel(); finishSubmit(); }
+        refresh.setRefreshing(false);
+        refresh.setOnRefreshListener(null);
+        pageError.hide();
         list.setAdapter(null);
     }
 }

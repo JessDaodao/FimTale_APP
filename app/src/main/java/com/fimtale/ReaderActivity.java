@@ -1885,6 +1885,7 @@ public class ReaderActivity extends AppCompatActivity {
             TextView tvContinueRead;
             View commentsHeader;
             View commentsButton;
+            View commentsRefresh;
             View commentsList;
             View commentsSkeleton;
             View commentsStatus;
@@ -1896,6 +1897,7 @@ public class ReaderActivity extends AppCompatActivity {
                 super(itemView);
                 commentsHeader = itemView.findViewById(R.id.readerCommentsHeader);
                 commentsButton = itemView.findViewById(R.id.readerCommentsButton);
+                commentsRefresh = itemView.findViewById(R.id.readerCommentsRefreshLayout);
                 tvChapterTitle = itemView.findViewById(R.id.readerCommentsTitle);
                 tvContinueRead = itemView.findViewById(R.id.readerContinueRead);
                 commentsList = itemView.findViewById(R.id.readerCommentsList);
@@ -1918,6 +1920,7 @@ public class ReaderActivity extends AppCompatActivity {
                     if (commentsPanel != null) { commentsPanel.close(); commentsPanel = null; }
                     commentsHeader.setVisibility(View.GONE);
                     commentsButton.setVisibility(View.VISIBLE);
+                    commentsRefresh.setVisibility(View.GONE);
                     commentsList.setVisibility(View.GONE);
                     commentsSkeleton.setVisibility(View.GONE);
                     commentsStatus.setVisibility(View.GONE);
@@ -1927,6 +1930,7 @@ public class ReaderActivity extends AppCompatActivity {
                     commentsButton.setOnClickListener(v -> showReaderCommentsBottomSheet(chapterId));
                 } else {
                     commentsButton.setVisibility(View.GONE);
+                    commentsRefresh.setVisibility(View.VISIBLE);
                     commentsHeader.setVisibility(View.VISIBLE);
                     commentsComposer.setVisibility(View.VISIBLE);
                     tvChapterTitle.setText("评论");

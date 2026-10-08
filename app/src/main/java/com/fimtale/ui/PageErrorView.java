@@ -35,6 +35,12 @@ public final class PageErrorView extends FrameLayout {
     public static PageErrorView wrap(View content) {
         View anchor = content.getParent() instanceof PullRefreshLayout ? (View) content.getParent() : content;
         ViewGroup parent = (ViewGroup) anchor.getParent();
+        // Reader page holders reuse their views when binding another chapter.
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View child = parent.getChildAt(i);
+            if (child instanceof PageErrorView && ((PageErrorView) child).content == anchor)
+                return (PageErrorView) child;
+        }
         int index = parent.indexOfChild(anchor);
         ViewGroup.LayoutParams params = anchor.getLayoutParams();
         FrameLayout host = new FrameLayout(content.getContext());

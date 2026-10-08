@@ -95,7 +95,7 @@ public class SearchActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
-            getSupportActionBar().setTitle("");
+            getSupportActionBar().setTitle("搜索");
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
