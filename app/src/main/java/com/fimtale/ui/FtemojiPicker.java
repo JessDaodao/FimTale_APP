@@ -9,8 +9,6 @@ import android.content.res.ColorStateList;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -47,27 +45,13 @@ public final class FtemojiPicker {
 
     public static void show(Context context, Consumer<String> onSelected) {
         BottomSheetDialog dialog = new BottomSheetDialog(context);
-        LinearLayout content = new LinearLayout(context);
-        content.setOrientation(LinearLayout.VERTICAL);
-        int padding = dp(context, 12);
-        content.setPadding(padding, padding, padding, dp(context, 20));
-
-        TextView title = new TextView(context);
-        title.setText("插入表情");
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        title.setTextColor(resolveColor(context, com.google.android.material.R.attr.colorOnSurface));
-        title.setGravity(Gravity.CENTER_VERTICAL);
-        title.setPadding(dp(context, 4), 0, dp(context, 4), dp(context, 8));
-        content.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 40)));
-
-        RecyclerView grid = new RecyclerView(context);
-        grid.setLayoutManager(new GridLayoutManager(context, 6));
-        grid.setAdapter(new EmojiAdapter(context, name -> {
+        dialog.setContentView(R.layout.dialog_ftemoji_picker);
+        RecyclerView grid = dialog.findViewById(R.id.ftemojiGrid);
+        grid.setLayoutManager(new GridLayoutManager(dialog.getContext(), 6));
+        grid.setAdapter(new EmojiAdapter(dialog.getContext(), name -> {
             onSelected.accept(name);
             dialog.dismiss();
         }));
-        content.addView(grid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 320)));
-        dialog.setContentView(content);
         dialog.show();
     }
 

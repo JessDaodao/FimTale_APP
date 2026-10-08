@@ -5,4 +5,5 @@
     <dimen name="page_margin">16dp</dimen>
     <dimen name="page_offset">24dp</dimen>
     <dimen name="input_corner_radius">20dp</dimen>
+    <dimen name="message_bubble_corner_radius">20dp</dimen>
 </resources>

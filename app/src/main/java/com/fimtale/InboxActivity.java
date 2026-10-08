@@ -180,13 +180,10 @@ public abstract class InboxActivity extends AppCompatActivity {
         try { return android.text.format.DateUtils.getRelativeTimeSpanString(java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli(), System.currentTimeMillis(), 60000).toString(); }
         catch (RuntimeException e) { return iso; }
     }
-    private void loadAvatar(ImageView view, AuthorInfo author, boolean circular) {
+    private void loadAvatar(ImageView view, AuthorInfo author) {
         view.setContentDescription(author == null ? "用户头像" : author.getUserName() + "的头像");
-        com.bumptech.glide.RequestBuilder<android.graphics.drawable.Drawable> request = Glide.with(this)
-                .load(author == null ? null : author.getAvatar()).placeholder(MdiIcons.drawable(this, "account"));
-        if (circular) request.circleCrop().into(view);
-        else request.transform(new com.bumptech.glide.load.resource.bitmap.CenterCrop(),
-                new com.bumptech.glide.load.resource.bitmap.RoundedCorners(dp(6))).into(view);
+        Glide.with(this).load(author == null ? null : author.getAvatar())
+                .placeholder(MdiIcons.drawable(this, "account")).circleCrop().into(view);
     }
     private String chatTime(String iso) {
         if (iso == null) return "";
@@ -222,7 +219,7 @@ public abstract class InboxActivity extends AppCompatActivity {
             ImageView avatar = new ImageView(this);
             FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(dp(count == 1 ? 52 : 25), dp(count == 1 ? 52 : 25));
             if (count > 1) { params.leftMargin = dp((i % 2) * 27); params.topMargin = dp((i / 2) * 27 + (count == 2 ? 13 : 0)); }
-            avatars.addView(avatar, params); loadAvatar(avatar, others.isEmpty() ? null : others.get(i), true);
+            avatars.addView(avatar, params); loadAvatar(avatar, others.isEmpty() ? null : others.get(i));
         }
         view.setOnClickListener(v -> startActivity(ConversationActivity.intent(this, conversation)));
         row.addView(view);
@@ -243,7 +240,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         LinearLayout line = view.findViewById(R.id.messageLine); line.setGravity((mine ? Gravity.END : Gravity.START) | Gravity.TOP);
         ImageView left = view.findViewById(R.id.messageAvatarLeft), right = view.findViewById(R.id.messageAvatarRight);
         left.setVisibility(mine ? View.GONE : View.VISIBLE); right.setVisibility(mine ? View.VISIBLE : View.GONE);
-        ImageView avatar = mine ? right : left; loadAvatar(avatar, message.user, false);
+        ImageView avatar = mine ? right : left; loadAvatar(avatar, message.user);
         if (message.user != null) avatar.setOnClickListener(v -> startActivity(new Intent(this, UserDetailActivity.class)
                 .putExtra(UserDetailActivity.EXTRA_USERNAME, message.user.getUserName())));
         int availableWidth = list.getWidth() > 0 ? list.getWidth() : getResources().getDisplayMetrics().widthPixels;

@@ -145,13 +145,14 @@ public final class ShimmerSkeletonView extends View {
     }
     private void chat() {
         float width = getWidth(); int index = 0;
+        float bubbleRadius = getResources().getDimension(R.dimen.message_bubble_corner_radius);
         for (float y = dp(24); y < getHeight(); y += dp(100)) {
             boolean mine = index++ % 2 != 0;
             float avatarLeft = mine ? width - dp(52) : dp(12);
-            block(avatarLeft, y, avatarLeft + dp(40), y + dp(40), dp(6));
+            block(avatarLeft, y, avatarLeft + dp(40), y + dp(40), dp(20));
             float bubbleWidth = Math.max(dp(40), (width - dp(112)) * (mine ? .7f : .9f));
             float left = mine ? width - dp(60) - bubbleWidth : dp(60);
-            block(left, y, left + bubbleWidth, y + dp(mine ? 42 : 62), dp(8));
+            block(left, y, left + bubbleWidth, y + dp(mine ? 42 : 62), bubbleRadius);
         }
     }
     private void rebuild() {
