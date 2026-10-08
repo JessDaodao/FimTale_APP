@@ -68,6 +68,7 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                             addTagChip(topicHolder.tagChipGroup, tagName, false);
                         }
                     }
+                    alignTagChipHeights(topicHolder.tagChipGroup);
                 } else {
                     topicHolder.tagChipGroup.setVisibility(View.GONE);
                 }
@@ -166,6 +167,20 @@ public class TopicAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             if (cover instanceof ParallaxImageView) ((ParallaxImageView) cover).setParallaxEnabled(false);
         }
         super.onViewRecycled(holder);
+    }
+
+    private void alignTagChipHeights(ChipGroup group) {
+        // ChipGroup uses the last chip's height for each row, so shorter labels can clip taller ones.
+        int measureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        int height = 0;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View chip = group.getChildAt(i);
+            chip.measure(measureSpec, measureSpec);
+            height = Math.max(height, chip.getMeasuredHeight());
+        }
+        for (int i = 0; i < group.getChildCount(); i++) {
+            ((Chip) group.getChildAt(i)).setMinHeight(height);
+        }
     }
 
     private void addTagChip(ChipGroup group, String text, boolean isStatus) {
