@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
             bottomNav.setSelectedItemId(currentItemId);
         }
 
-        UpdateChecker.checkUpdate(this, false);
+        com.fimtale.crash.CrashFeedback.whenNoPendingReport(this, () -> UpdateChecker.checkUpdate(this, false));
     }
 
     private void updateToolbar(int itemId) {

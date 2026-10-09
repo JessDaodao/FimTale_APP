@@ -36,6 +36,8 @@ public interface FimTaleApiService {
             @Body TimelineItem.Highlight request);
     @POST("report/create_report") Call<com.fimtale.report.ReportRequest.Result> createReport(
             @Header("Token") String token, @Body com.fimtale.report.ReportRequest report);
+    @POST("report/create_report") Call<com.fimtale.report.ReportRequest.Result> sendCrashFeedback(
+            @Header("Token") String token, @Body com.fimtale.crash.CrashFeedbackRequest report);
     @GET("work/get_review_entries") Call<List<ReviewEntry>> getReviewEntries(@Header("Token") String token);
     @POST("work/submit_review") Call<ReviewEntry> submitReview(@Header("Token") String token, @Body ReviewEntry.Submit submission);
     @GET("user/get_username_by_id") Call<String> getUsernameById(@Header("Token") String token, @Query("user_id") int userId);

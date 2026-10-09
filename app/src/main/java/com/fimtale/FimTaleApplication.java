@@ -10,6 +10,9 @@ import com.mikepenz.iconics.typeface.library.community.material.CommunityMateria
 public class FimTaleApplication extends Application {
 
     private static FimTaleApplication instance;
+    private com.fimtale.crash.CrashFeedback crashFeedback;
+
+    public com.fimtale.crash.CrashFeedback getCrashFeedback() { return crashFeedback; }
 
     public static FimTaleApplication getInstance() {
         return instance;
@@ -19,6 +22,7 @@ public class FimTaleApplication extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        crashFeedback = com.fimtale.crash.CrashFeedback.install(this);
         Iconics.registerFont(CommunityMaterial.INSTANCE);
         Iconics.init(this);
 

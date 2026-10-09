@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:paddingHorizontal="24dp" android:paddingVertical="8dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/crash_feedback_message" android:textAppearance="?attr/textAppearanceBodyLarge" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/crash_feedback_data"
+            android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:hint="@string/crash_feedback_description">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/crashFeedbackDescription"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="top|start" android:minLines="2" android:maxLines="5" android:maxLength="2000"
+                android:inputType="textCapSentences|textMultiLine" android:imeOptions="flagNoExtractUi" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.button.MaterialButton android:id="@+id/crashFeedbackShowDetails"
+            style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="@string/crash_feedback_show_details" />
+        <TextView android:id="@+id/crashFeedbackDetails" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceBodySmall"
+            android:fontFamily="monospace" android:textIsSelectable="true" android:visibility="gone" />
+        <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/crashFeedbackProgress"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp"
+            android:indeterminate="true" android:visibility="gone" android:contentDescription="@string/crash_feedback_sending" />
+        <TextView android:id="@+id/crashFeedbackError" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:textColor="?attr/colorError" android:accessibilityLiveRegion="polite"
+            android:visibility="gone" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
