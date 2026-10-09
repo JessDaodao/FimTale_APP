@@ -7,6 +7,7 @@ import com.fimtale.utils.ReaderPagination;
 import android.widget.ScrollView;
 import android.text.SpannableStringBuilder;
 import android.text.SpannedString;
+import android.text.TextUtils;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -178,6 +179,28 @@ public class ReaderActivity extends AppCompatActivity {
     private int pagedViewportWidth;
     private int pagedViewportHeight;
     private boolean pageReflowPending;
+    private boolean rebuildingReaderContent;
+    private boolean adjacentChapterLoadPosted;
+    private VerticalPosition pendingVerticalPosition;
+
+    /** Chapter-relative row and offset from the padded reading area, valid across preloads. */
+    private static final class VerticalPosition {
+        final int chapterId;
+        final int paragraph;
+        final int offset;
+        final double fraction;
+
+        VerticalPosition(int chapterId, int paragraph, int offset) {
+            this(chapterId, paragraph, offset, 0);
+        }
+
+        VerticalPosition(int chapterId, int paragraph, int offset, double fraction) {
+            this.chapterId = chapterId;
+            this.paragraph = paragraph;
+            this.offset = offset;
+            this.fraction = fraction;
+        }
+    }
     
     private float currentFontSize = 20f;
     private SharedPreferences prefs;
@@ -361,28 +384,14 @@ public class ReaderActivity extends AppCompatActivity {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
+                if (recyclerView.getVisibility() != View.VISIBLE) return;
                 if (isMenuVisible && dy != 0) {
                     hideMenu();
                 }
-                
-                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                if (layoutManager == null || verticalPages.isEmpty()) return;
-
-                int firstPos = layoutManager.findFirstVisibleItemPosition();
-                int lastPos = layoutManager.findLastVisibleItemPosition();
-                
-                if (firstPos != RecyclerView.NO_POSITION) {
-                    updateCurrentChapterFromParagraph(firstPos);
-                    if (scrollProgressBar != null) {
-                        float percent = calculateContentBasedPercent(layoutManager, firstPos, lastPos);
-                        if (percent > 100) percent = 100;
-                        if (percent < 0) percent = 0;
-                        scrollProgressBar.setProgress((int) (percent * 10));
-                    }
-                    ensureAdjacentChapters(currentTopicId);
-                }
+                updateVerticalProgress();
             }
         });
+        recyclerView.getViewTreeObserver().addOnPreDrawListener(this::onVerticalPreDraw);
 
         adapter = new ReaderAdapter(pages, false);
         viewPager.setAdapter(adapter);
@@ -395,11 +404,7 @@ public class ReaderActivity extends AppCompatActivity {
         sliderLineSpacing.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser) {
                 UserPreferences.setLineSpacing(this, value);
-                calculatePages();
-                if (recyclerView.getVisibility() == View.VISIBLE) {
-                    prepareVerticalContent();
-                    recyclerAdapter.updateData(verticalPages);
-                }
+                rebuildReaderContent(true);
             }
         });
         
@@ -517,8 +522,9 @@ public class ReaderActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
+                if (viewPager.getVisibility() != View.VISIBLE || rebuildingReaderContent) return;
                 updateCurrentChapterFromPage(position);
-                ensureAdjacentChapters(currentTopicId);
+                scheduleAdjacentChapters();
             }
 
             @Override
@@ -840,6 +846,16 @@ public class ReaderActivity extends AppCompatActivity {
         if (previousId != -1 && findLoadedChapter(previousId) == null) requestChapter(previousId, false, false);
     }
 
+    private void scheduleAdjacentChapters() {
+        if (adjacentChapterLoadPosted || !contentReady) return;
+        adjacentChapterLoadPosted = true;
+        recyclerView.post(() -> {
+            adjacentChapterLoadPosted = false;
+            if (!isFinishing() && !isDestroyed() && !rebuildingReaderContent && pendingVerticalPosition == null)
+                ensureAdjacentChapters(currentTopicId);
+        });
+    }
+
     private void fetchChapterFromNetwork(int chapterId, boolean activate, boolean scrollToEnd) {
         RetrofitClient.getInstance().getChapter(chapterId).enqueue(new Callback<com.fimtale.model.ChapterResponse>() {
             @Override public void onResponse(Call<com.fimtale.model.ChapterResponse> call, Response<com.fimtale.model.ChapterResponse> response) {
@@ -860,41 +876,68 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void positionReader(int topicId, boolean scrollToEnd) {
-        if (viewPager.getVisibility() == View.VISIBLE) {
-            int initialPage = chapterStartIndex(pages, topicId);
-            if (!scrollToEnd && shouldApplyInitialProgress(topicId)) {
-                initialPage = computeTargetPagedIndex(initialProgress);
-                initialProgressApplied = true;
-            } else if (scrollToEnd) {
-                initialPage = chapterEndIndex(pages, topicId);
-            }
-
-            if (initialPage < 0) initialPage = 0;
-            if (initialPage >= pages.size()) initialPage = Math.max(0, pages.size() - 1);
-            viewPager.setCurrentItem(initialPage, false);
-            updateCurrentChapterFromPage(initialPage);
-        } else {
-            int pos = chapterStartIndex(verticalPages, topicId);
-            if (!scrollToEnd && shouldApplyInitialProgress(topicId)) {
-                pos = computeTargetVerticalIndex(initialProgress);
-                initialProgressApplied = true;
-            } else if (scrollToEnd) {
-                pos = chapterEndIndex(verticalPages, topicId);
-            }
-
-            if (pos < 0) pos = 0;
-            if (pos >= verticalPages.size()) pos = Math.max(0, verticalPages.size() - 1);
-            int finalPos = pos;
-            recyclerView.post(() -> {
-                RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
-                if (lm instanceof LinearLayoutManager) {
-                    ((LinearLayoutManager) lm).scrollToPositionWithOffset(finalPos, 0);
-                } else {
-                    recyclerView.scrollToPosition(finalPos);
-                }
-                updateCurrentChapterFromParagraph(finalPos);
-            });
+        double progress = scrollToEnd ? 1 : 0;
+        if (!scrollToEnd && shouldApplyInitialProgress(topicId)) {
+            progress = initialProgress;
+            initialProgressApplied = true;
         }
+        positionReaderAtProgress(topicId, progress);
+    }
+
+    private void positionReaderAtProgress(int topicId, double progress) {
+        if (viewPager.getVisibility() == View.VISIBLE) {
+            if (pages.isEmpty()) return;
+            int page = computeTargetPagedIndex(topicId, progress);
+            viewPager.setCurrentItem(page, false);
+            updateCurrentChapterFromPage(page);
+        } else if (!verticalPages.isEmpty() && paragraphStartOffsets.size() == verticalPages.size()) {
+            recyclerView.stopScroll();
+            restoreVerticalPosition(verticalPositionForProgress(topicId, progress));
+        }
+    }
+
+    private VerticalPosition captureVerticalPosition() {
+        // Several cached chapters can arrive before the next layout. Keep the original anchor.
+        if (pendingVerticalPosition != null) return pendingVerticalPosition;
+        LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        if (manager == null) return null;
+        int first = manager.findFirstVisibleItemPosition();
+        if (first < 0 || first >= verticalPages.size()) return null;
+        View view = manager.findViewByPosition(first);
+        if (view == null) return null;
+        int chapterId = verticalPages.get(first).chapterId;
+        return new VerticalPosition(chapterId, first - chapterStartIndex(verticalPages, chapterId),
+                verticalItemTop(manager, view) - recyclerView.getPaddingTop());
+    }
+
+    private void restoreVerticalPosition(VerticalPosition position) {
+        LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        if (manager == null || verticalPages.isEmpty()) return;
+        pendingVerticalPosition = position;
+        int target = Math.min(chapterEndIndex(verticalPages, position.chapterId),
+                chapterStartIndex(verticalPages, position.chapterId) + position.paragraph);
+        manager.scrollToPositionWithOffset(target, position.offset);
+    }
+
+    private boolean onVerticalPreDraw() {
+        if (recyclerView.getVisibility() != View.VISIBLE || rebuildingReaderContent
+                || recyclerView.hasPendingAdapterUpdates()) return true;
+        VerticalPosition position = pendingVerticalPosition;
+        if (position != null) {
+            if (position.fraction > 0) {
+                LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                int target = chapterStartIndex(verticalPages, position.chapterId) + position.paragraph;
+                View view = manager == null ? null : manager.findViewByPosition(target);
+                if (view == null || view.getHeight() <= 0) return true;
+                // The row must be measured before restoring an offset inside a long paragraph.
+                restoreVerticalPosition(new VerticalPosition(position.chapterId, position.paragraph,
+                        -(int) Math.round(verticalItemHeight(manager, view) * position.fraction)));
+                return false;
+            }
+            pendingVerticalPosition = null;
+        }
+        updateVerticalProgress();
+        return true;
     }
 
     private int chapterStartIndex(List<ReaderPage> data, int chapterId) {
@@ -911,43 +954,30 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void rebuildReaderContent(boolean preservePosition) {
-        final int preservedTopicId = currentTopicId;
-        int oldPage = viewPager == null ? 0 : viewPager.getCurrentItem();
-        int oldPageOffset = oldPage - chapterStartIndex(pages, preservedTopicId);
-        int oldVerticalPosition = RecyclerView.NO_POSITION;
-        int oldVerticalTop = 0;
-        if (recyclerView != null && recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
-            LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            oldVerticalPosition = manager.findFirstVisibleItemPosition();
-            View first = oldVerticalPosition == RecyclerView.NO_POSITION ? null : manager.findViewByPosition(oldVerticalPosition);
-            if (first != null) oldVerticalTop = first.getTop();
-        }
-
-        calculatePages();
-        prepareVerticalContent();
-        if (!preservePosition) return;
-
-        int pageTarget = chapterStartIndex(pages, preservedTopicId) + Math.max(0, oldPageOffset);
-        if (viewPager != null && !pages.isEmpty()) {
-            viewPager.post(() -> {
-                int target = Math.min(pageTarget, pages.size() - 1);
-                viewPager.setCurrentItem(target, false);
-                updateCurrentChapterFromPage(target);
-            });
-        }
-        if (oldVerticalPosition != RecyclerView.NO_POSITION && !verticalPages.isEmpty()) {
-            int verticalOffset = oldVerticalPosition - chapterStartIndex(verticalPages, preservedTopicId);
-            int target = chapterStartIndex(verticalPages, preservedTopicId) + Math.max(0, verticalOffset);
-            final int savedVerticalTop = oldVerticalTop;
-            recyclerView.post(() -> {
-                RecyclerView.LayoutManager layout = recyclerView.getLayoutManager();
-                if (layout instanceof LinearLayoutManager) {
-                    ((LinearLayoutManager) layout).scrollToPositionWithOffset(
-                            Math.min(target, verticalPages.size() - 1), savedVerticalTop);
-                    updateCurrentChapterFromParagraph(Math.min(target, verticalPages.size() - 1));
+        boolean vertical = recyclerView.getVisibility() == View.VISIBLE;
+        VerticalPosition verticalPosition = preservePosition && vertical ? captureVerticalPosition() : null;
+        int oldPage = viewPager.getCurrentItem();
+        int pageChapterId = oldPage < pages.size() ? pages.get(oldPage).chapterId : currentTopicId;
+        int oldPageOffset = Math.max(0, oldPage - chapterStartIndex(pages, pageChapterId));
+        int pageTarget = 0;
+        if (!preservePosition) pendingVerticalPosition = null;
+        rebuildingReaderContent = true;
+        try {
+            calculatePages();
+            prepareVerticalContent();
+            if (preservePosition) {
+                if (vertical && verticalPosition != null) {
+                    restoreVerticalPosition(verticalPosition);
+                } else if (!vertical && !pages.isEmpty()) {
+                    pageTarget = Math.min(chapterEndIndex(pages, pageChapterId),
+                            chapterStartIndex(pages, pageChapterId) + oldPageOffset);
+                    viewPager.setCurrentItem(pageTarget, false);
                 }
-            });
+            }
+        } finally {
+            rebuildingReaderContent = false;
         }
+        if (preservePosition && !vertical) updateCurrentChapterFromPage(pageTarget);
     }
 
 
@@ -1047,6 +1077,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void updateCurrentChapterFromPage(int pageIndex) {
+        if (!contentReady || rebuildingReaderContent || viewPager.getVisibility() != View.VISIBLE) return;
         if (pageIndex < 0 || pageIndex >= pages.size()) return;
         ReaderPage page = pages.get(pageIndex);
         LoadedChapter chapter = findLoadedChapter(page.chapterId);
@@ -1067,32 +1098,71 @@ public class ReaderActivity extends AppCompatActivity {
         updateHeader(chapter.title, (realIndex + 1) + "/" + realTotal);
     }
 
-    private void updateCurrentChapterFromParagraph(int paragraphIndex) {
+    private void updateVerticalProgress() {
+        if (!contentReady || rebuildingReaderContent || pendingVerticalPosition != null
+                || recyclerView.getVisibility() != View.VISIBLE || recyclerView.hasPendingAdapterUpdates()) return;
+        LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+        if (manager == null || paragraphStartOffsets.size() != verticalPages.size()) return;
+        int paragraphIndex = manager.findFirstVisibleItemPosition();
         if (paragraphIndex < 0 || paragraphIndex >= verticalPages.size()) return;
+        int viewportBottom = recyclerView.getHeight() - recyclerView.getPaddingBottom();
+        // A short final chapter may fit below the previous chapter without its title ever
+        // reaching the top. Once it is fully visible, report that chapter as completed.
+        int last = Math.min(manager.findLastVisibleItemPosition(), verticalPages.size() - 1);
+        for (int i = paragraphIndex + 1; i <= last; i++) {
+            ReaderPage candidate = verticalPages.get(i);
+            if (candidate.type != ReaderPage.TYPE_COMMENT
+                    || candidate.chapterId == verticalPages.get(paragraphIndex).chapterId) continue;
+            View end = manager.findViewByPosition(i);
+            if (end != null && verticalItemTop(manager, end) + verticalItemHeight(manager, end) <= viewportBottom)
+                paragraphIndex = i;
+        }
         ReaderPage page = verticalPages.get(paragraphIndex);
         LoadedChapter chapter = findLoadedChapter(page.chapterId);
-        if (chapter == null) return;
+        View first = manager.findViewByPosition(paragraphIndex);
+        if (chapter == null || first == null) return;
         currentTopicId = chapter.id;
         currentPostId = chapter.id;
         chapterTitle = chapter.title;
-        topToolbar.setTitle(chapterTitle);
+        if (!TextUtils.equals(topToolbar.getTitle(), chapterTitle)) topToolbar.setTitle(chapterTitle);
         int chapterStart = chapterStartIndex(verticalPages, chapter.id);
         int chapterEnd = chapterEndIndex(verticalPages, chapter.id);
-        int count = Math.max(1, chapterEnd - chapterStart + 1);
-        int relative = Math.max(0, Math.min(count - 1, paragraphIndex - chapterStart));
-        float percent = count > 1 ? (float) relative * 100f / (count - 1) : 100f;
-        currentProgress = count > 1 ? (double) relative / (count - 1) : 1.0;
-        updateHeader(chapter.title, getString(R.string.reader_percent, percent));
-        if (scrollProgressBar != null) scrollProgressBar.setProgress((int) (percent * 10));
+        int chapterOffset = paragraphStartOffsets.get(chapterStart);
+        int total = paragraphStartOffsets.get(chapterEnd) - chapterOffset;
+        int paragraphOffset = paragraphStartOffsets.get(paragraphIndex);
+        int weight = paragraphIndex < chapterEnd ? paragraphStartOffsets.get(paragraphIndex + 1) - paragraphOffset : 0;
+        int height = verticalItemHeight(manager, first);
+        double fraction = height > 0
+                ? clamp01((double) (recyclerView.getPaddingTop() - verticalItemTop(manager, first)) / height) : 0;
+        // Content offsets are stable when other chapters load; RecyclerView's estimated scroll
+        // range is not, because text, images and the comments entry have different heights.
+        currentProgress = total > 0 ? clamp01((paragraphOffset - chapterOffset + weight * fraction) / total) : 1;
+        View end = manager.findViewByPosition(chapterEnd);
+        if (end != null && verticalItemTop(manager, end) + verticalItemHeight(manager, end)
+                <= viewportBottom) currentProgress = 1;
+        updateHeader(chapter.title, getString(R.string.reader_percent, currentProgress * 100));
+        if (scrollProgressBar != null) scrollProgressBar.setProgress((int) Math.round(currentProgress * 1000));
+        scheduleAdjacentChapters();
+    }
+
+    private int verticalItemTop(LinearLayoutManager manager, View view) {
+        RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) view.getLayoutParams();
+        return manager.getDecoratedTop(view) - params.topMargin;
+    }
+
+    private int verticalItemHeight(LinearLayoutManager manager, View view) {
+        RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) view.getLayoutParams();
+        return manager.getDecoratedMeasuredHeight(view) + params.topMargin + params.bottomMargin;
     }
     
     private void updateHeader(String title, String progressText) {
-        tvChapterTitle.setText(title);
-        tvChapterProgress.setText(progressText);
+        if (!TextUtils.equals(tvChapterTitle.getText(), title)) tvChapterTitle.setText(title);
+        if (!TextUtils.equals(tvChapterProgress.getText(), progressText)) tvChapterProgress.setText(progressText);
     }
 
     private void saveReadingProgress() {
-        if (!contentReady || currentPostId < 0 || rootTopicId <= 0 || isLoadingChapter || !UserPreferences.isLoggedIn(this)) return;
+        if (!contentReady || currentPostId < 0 || rootTopicId <= 0 || isLoadingChapter
+                || rebuildingReaderContent || pendingVerticalPosition != null || !UserPreferences.isLoggedIn(this)) return;
         RetrofitClient.getInstance().saveReadingProgress(new com.fimtale.model.ReadProgress(rootTopicId, currentPostId, currentProgress))
                 .enqueue(new Callback<com.fimtale.model.ReadProgress>() {
             @Override public void onResponse(Call<com.fimtale.model.ReadProgress> call, Response<com.fimtale.model.ReadProgress> response) {}
@@ -1101,11 +1171,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void updateFontSize(float size) {
-        calculatePages();
-        if (recyclerView.getVisibility() == View.VISIBLE) {
-            prepareVerticalContent();
-            recyclerAdapter.updateData(verticalPages);
-        }
+        rebuildReaderContent(true);
     }
 
     private void saveFontSize() {
@@ -1125,7 +1191,6 @@ public class ReaderActivity extends AppCompatActivity {
         verticalPages.clear();
         paragraphStartOffsets.clear();
         chapterVerticalIndices.clear();
-        cachedWeights = null;
         
         if (loadedChapters.isEmpty()) {
             verticalPages.add(new ReaderPage(ReaderPage.TYPE_LOADING, null, currentTopicId));
@@ -1154,7 +1219,7 @@ public class ReaderActivity extends AppCompatActivity {
                 } else if (segment.type == ReaderPage.TYPE_IMAGE) {
                     verticalPages.add(new ReaderPage(ReaderPage.TYPE_IMAGE, segment.content, chapter.id));
                     paragraphStartOffsets.add(currentOffset);
-                    currentOffset += 1;
+                    currentOffset += 400;
                 }
             }
 
@@ -1169,6 +1234,10 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void updatePageMode(boolean isVertical) {
+        int topicId = currentTopicId;
+        double progress = currentProgress;
+        pendingVerticalPosition = null;
+        recyclerView.stopScroll();
         if (isVertical) {
             viewPager.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
@@ -1183,20 +1252,6 @@ public class ReaderActivity extends AppCompatActivity {
             applyReaderTheme(UserPreferences.getReaderTheme(this));
             
             prepareVerticalContent();
-            recyclerAdapter.updateData(verticalPages);
-            
-            recyclerView.post(() -> {
-                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                if (layoutManager != null) {
-                    int position = layoutManager.findFirstVisibleItemPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        updateCurrentChapterFromParagraph(position);
-                    } else {
-                        updateCurrentChapterFromParagraph(0);
-                    }
-                }
-            });
-
         } else {
             recyclerView.setVisibility(View.GONE);
             viewPager.setVisibility(View.VISIBLE);
@@ -1207,13 +1262,8 @@ public class ReaderActivity extends AppCompatActivity {
             applyReaderTheme(UserPreferences.getReaderTheme(this));
             
             calculatePages();
-            adapter.updateData(pages);
-            
-            viewPager.post(() -> {
-                int currentItem = viewPager.getCurrentItem();
-                updateCurrentChapterFromPage(currentItem);
-            });
         }
+        if (contentReady) positionReaderAtProgress(topicId, progress);
     }
     
     private void applyReaderTheme(int theme) {
@@ -1406,7 +1456,7 @@ public class ReaderActivity extends AppCompatActivity {
         pageReflowPending = true;
         viewPager.post(() -> {
             pageReflowPending = false;
-            if (isFinishing() || isDestroyed() || pages.isEmpty()) return;
+            if (isFinishing() || isDestroyed() || pages.isEmpty() || viewPager.getVisibility() != View.VISIBLE) return;
             int oldIndex = Math.min(viewPager.getCurrentItem(), pages.size() - 1);
             int chapterId = pages.get(oldIndex).chapterId;
             int chapterStart = chapterStartIndex(pages, chapterId);
@@ -1994,24 +2044,23 @@ public class ReaderActivity extends AppCompatActivity {
         return !initialProgressApplied && initialProgress >= 0d && topicId == initialTopicId;
     }
     
-    private int computeTargetPagedIndex(double progress01) {
+    private int computeTargetPagedIndex(int topicId, double progress01) {
         if (pages == null || pages.isEmpty()) return 0;
-        int startOffset = chapterStartIndex(pages, initialTopicId);
-        int realTotal = Math.max(1, chapterEndIndex(pages, initialTopicId) - startOffset + 1);
-        int realIndex = (int) Math.floor(clamp01(progress01) * realTotal);
-        if (realIndex >= realTotal) realIndex = realTotal - 1;
-        if (realIndex < 0) realIndex = 0;
-        return startOffset + realIndex;
+        int start = chapterStartIndex(pages, topicId);
+        int last = chapterEndIndex(pages, topicId) - start;
+        return start + (int) Math.round(clamp01(progress01) * last);
     }
     
-    private int computeTargetVerticalIndex(double progress01) {
-        if (verticalPages == null || verticalPages.isEmpty()) return 0;
-        int startOffset = chapterStartIndex(verticalPages, initialTopicId);
-        int realTotal = Math.max(1, chapterEndIndex(verticalPages, initialTopicId) - startOffset + 1);
-        int realIndex = (int) Math.floor(clamp01(progress01) * realTotal);
-        if (realIndex >= realTotal) realIndex = realTotal - 1;
-        if (realIndex < 0) realIndex = 0;
-        return startOffset + realIndex;
+    private VerticalPosition verticalPositionForProgress(int topicId, double progress01) {
+        int start = chapterStartIndex(verticalPages, topicId);
+        int end = chapterEndIndex(verticalPages, topicId);
+        int startOffset = paragraphStartOffsets.get(start);
+        double offset = startOffset + clamp01(progress01) * (paragraphStartOffsets.get(end) - startOffset);
+        int position = start;
+        while (position < end && paragraphStartOffsets.get(position + 1) <= offset) position++;
+        int weight = position < end ? paragraphStartOffsets.get(position + 1) - paragraphStartOffsets.get(position) : 0;
+        double fraction = weight > 0 ? (offset - paragraphStartOffsets.get(position)) / weight : 0;
+        return new VerticalPosition(topicId, position - start, 0, fraction);
     }
     
     private List<TopicDetailResponse.ChapterEdge> nextChoices() {
@@ -2041,74 +2090,6 @@ public class ReaderActivity extends AppCompatActivity {
         }
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle(getString(R.string.reader_choose_branch))
                 .setItems(labels, (dialog, which) -> jumpToChapter(choices.get(which).to == null ? 0 : choices.get(which).to)).show();
-    }
-
-    private long[] cachedWeights;
-    private long cachedTotalWeight = 0;
-    private float lastPercentValue = -1f;
-
-    private void ensureWeightsCalculated() {
-        if (cachedWeights != null && cachedWeights.length == verticalPages.size()) return;
-        
-        cachedWeights = new long[verticalPages.size()];
-        cachedTotalWeight = 0;
-        for (int i = 0; i < verticalPages.size(); i++) {
-            ReaderPage page = verticalPages.get(i);
-            long weight;
-            switch (page.type) {
-                case ReaderPage.TYPE_TEXT:
-                    weight = page.content != null ? page.content.length() : 10;
-                    break;
-                case ReaderPage.TYPE_IMAGE:
-                    weight = 400;
-                    break;
-                case ReaderPage.TYPE_COMMENT:
-                    weight = 800;
-                    break;
-                default:
-                    weight = 100;
-                    break;
-            }
-            cachedWeights[i] = weight;
-            cachedTotalWeight += weight;
-        }
-    }
-
-    private float calculateContentBasedPercent(LinearLayoutManager layoutManager, int firstPos, int lastPos) {
-        if (verticalPages.isEmpty()) return 0f;
-        ensureWeightsCalculated();
-        if (cachedTotalWeight == 0) return 0f;
-
-        double currentWeight = 0;
-        for (int i = 0; i < firstPos; i++) {
-            currentWeight += cachedWeights[i];
-        }
-
-        View firstView = layoutManager.findViewByPosition(firstPos);
-        if (firstView != null) {
-            float itemHeight = firstView.getHeight();
-            float itemTop = firstView.getTop();
-            float scrolledRate = itemHeight > 0 ? -itemTop / itemHeight : 0;
-            currentWeight += cachedWeights[firstPos] * scrolledRate;
-        }
-        
-        int offset = recyclerView.computeVerticalScrollOffset();
-        int range = recyclerView.computeVerticalScrollRange();
-        int extent = recyclerView.computeVerticalScrollExtent();
-        
-        float percent;
-        if (range > extent) {
-            percent = (float) offset * 100 / (range - extent);
-        } else {
-            percent = 100f;
-        }
-
-        if (lastPercentValue >= 0) {
-            percent = lastPercentValue + 0.3f * (percent - lastPercentValue);
-        }
-        lastPercentValue = percent;
-        
-        return percent;
     }
 
     private class ChapterListAdapter extends RecyclerView.Adapter<ChapterListAdapter.ViewHolder> {
