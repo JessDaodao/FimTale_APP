@@ -9,7 +9,7 @@
             android:layout_marginTop="8dp" android:text="@string/crash_feedback_data"
             android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Widget.Fimtale.TextInputLayout"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" android:hint="@string/crash_feedback_description">
             <com.google.android.material.textfield.TextInputEditText android:id="@+id/crashFeedbackDescription"
