@@ -109,7 +109,7 @@ public class CrashFeedbackTest {
         dialog().getButton(AlertDialog.BUTTON_NEGATIVE).performClick(); shadowOf(Looper.getMainLooper()).idle();
         assertNull(fragment()); assertNull(new CrashStore(app).pending()); assertTrue(requests.isEmpty());
     }
-    @Test public void explicitConsentPostsSystemFeedbackWithPreviewedDiagnostics() throws Exception {
+    @Test public void explicitConsentPostsPreviewedDiagnosticsInTheFeedbackBody() throws Exception {
         open(); describe("  点击表格时闪退  "); assertTrue(requests.isEmpty()); submit(); await(() -> fragment() == null);
         assertEquals(1, requests.size()); Request request = requests.get(0);
         assertEquals("POST", request.method()); assertEquals("/api/report/create_report", request.url().encodedPath());
@@ -117,11 +117,31 @@ public class CrashFeedbackTest {
         Buffer buffer = new Buffer(); request.body().writeTo(buffer);
         JsonObject body = new JsonParser().parse(buffer.readUtf8()).getAsJsonObject();
         assertEquals("system_feedback", body.get("kind").getAsString()); assertFalse(body.has("target_id")); assertFalse(body.has("target_type"));
-        assertTrue(body.get("content").getAsString().contains("点击表格时闪退"));
-        JsonObject error = body.getAsJsonObject("debug_context").getAsJsonArray("exceptions").get(0).getAsJsonObject();
-        assertEquals(report.timestamp, error.get("ts").getAsLong()); assertEquals(report.stack, error.get("stack").getAsString());
-        assertEquals("android/EditorActivity", error.get("path").getAsString()); assertNull(store.pending());
+        assertEquals(report.diagnostics() + app.getString(R.string.crash_feedback_notes, "点击表格时闪退"), body.get("content").getAsString());
+        assertFalse(body.has("debug_context")); assertEquals(2, body.size()); assertNull(store.pending());
         assertFalse(body.toString().contains("private document")); assertFalse(body.toString().contains("crash-fixture-session"));
+    }
+    @Test public void systemExitDiagnosticsAreSentInTheBodyWithoutOptionalNotes() throws Exception {
+        report = CrashReport.systemExit(report.environment, "ReaderActivity",
+                new CrashStore.Exit(report.timestamp, 123, android.app.ApplicationExitInfo.REASON_CRASH_NATIVE, app.getPackageName()));
+        store.record(report); open(); describe("  \n  "); submit(); await(() -> fragment() == null);
+        assertEquals(1, requests.size());
+        Buffer buffer = new Buffer(); requests.get(0).body().writeTo(buffer);
+        JsonObject body = new JsonParser().parse(buffer.readUtf8()).getAsJsonObject();
+        assertEquals(report.diagnostics(), body.get("content").getAsString()); assertFalse(body.has("debug_context"));
+    }
+    @Test public void inlineDiagnosticsAndNotesEscapeReportMarkupAndPreserveLineBreaks() throws Exception {
+        report = new CrashReport(report.id, report.kind,
+                "java.lang.IllegalStateException\n  at fixture.Editor.render(Editor[1]&2.java:42)\n",
+                report.screen, report.timestamp, report.environment);
+        store.record(report); open(); describe("[b]点击表格[/b] & 换行\n再次编辑"); submit(); await(() -> fragment() == null);
+        assertEquals(1, requests.size());
+        Buffer buffer = new Buffer(); requests.get(0).body().writeTo(buffer);
+        JsonObject body = new JsonParser().parse(buffer.readUtf8()).getAsJsonObject();
+        String content = body.get("content").getAsString();
+        assertTrue(content.contains("java.lang.IllegalStateException\n  at fixture.Editor.render(Editor&#91;1&#93;&amp;2.java:42)\n"));
+        assertTrue(content.contains("&#91;b&#93;点击表格&#91;/b&#93; &amp; 换行\n再次编辑"));
+        assertFalse(body.has("debug_context"));
     }
     @Test public void rotationKeepsOneInFlightSubmissionAndTheDescription() throws Exception {
         gate = new CountDownLatch(1); open(); describe("旋转前的说明"); CrashFeedbackViewModel before = model(); submit();
