@@ -65,7 +65,7 @@
                     <com.fimtale.ui.icons.MdiImageView
                         android:layout_width="@dimen/mdi_icon_size"
                         android:layout_height="@dimen/mdi_icon_size"
-                        app:mdiIcon="text-box-outline"
+                        app:mdiIcon="text-box"
                         app:tint="?attr/colorPrimary"/>
 
                     <TextView
