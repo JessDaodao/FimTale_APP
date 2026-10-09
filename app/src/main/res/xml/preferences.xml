@@ -2,60 +2,60 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory 
-        app:title="通用"
+        app:title="@string/settings_general"
         app:iconSpaceReserved="false">
 
         <SwitchPreferenceCompat
             app:key="auto_update"
-            app:title="自动弹出更新窗口"
+            app:title="@string/update_auto_prompt"
             app:defaultValue="true"
             app:iconSpaceReserved="false" />
 
         <SwitchPreferenceCompat
             app:key="theme_follow_system"
-            app:title="深色模式跟随系统"
+            app:title="@string/settings_follow_system_theme"
             app:defaultValue="true"
             app:iconSpaceReserved="false" />
 
         <Preference
             app:key="content_filters"
-            app:title="内容过滤"
-            app:summary="管理网站内容过滤偏好"
+            app:title="@string/filters_title"
+            app:summary="@string/settings_filters_summary"
             app:iconSpaceReserved="false" />
 
         <Preference
             app:key="logout"
-            app:title="退出登录"
+            app:title="@string/login_logout"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:title="阅读"
+        app:title="@string/work_read_label"
         app:iconSpaceReserved="false">
 
         <SwitchPreferenceCompat
             app:key="show_reader_progress"
-            app:title="显示阅读进度条"
+            app:title="@string/reader_show_progress"
             app:defaultValue="false"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:title="缓存"
+        app:title="@string/settings_cache"
         app:iconSpaceReserved="false">
 
         <Preference
             app:key="cache_size_display"
-            app:title="当前缓存大小"
-            app:summary="计算中..."
+            app:title="@string/settings_cache_size"
+            app:summary="@string/settings_cache_calculating"
             app:selectable="false"
             app:iconSpaceReserved="false" />
 
         <ListPreference
             app:key="max_cache_size"
-            app:title="最大缓存大小"
+            app:title="@string/settings_cache_limit"
             app:entries="@array/cache_size_entries"
             app:entryValues="@array/cache_size_values"
             app:defaultValue="104857600"
@@ -63,31 +63,31 @@
 
         <Preference
             app:key="clear_cache"
-            app:title="清除所有缓存"
-            app:summary="删除所有已缓存的章节内容"
+            app:title="@string/settings_clear_all_cache"
+            app:summary="@string/settings_clear_cache_summary"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:title="高级"
+        app:title="@string/settings_advanced"
         app:iconSpaceReserved="false">
 
         <Preference
             app:key="account"
-            app:title="账户与会话"
-            app:summary="登录或管理网站会话"
+            app:title="@string/sessions_title"
+            app:summary="@string/settings_sessions_summary"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:title="关于"
+        app:title="@string/about_title"
         app:iconSpaceReserved="false">
 
         <Preference
             app:key="about"
-            app:title="关于应用"
+            app:title="@string/about_app"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>

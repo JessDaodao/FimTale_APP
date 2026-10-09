@@ -55,7 +55,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 /** Exercises the visible buttons against an in-process API fixture; never publishes online. */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 public class EditorSubmissionTest {

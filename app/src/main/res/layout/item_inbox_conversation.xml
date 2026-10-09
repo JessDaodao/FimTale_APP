@@ -6,7 +6,7 @@
     android:background="?attr/selectableItemBackground" android:clickable="true" android:focusable="true">
     <FrameLayout android:layout_width="64dp" android:layout_height="64dp">
         <FrameLayout android:id="@+id/conversationAvatars" android:layout_width="52dp" android:layout_height="52dp" android:layout_gravity="center_vertical" />
-        <View android:id="@+id/conversationUnread" android:layout_width="10dp" android:layout_height="10dp" android:layout_marginTop="3dp" android:layout_marginStart="46dp" android:background="@drawable/bg_inbox_unread" android:contentDescription="未读消息" />
+        <View android:id="@+id/conversationUnread" android:layout_width="10dp" android:layout_height="10dp" android:layout_marginTop="3dp" android:layout_marginStart="46dp" android:background="@drawable/bg_inbox_unread" android:contentDescription="@string/inbox_unread_description" />
     </FrameLayout>
     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingTop="16dp">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">

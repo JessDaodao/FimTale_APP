@@ -19,6 +19,6 @@
             android:textAppearance="?attr/textAppearanceTitleMedium" />
         <com.google.android.material.button.MaterialButton android:id="@+id/timelineStateAction"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" android:text="登录" />
+            android:layout_marginTop="16dp" android:text="@string/common_login" />
     </LinearLayout>
 </FrameLayout>

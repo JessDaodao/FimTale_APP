@@ -54,7 +54,7 @@
                                 android:id="@+id/tagType"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="文"
+                                android:text="@string/reader_font_label"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="@android:color/white"
@@ -67,7 +67,7 @@
                                 android:id="@+id/tagSource"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="著"
+                                android:text="@string/work_author_suffix"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="@android:color/white"
@@ -80,7 +80,7 @@
                                 android:id="@+id/tagLength"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="中"
+                                android:text="@string/reader_medium_size"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="@android:color/white"
@@ -93,7 +93,7 @@
                                 android:id="@+id/tagRate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="E"
+                                android:text="@string/preview_rating"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="@android:color/white"
@@ -128,7 +128,7 @@
                         android:layout_marginStart="12dp"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         android:textStyle="bold"
-                        tools:text="作者名" />
+                        tools:text="@string/preview_author" />
                 </LinearLayout>
 
                 <!-- 统计信息 -->
@@ -151,7 +151,7 @@
                         app:mdiDrawableStart="text-box-outline"
                         android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
-                        tools:text="1.2万" />
+                        tools:text="@string/preview_twelve_thousand" />
 
                     <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/viewCountTextView"
@@ -162,7 +162,7 @@
                         app:mdiDrawableStart="eye-outline"
                         android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
-                        tools:text="1000" />
+                        tools:text="@string/preview_one_thousand" />
 
                     <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/commentCountTextView"
@@ -173,7 +173,7 @@
                         app:mdiDrawableStart="comment-text-outline"
                         android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
-                        tools:text="50" />
+                        tools:text="@string/preview_fifty" />
 
                     <com.fimtale.ui.icons.MdiTextView
                         android:id="@+id/favoriteCountTextView"
@@ -183,7 +183,7 @@
                         app:mdiDrawableStart="bookmark-outline"
                         android:drawablePadding="@dimen/article_stats_icon_text_spacing"
                         android:gravity="center_vertical"
-                        tools:text="20" />
+                        tools:text="@string/preview_twenty" />
                 </LinearLayout>
 
                 <!-- 标签列表 -->
@@ -202,16 +202,16 @@
                     <com.fimtale.ui.icons.MdiButton
                         android:id="@+id/likeWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="0" android:contentDescription="点赞" android:checkable="true" app:mdiIcon="thumb-up-outline"/>
+                        android:text="@string/common_zero" android:contentDescription="@string/work_like" android:checkable="true" app:mdiIcon="thumb-up-outline"/>
                     <com.fimtale.ui.icons.MdiButton
                         android:id="@+id/favoriteWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:layout_marginHorizontal="8dp" android:text="0" android:contentDescription="收藏"
+                        android:layout_marginHorizontal="8dp" android:text="@string/common_zero" android:contentDescription="@string/favorites_short_title"
                         android:checkable="true" app:mdiIcon="bookmark-outline"/>
                     <com.fimtale.ui.icons.MdiButton
                         android:id="@+id/highPraiseWorkButton" style="@style/Widget.Fimtale.WorkAction"
                         android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="投HP" android:contentDescription="投送 HP" android:checkable="true"
+                        android:text="@string/work_hp_action" android:contentDescription="@string/work_hp_title" android:checkable="true"
                         app:mdiIcon="star-outline"/>
                 </LinearLayout>
                 <TextView android:id="@+id/workActionStatus"
@@ -236,7 +236,7 @@
                     android:lineSpacingMultiplier="1.1"
                     android:textSize="17sp"
                     android:textColor="?android:attr/textColorPrimary"
-                    tools:text="小说前言内容..." />
+                    tools:text="@string/preview_work_preface" />
 
                 <com.google.android.material.divider.MaterialDivider
                     android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -255,13 +255,13 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/startReadingButton"
                 android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:text="开始阅读"/>
+                android:layout_weight="1" android:text="@string/reader_start_reading"/>
             <com.fimtale.ui.icons.MdiButton
                 android:id="@+id/showChaptersButton" style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginStart="12dp" android:text="目录"
+                android:layout_marginStart="12dp" android:text="@string/reader_catalog"
                 android:visibility="gone" tools:visibility="visible"
-                android:contentDescription="查看章节目录" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="book-open-page-variant"/>
+                android:contentDescription="@string/reader_view_catalog" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="book-open-page-variant"/>
         </LinearLayout>
 
         <com.fimtale.ui.ShimmerSkeletonView
@@ -276,7 +276,7 @@
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="24dp" android:visibility="gone"
-            android:text="加载失败，点击重试" android:textColor="?attr/colorOnSurfaceVariant"/>
+            android:text="@string/common_load_failed_tap" android:textColor="?attr/colorOnSurfaceVariant"/>
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/app_bar"

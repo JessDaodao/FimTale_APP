@@ -1,5 +1,8 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.google.gson.JsonObject;
 import java.io.IOException;
 
@@ -23,7 +26,7 @@ public final class DraftSync {
         try { server = remote.get(key); known = true; }
         catch (IOException e) {
             if (pending == null) throw e;
-            warning = "无法读取在线草稿，已恢复本机副本"; return pending;
+            warning = AppStrings.get(R.string.drafts_local_restored); return pending;
         }
         baseline = server == null ? null : server.payload;
         long serverRevision = server == null ? 0 : server.revision;
@@ -34,7 +37,7 @@ public final class DraftSync {
                 revision = serverRevision; pending.revision = revision; pending.pendingSync = false;
                 pending.onlinePayload = DraftCodec.copy(server.payload); local.write(pending);
             } else if (revision != serverRevision) {
-                conflict = true; warning = "在线草稿已在其他设备修改，请处理同步冲突";
+                conflict = true; warning = AppStrings.get(R.string.drafts_conflict_notice);
             }
             return pending;
         }
@@ -50,7 +53,7 @@ public final class DraftSync {
     }
     public EditorDocument save(DraftRemote remote, EditorDocument document) throws IOException {
         persist(document);
-        if (conflict) throw new DraftRemote.Failure(409, "在线草稿已更新，请处理同步冲突");
+        if (conflict) throw new DraftRemote.Failure(409, AppStrings.get(R.string.drafts_conflict_updated));
         JsonObject payload = DraftCodec.payload(document, chapterId >= 0);
         if (known && baseline != null && baseline.equals(payload)) { document.pendingSync = false; return document; }
         try {

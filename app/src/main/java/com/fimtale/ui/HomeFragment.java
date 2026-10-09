@@ -262,12 +262,12 @@ public class HomeFragment extends Fragment {
                     topicListHot.clear();
                     List<Topic> topics = response.body().getTopicArray();
                     if (topics != null) for (Topic topic : topics) topicListHot.add(new TopicViewItem(topic));
-                } else homeError = "推荐作品加载失败，点击重试";
+                } else homeError = getString(R.string.home_recommendations_failed);
                 finishHomeRequest();
             }
             @Override public void onFailure(Call<com.fimtale.model.TopicListResponse> call, Throwable t) {
                 if (!acceptHomeResult(request)) return;
-                homeError = "推荐作品加载失败，点击重试"; finishHomeRequest();
+                homeError = getString(R.string.home_recommendations_failed); finishHomeRequest();
             }
         });
         Call<com.fimtale.model.TopicListResponse> latest = RetrofitClient.getInstance()
@@ -280,12 +280,12 @@ public class HomeFragment extends Fragment {
                     topicListNew.clear();
                     List<Topic> topics = response.body().getTopicArray();
                     if (topics != null) for (Topic topic : topics) topicListNew.add(new TopicViewItem(topic));
-                } else homeError = "最近更新加载失败，点击重试";
+                } else homeError = getString(R.string.home_recent_updates_failed);
                 finishHomeRequest();
             }
             @Override public void onFailure(Call<com.fimtale.model.TopicListResponse> call, Throwable t) {
                 if (!acceptHomeResult(request)) return;
-                homeError = "最近更新加载失败，点击重试"; finishHomeRequest();
+                homeError = getString(R.string.home_recent_updates_failed); finishHomeRequest();
             }
         });
         Call<com.fimtale.model.CuratedResponse> curated = RetrofitClient.getInstance().getCuratedWorks(1, 5);
@@ -296,12 +296,12 @@ public class HomeFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     // Keep the attached adapter's data unchanged until the batch is ready.
                     pendingBanners = response.body().items == null ? new ArrayList<>() : new ArrayList<>(response.body().items);
-                } else homeError = "精选作品加载失败，点击重试";
+                } else homeError = getString(R.string.home_curated_failed);
                 finishHomeRequest();
             }
             @Override public void onFailure(Call<com.fimtale.model.CuratedResponse> call, Throwable t) {
                 if (!acceptHomeResult(request)) return;
-                homeError = "精选作品加载失败，点击重试"; finishHomeRequest();
+                homeError = getString(R.string.home_curated_failed); finishHomeRequest();
             }
         });
     }
@@ -324,7 +324,7 @@ public class HomeFragment extends Fragment {
             if (isResumed()) startBannerAutoScroll();
         }
         if (homeError != null) {
-            pageError.show(homeError.replace("，点击重试", ""), this::fetchHomePageData,
+            pageError.show(homeError.replace(getString(R.string.common_retry_suffix), ""), this::fetchHomePageData,
                     !bannerList.isEmpty() || !visibleTopics.isEmpty());
         }
     }

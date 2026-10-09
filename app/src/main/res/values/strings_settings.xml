@@ -1,0 +1,49 @@
+<resources>
+    <string-array name="theme_entries">
+        <item>跟随系统</item>
+        <item>浅色模式</item>
+        <item>深色模式</item>
+    </string-array>
+
+    <string-array name="theme_values">
+        <item>system</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+
+    <string-array name="cache_size_entries">
+        <item>50 MB</item>
+        <item>100 MB</item>
+        <item>200 MB</item>
+        <item>500 MB</item>
+        <item>1 GB</item>
+    </string-array>
+
+    <string-array name="cache_size_values">
+        <item>52428800</item>
+        <item>104857600</item>
+        <item>209715200</item>
+        <item>524288000</item>
+        <item>1073741824</item>
+    </string-array>
+    <string name="settings_title">设置</string>
+    <string name="settings_toggle_theme">切换主题</string>
+    <string name="settings_general">通用</string>
+    <string name="settings_follow_system_theme">深色模式跟随系统</string>
+    <string name="settings_filters_summary">管理网站内容过滤偏好</string>
+    <string name="settings_cache">缓存</string>
+    <string name="settings_cache_size">当前缓存大小</string>
+    <string name="settings_cache_calculating">计算中...</string>
+    <string name="settings_cache_limit">最大缓存大小</string>
+    <string name="settings_clear_all_cache">清除所有缓存</string>
+    <string name="settings_clear_cache_summary">删除所有已缓存的章节内容</string>
+    <string name="settings_advanced">高级</string>
+    <string name="settings_sessions_summary">登录或管理网站会话</string>
+    <string name="settings_clear_cache">清除缓存</string>
+    <string name="settings_clear_cache_message">确定要清除所有已缓存的章节吗？</string>
+    <string name="settings_cache_cleared">缓存已清除</string>
+    <string name="settings_size_bytes">%1$d B</string>
+    <string name="settings_size_kilobytes">%1$.1f KB</string>
+    <string name="settings_size_megabytes">%1$.1f MB</string>
+    <string name="settings_size_gigabytes">%1$.2f GB</string>
+</resources>

@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_filter"
-        android:title="过滤器"
+        android:title="@string/filters_preset_title"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_tag_info"
-        android:title="详情"
+        android:title="@string/common_details"
         android:visible="false"
         app:showAsAction="ifRoom" />
 </menu>

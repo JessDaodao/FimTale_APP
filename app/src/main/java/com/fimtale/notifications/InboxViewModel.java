@@ -1,5 +1,7 @@
 package com.fimtale.notifications;
 
+import com.fimtale.R;
+
 import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -149,7 +151,7 @@ public class InboxViewModel extends AndroidViewModel {
         long id = conversation.id;
         retryNext = false; mutating = true; changed();
         request(api.sendMessage(session, new Inbox.Send(id, text)), ignored -> {
-            drafts.remove(id); mutating = false; notice = "私信已发送"; load(false);
+            drafts.remove(id); mutating = false; notice = getApplication().getString(R.string.inbox_message_sent); load(false);
         }, true);
     }
     public void invite(Inbox.Notice n, String action) {
@@ -177,7 +179,7 @@ public class InboxViewModel extends AndroidViewModel {
             }
             @Override public void onFailure(Call<T> ignored, Throwable t) {
                 if (!current()) return;
-                failed(mutating ? "操作结果未确认，请刷新消息核对后再重试" : "消息加载失败，请重试"); changed();
+                failed(mutating ? getApplication().getString(R.string.inbox_mutation_uncertain) : getApplication().getString(R.string.inbox_load_failed)); changed();
             }
             private void failed(String message) {
                 if (primary) { loading = false; mutating = false; error = message; }

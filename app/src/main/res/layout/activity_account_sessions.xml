@@ -10,13 +10,13 @@
             <TextView android:id="@+id/accountSummary" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceBodyLarge" android:textColor="?attr/colorOnSurface" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp"
-                android:text="活跃会话" android:textAppearance="?attr/textAppearanceTitleLarge" />
+                android:text="@string/sessions_active" android:textAppearance="?attr/textAppearanceTitleLarge" />
             <TextView android:id="@+id/accountSessionHint" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="6dp" android:text="以下是当前账号的活跃登录会话和有效 API Token。"
+                android:layout_marginTop="6dp" android:text="@string/sessions_explanation"
                 android:textColor="?attr/colorOnSurfaceVariant" />
             <com.fimtale.ui.icons.MdiButton android:id="@+id/accountRefresh"
                 style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_gravity="end" android:text="刷新" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="refresh" />
+                android:layout_gravity="end" android:text="@string/common_refresh" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="refresh" />
             <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:id="@+id/accountProgress"
                 android:layout_width="48dp"
@@ -29,27 +29,27 @@
             <LinearLayout android:id="@+id/accountSessions" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:orientation="vertical" />
             <TextView android:id="@+id/accountEmpty" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:gravity="center" android:padding="24dp" android:text="暂无有效会话"
+                android:gravity="center" android:padding="24dp" android:text="@string/sessions_empty"
                 android:textColor="?attr/colorOnSurfaceVariant" android:visibility="gone" />
 
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp"
-                android:text="API Token" android:textAppearance="?attr/textAppearanceTitleLarge" />
+                android:text="@string/sessions_api_token" android:textAppearance="?attr/textAppearanceTitleLarge" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
-                android:text="API Token 是长期有效的会话凭证，新 Token 只会在创建后显示一次。"
+                android:text="@string/sessions_token_explanation"
                 android:textColor="?attr/colorOnSurfaceVariant" />
             <com.fimtale.ui.icons.MdiButton android:id="@+id/accountCreateToken"
                 android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp"
-                android:text="创建 API Token" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="key-plus" />
+                android:text="@string/sessions_create_token" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="key-plus" />
             <com.fimtale.ui.icons.MdiTextInputLayout android:id="@+id/accountTokenLayout"
                 android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
-                android:hint="新 API Token" android:visibility="gone" style="@style/Widget.Fimtale.TextInputLayout">
+                android:hint="@string/sessions_new_token" android:visibility="gone" style="@style/Widget.Fimtale.TextInputLayout">
                 <com.google.android.material.textfield.TextInputEditText android:id="@+id/accountToken"
                     android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text"
                     android:focusable="false" android:textIsSelectable="true" />
             </com.fimtale.ui.icons.MdiTextInputLayout>
             <com.fimtale.ui.icons.MdiButton android:id="@+id/accountCopyToken"
                 style="@style/Widget.Material3.Button.TonalButton" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" android:text="复制 Token" android:visibility="gone" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="content-copy" />
+                android:layout_marginTop="8dp" android:text="@string/sessions_copy_token" android:visibility="gone" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="content-copy" />
         </LinearLayout>
     </ScrollView>
     <FrameLayout android:id="@+id/accountToolbarContainer"
@@ -66,7 +66,7 @@
             android:stateListAnimator="@null" app:mdiNavigationIcon="arrow-left"
             app:navigationIconTint="?attr/colorOnSurface" app:titleTextColor="?attr/colorOnSurface">
             <TextView android:id="@+id/accountToolbarTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="账户与会话" android:textColor="?attr/colorOnSurface" android:textSize="21sp" />
+                android:text="@string/sessions_title" android:textColor="?attr/colorOnSurface" android:textSize="21sp" />
         </com.fimtale.ui.icons.MdiToolbar>
     </FrameLayout>
 </FrameLayout>

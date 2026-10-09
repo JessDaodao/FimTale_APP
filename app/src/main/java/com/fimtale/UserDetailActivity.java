@@ -270,13 +270,13 @@ public class UserDetailActivity extends AppCompatActivity {
         invalidateOptionsMenu();
 
         tvUsername.setText(info.getUserName());
-        tvUserRole.setText("LV." + info.getLevel());
+        tvUserRole.setText(getString(R.string.profile_level, info.getLevel()));
 
         if (!TextUtils.isEmpty(info.getLastSeen())) {
             try {
                 long timestamp = java.time.OffsetDateTime.parse(info.getLastSeen()).toInstant().toEpochMilli();
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-                tvLastSeen.setText("最后活动: " + sdf.format(new Date(timestamp)));
+                SimpleDateFormat sdf = new SimpleDateFormat(getString(R.string.common_date_time), Locale.getDefault());
+                tvLastSeen.setText(getString(R.string.profile_last_seen, sdf.format(new Date(timestamp))));
             } catch (Exception e) {
                 tvLastSeen.setVisibility(View.GONE);
             }
@@ -414,7 +414,7 @@ public class UserDetailActivity extends AppCompatActivity {
                     finishTopicsLoading();
                     rvUserTopics.setVisibility(topicList.isEmpty() ? View.GONE : View.VISIBLE);
                     if (topicList.isEmpty()) {
-                        topicsStatus.setText("暂无文章"); topicsStatus.setVisibility(View.VISIBLE);
+                        topicsStatus.setText(getString(R.string.work_empty)); topicsStatus.setVisibility(View.VISIBLE);
                         topicsStatus.setOnClickListener(null);
                     }
                 } else showTopicsLoadError(page);
@@ -435,7 +435,7 @@ public class UserDetailActivity extends AppCompatActivity {
     private void showTopicsLoadError(int page) {
         finishTopicsLoading();
         topicsStatus.setVisibility(View.GONE);
-        pageError.show("暂时无法加载该用户的作品。", () -> { loadData(currentUsername); loadUserTopics(currentUsername, page); }, currentUserId > 0);
+        pageError.show(getString(R.string.profile_works_failed), () -> { loadData(currentUsername); loadUserTopics(currentUsername, page); }, currentUserId > 0);
     }
 
     @Override protected void onDestroy() {

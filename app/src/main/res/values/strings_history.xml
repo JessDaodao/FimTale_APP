@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_title">历史记录</string>
+    <string name="history_short_title">历史</string>
+    <string name="history_empty">暂无历史记录，点击刷新</string>
+</resources>

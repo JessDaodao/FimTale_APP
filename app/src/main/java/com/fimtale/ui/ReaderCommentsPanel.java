@@ -1,5 +1,6 @@
 package com.fimtale.ui;
 
+
 import com.fimtale.utils.MdiIcons;
 
 import android.content.Context;
@@ -86,7 +87,7 @@ public final class ReaderCommentsPanel {
         refresh.setOnRefreshListener(() -> load(1));
         sort.setOnClickListener(v -> {
             descending = !descending;
-            sort.setText(descending ? "从晚到早" : "从早到晚");
+            sort.setText(descending ? activity.getString(R.string.comments_newest_first) : activity.getString(R.string.comments_oldest_first));
             load(1);
         });
         previous.setOnClickListener(v -> load(page - 1));
@@ -117,8 +118,8 @@ public final class ReaderCommentsPanel {
         page = 1;
         totalPages = 1;
         refresh.setRefreshing(false);
-        title.setText("评论");
-        sort.setText(descending ? "从晚到早" : "从早到晚");
+        title.setText(activity.getString(R.string.comments_title));
+        sort.setText(descending ? activity.getString(R.string.comments_newest_first) : activity.getString(R.string.comments_oldest_first));
         load(1);
     }
 
@@ -148,17 +149,17 @@ public final class ReaderCommentsPanel {
                     page = requestedPage;
                     adapter.updateData(result.getItems());
                     list.scrollToPosition(0);
-                    title.setText("评论（" + result.total + "）");
+                    title.setText(activity.getString(R.string.comments_count, result.total));
                     finishLoading();
                     if (result.getItems().isEmpty()) {
-                        status.setText("暂无评论，下拉刷新");
+                        status.setText(activity.getString(R.string.comments_empty_pull));
                         status.setVisibility(View.VISIBLE);
                     }
                 } else showError(requestedPage, ApiErrors.message(response));
             }
 
             @Override public void onFailure(Call<WorkCommentsResponse> call, Throwable error) {
-                if (valid(call)) showError(requestedPage, "评论加载失败");
+                if (valid(call)) showError(requestedPage, activity.getString(R.string.comments_load_failed));
             }
         });
     }
@@ -182,14 +183,14 @@ public final class ReaderCommentsPanel {
         previous.setEnabled(!loading && page > 1);
         next.setEnabled(!loading && page < totalPages);
         sort.setEnabled(!loading);
-        pageLabel.setText(page + " / " + totalPages);
+        pageLabel.setText(activity.getString(R.string.common_pagination, page, totalPages));
     }
 
     private void submit() {
         if (sending || closed) return;
         String content = input.getText() == null ? "" : input.getText().toString().trim();
         if (content.isEmpty()) {
-            MdiIcons.setError(input, "评论内容不能为空");
+            MdiIcons.setError(input, activity.getString(R.string.comments_content_required));
             return;
         }
         if (!UserPreferences.isLoggedIn(activity)) {
@@ -214,9 +215,9 @@ public final class ReaderCommentsPanel {
                     input.clearFocus();
                     hideKeyboard();
                     descending = true;
-                    sort.setText("从晚到早");
+                    sort.setText(activity.getString(R.string.comments_newest_first));
                     load(1);
-                    Toast.makeText(activity, "评论已发送", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(activity, activity.getString(R.string.comments_sent), Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(activity, ApiErrors.message(response), Toast.LENGTH_LONG).show();
                     if (response.code() == 401) activity.startActivity(new Intent(activity, LoginActivity.class));
@@ -226,7 +227,7 @@ public final class ReaderCommentsPanel {
             @Override public void onFailure(Call<Void> call, Throwable error) {
                 if (!validComment(call)) return;
                 finishSubmit();
-                Toast.makeText(activity, "评论发送失败，请重试", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, activity.getString(R.string.comments_send_failed), Toast.LENGTH_SHORT).show();
             }
         });
     }

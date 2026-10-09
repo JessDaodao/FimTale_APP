@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="emoji_title">表情</string>
+    <string name="emoji_insert_description">插入表情 %1$s</string>
+</resources>

@@ -1,0 +1,99 @@
+<resources>
+    <string name="editor_more_formats">更多格式</string>
+    <string name="editor_format_insert">插入</string>
+    <string name="editor_format_save">保存</string>
+    <string name="editor_edit_link">编辑链接</string>
+    <string name="editor_remove_link">移除链接</string>
+    <string name="editor_format_back">返回格式列表</string>
+    <item name="editorFormatInput0" type="id" />
+    <item name="editorFormatInput1" type="id" />
+    <item name="editorFormatInput2" type="id" />
+    <item name="editorFormatInput3" type="id" />
+    <item name="editorFormatChoice" type="id" />
+    <item name="editorFormatHeaderRow" type="id" />
+    <item name="editorTableSizePicker" type="id" />
+    <item name="editorTableDimensions" type="id" />
+    <item name="editorTableCell" type="id" />
+    <item name="editorRemoveLink" type="id" />
+    <string name="editor_format_bold_action">加粗</string>
+    <string name="editor_format_quote">引用</string>
+    <string name="editor_format_link">链接</string>
+    <string name="editor_format_underline">下划线</string>
+    <string name="editor_format_strike">删除线</string>
+    <string name="editor_format_subscript">下标</string>
+    <string name="editor_format_superscript">上标</string>
+    <string name="editor_format_larger">增大字号</string>
+    <string name="editor_format_smaller">减小字号</string>
+    <string name="editor_format_color">文字颜色</string>
+    <string name="editor_format_background">文字背景</string>
+    <string name="editor_format_spoiler">黑条</string>
+    <string name="editor_format_heading_1">标题 1</string>
+    <string name="editor_format_heading_2">标题 2</string>
+    <string name="editor_format_heading_3">标题 3</string>
+    <string name="editor_format_heading_4">标题 4</string>
+    <string name="editor_format_heading_5">标题 5</string>
+    <string name="editor_format_heading_6">标题 6</string>
+    <string name="editor_format_left">左对齐</string>
+    <string name="editor_format_center">居中</string>
+    <string name="editor_format_right">右对齐</string>
+    <string name="editor_format_justify">两端对齐</string>
+    <string name="editor_format_indent">首行缩进</string>
+    <string name="editor_format_bullets">无序列表</string>
+    <string name="editor_format_numbers">有序列表</string>
+    <string name="editor_format_image_link">图片链接</string>
+    <string name="editor_format_mention">提及用户</string>
+    <string name="editor_format_hash">话题标签</string>
+    <string name="editor_format_table">表格</string>
+    <string name="editor_format_collapse">折叠区</string>
+    <string name="editor_format_code">代码块</string>
+    <string name="editor_format_reference">引用卡片</string>
+    <string name="editor_format_rule">分隔线</string>
+    <string name="editor_format_group_inline">文字样式</string>
+    <string name="editor_format_group_block">标题与段落</string>
+    <string name="editor_format_insert_content">插入内容</string>
+    <string name="editor_color_hint">颜色</string>
+    <string name="editor_color_red">红</string>
+    <string name="editor_color_orange">橙</string>
+    <string name="editor_color_yellow">黄</string>
+    <string name="editor_color_green">绿</string>
+    <string name="editor_color_blue">蓝</string>
+    <string name="editor_color_purple">紫</string>
+    <string name="editor_color_black">黑</string>
+    <string name="editor_color_white">白</string>
+    <string name="editor_color_invalid">请输入有效颜色，例如 #E53935</string>
+    <string name="editor_format_markdown" translatable="false">Markdown</string>
+    <string name="editor_color_value_red" translatable="false">#E53935</string>
+    <string name="editor_color_value_orange" translatable="false">#F57C00</string>
+    <string name="editor_color_value_yellow" translatable="false">#FFF59D</string>
+    <string name="editor_color_value_green" translatable="false">#388E3C</string>
+    <string name="editor_color_value_blue" translatable="false">#1976D2</string>
+    <string name="editor_color_value_purple" translatable="false">#8E24AA</string>
+    <string name="editor_color_value_black" translatable="false">#000000</string>
+    <string name="editor_color_value_white" translatable="false">#FFFFFF</string>
+    <string-array name="editor_format_groups">
+        <item>@string/editor_format_group_inline</item>
+        <item>@string/editor_format_group_block</item>
+        <item>@string/editor_format_insert_content</item>
+    </string-array>
+    <string-array name="editor_format_names">
+        <item>@string/editor_color_red</item>
+        <item>@string/editor_color_orange</item>
+        <item>@string/editor_color_yellow</item>
+        <item>@string/editor_color_green</item>
+        <item>@string/editor_color_blue</item>
+        <item>@string/editor_color_purple</item>
+        <item>@string/editor_color_black</item>
+        <item>@string/editor_color_white</item>
+    </string-array>
+    <string-array name="editor_color_values" translatable="false">
+        <item>@string/editor_color_value_red</item>
+        <item>@string/editor_color_value_orange</item>
+        <item>@string/editor_color_value_yellow</item>
+        <item>@string/editor_color_value_green</item>
+        <item>@string/editor_color_value_blue</item>
+        <item>@string/editor_color_value_purple</item>
+        <item>@string/editor_color_value_black</item>
+        <item>@string/editor_color_value_white</item>
+    </string-array>
+    <string name="editor_format_input_required" translatable="false">This format needs author input</string>
+</resources>

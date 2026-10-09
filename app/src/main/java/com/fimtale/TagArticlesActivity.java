@@ -76,7 +76,7 @@ public class TagArticlesActivity extends AppCompatActivity {
 
         tagName = getIntent().getStringExtra(EXTRA_TAG_NAME);
         workType = getIntent().getIntExtra(EXTRA_WORK_TYPE, 0);
-        if (workType != 0) tagName = workType == 2 ? "图集" : "帖子";
+        if (workType != 0) tagName = workType == 2 ? getString(R.string.work_type_gallery) : getString(R.string.work_type_post);
         if (tagName == null) {
             finish();
             return;
@@ -94,7 +94,7 @@ public class TagArticlesActivity extends AppCompatActivity {
             getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
             getSupportActionBar().setDisplayShowTitleEnabled(true);
             // Keep the ActionBar's title in sync so window updates cannot replace it.
-            getSupportActionBar().setTitle("# " + tagName);
+            getSupportActionBar().setTitle(getString(R.string.tags_heading, tagName));
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -181,7 +181,7 @@ public class TagArticlesActivity extends AppCompatActivity {
     }
 
     private void showFilterDialog() {
-        final String[] options = {"默认排序", "发表时间", "更新时间", "最后评论", "字数排序", "评论数排序", "阅读数排序", "总体评分"};
+        final String[] options = getResources().getStringArray(R.array.work_sort_options);
         final String[] values = {"", "created_at", "last_chapter_at", "commented_at", "count_character", "count_comment", "count_view", "wilson_score"};
 
         int checkedItem = 0;
@@ -193,7 +193,7 @@ public class TagArticlesActivity extends AppCompatActivity {
         }
 
         new MaterialAlertDialogBuilder(this)
-                .setTitle("选择排序方式")
+                .setTitle(getString(R.string.work_choose_sort))
                 .setSingleChoiceItems(options, checkedItem, (dialog, which) -> {
                     currentSortBy = values[which];
                     dialog.dismiss();
@@ -208,14 +208,14 @@ public class TagArticlesActivity extends AppCompatActivity {
 
     private void showTagInfoDialog() {
         if (tagInfo == null || tagInfo.getIntro() == null || tagInfo.getIntro().isEmpty()) {
-            Toast.makeText(this, "暂无详情介绍", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.profile_empty_intro), Toast.LENGTH_SHORT).show();
             return;
         }
 
         new MaterialAlertDialogBuilder(this)
                 .setTitle(tagInfo.getName())
                 .setMessage(android.text.Html.fromHtml(tagInfo.getIntro(), android.text.Html.FROM_HTML_MODE_COMPACT))
-                .setPositiveButton("确定", null)
+                .setPositiveButton(getString(R.string.common_confirm), null)
                 .show();
     }
 
@@ -231,11 +231,11 @@ public class TagArticlesActivity extends AppCompatActivity {
                 @Override public void onResponse(Call<TagInfo> call, Response<TagInfo> response) {
                     if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagInfoCall) return;
                     if (response.isSuccessful() && response.body() != null) { tagInfo = response.body(); updateTagInfoMenuItemVisibility(); }
-                    else pageError.show("暂时无法加载标签信息。", () -> fetchTagTopics(1), topicAdapter.getItemCount() > 0);
+                    else pageError.show(getString(R.string.tags_details_failed), () -> fetchTagTopics(1), topicAdapter.getItemCount() > 0);
                 }
                 @Override public void onFailure(Call<TagInfo> call, Throwable t) {
                     if (isFinishing() || isDestroyed() || call.isCanceled() || call != tagInfoCall) return;
-                    pageError.show("暂时无法加载标签信息。", () -> fetchTagTopics(1), topicAdapter.getItemCount() > 0);
+                    pageError.show(getString(R.string.tags_details_failed), () -> fetchTagTopics(1), topicAdapter.getItemCount() > 0);
                 }
             });
         }
@@ -264,7 +264,7 @@ public class TagArticlesActivity extends AppCompatActivity {
                     finishLoading();
                     if (page == 1) recyclerView.scrollToPosition(0);
                     if (topicViewItemList.isEmpty()) {
-                        loadingStatus.setText("暂无文章，点击刷新");
+                        loadingStatus.setText(getString(R.string.work_empty_tap));
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
                 } else showLoadError(page);

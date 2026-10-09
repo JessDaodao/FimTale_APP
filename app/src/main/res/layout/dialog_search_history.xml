@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="搜索历史"
+            android:text="@string/search_history"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textColor="?android:attr/textColorPrimary" />
 
@@ -26,7 +26,7 @@
             android:id="@+id/tvClearHistory"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="清除全部"
+            android:text="@string/search_clear_all"
             android:textSize="12sp"
             android:textColor="?attr/colorPrimary"
             android:clickable="true"

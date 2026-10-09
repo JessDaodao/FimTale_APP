@@ -1,0 +1,210 @@
+<resources>
+    <string name="editor_preview">预览</string>
+    <string name="editor_return_to_editing">返回编辑</string>
+    <item name="editorPreviewContent" type="id" />
+    <string name="drafts_title">草稿箱</string>
+    <string name="drafts_local_hint">在线草稿与网站同步，按最近保存时间排列</string>
+    <string name="drafts_empty">还没有草稿\n点击下方按钮，开始写作</string>
+    <string name="draft_create">新建草稿</string>
+    <string name="draft_options">草稿选项</string>
+    <string name="editor_metadata">文章信息</string>
+    <string name="editor_start_writing">开始写作…</string>
+    <string name="editor_done_metadata">完成</string>
+    <string name="editor_submit_action">发表</string>
+    <string name="editor_save_action">保存</string>
+    <string name="editor_show_source">源码</string>
+    <string name="editor_hide_source">收起源码</string>
+    <string name="editor_show_source_description">显示全部 BBCode 标签</string>
+    <string name="editor_hide_source_description">收起标签，显示正文格式</string>
+    <string name="editor_tool_bold">粗体</string>
+    <string name="editor_tool_italic">斜体</string>
+    <string name="editor_tool_quote">插入引用</string>
+    <string name="editor_tool_spoiler">黑条（隐藏文字）</string>
+    <string name="editor_tool_emoji">插入表情</string>
+    <string name="editor_tool_image">插入图片</string>
+    <string name="editor_retry_load">重试加载</string>
+    <string name="editor_title_hint">标题</string>
+    <string name="editor_work_metadata">作品信息</string>
+    <string name="editor_work_type">作品类型</string>
+    <string name="editor_classification_hint">文章和图集需完整填写分类；帖子的分类可留空。</string>
+    <string name="editor_work_length">作品长度</string>
+    <string name="editor_rating">作品分级</string>
+    <string name="editor_origin">作品来源</string>
+    <string name="editor_serialization">连载状态</string>
+    <string name="editor_intro_hint">简介</string>
+    <string name="editor_optional_tags">分类标签与角色（选填）</string>
+    <string name="editor_choose_tags">选择标签或角色</string>
+    <string name="editor_cover_url_hint">封面图片地址（选填）</string>
+    <string name="editor_upload_cover">上传封面</string>
+    <string name="editor_origin_link_hint">原文链接（翻译或转载时填写）</string>
+    <string name="editor_prequel_hint">前作 ID（选填）</string>
+    <string name="editor_handbook_agreement">我已阅读《用户手册》，并同意遵守相关规定</string>
+    <string name="editor_read_handbook">阅读用户手册</string>
+    <string name="editor_new_work">发表文章</string>
+    <string name="editor_save_draft">保存草稿</string>
+    <string name="editor_discard_draft">放弃草稿</string>
+    <string name="editor_resolve_conflict">处理草稿同步冲突</string>
+    <string name="editor_edit_work_and_chapters">编辑文章与章节</string>
+    <string name="editor_edit_current">编辑当前内容</string>
+    <string name="editor_edit_work">编辑作品信息与序言</string>
+    <string name="editor_new_chapter">发表新章节</string>
+    <string name="editor_edit_existing_chapter">编辑已有章节</string>
+    <string name="editor_wait_operation">请等待当前操作完成</string>
+    <string name="editor_draft_conflict_title">草稿已在其他设备修改</string>
+    <string name="editor_draft_conflict_message">读取在线版本会放弃本机未同步的修改；使用本机版本会更新在线草稿。</string>
+    <string name="editor_use_online_draft">读取在线版本</string>
+    <string name="editor_use_local_draft">使用本机版本</string>
+    <string name="editor_discard_draft_title">放弃草稿？</string>
+    <string name="editor_discard_draft_message">此操作会删除在线草稿及本机待同步修改，并重新读取已发表的内容。</string>
+    <string name="editor_not_selected">未选择</string>
+    <string name="editor_chapter_hint">编辑当前章节的正文，提交后将更新到作品目录。</string>
+    <string name="editor_preface_hint">这里编辑作品序言（长简介）。章节正文可在发表作品后，通过作品详情页的编辑菜单添加。</string>
+    <string name="editor_save_chapter">保存章节修改</string>
+    <string name="editor_publish_chapter">发表章节</string>
+    <string name="editor_save_work">保存作品修改</string>
+    <string name="editor_publish_work">发表作品</string>
+    <string name="editor_chapter_metadata">章节信息</string>
+    <string name="editor_unnamed_chapter">未命名章节</string>
+    <string name="editor_unnamed_work">未命名文章</string>
+    <string name="editor_return_body">返回正文</string>
+    <string name="editor_title_required">请填写标题</string>
+    <string name="editor_intro_required">请填写简介</string>
+    <string name="editor_work_id_invalid">请输入有效的作品 ID</string>
+    <string name="editor_handbook_required">请先阅读并同意用户手册</string>
+    <string name="editor_submission_uncertain_title">上次提交结果未确认</string>
+    <string name="editor_resubmit_message">请先核对已发表内容。再次提交可能产生重复作品或章节。</string>
+    <string name="editor_view_published">查看已发表</string>
+    <string name="editor_confirm_resubmit">已核对，重新提交</string>
+    <string name="editor_wait_before_exit">请等待当前操作完成，避免丢失提交结果</string>
+    <string name="editor_no_chapters_hint">还没有章节，可先发表新章节</string>
+    <string name="editor_choose_chapter">选择要编辑的章节</string>
+    <string name="editor_table_size_invalid">表格支持 1–20 行、1–10 列</string>
+    <string name="editor_image_dimensions_invalid">图片宽高需为 1–4096 的整数，或留空</string>
+    <string name="editor_url_invalid">请输入有效的 http(s) 网址或站内路径</string>
+    <string name="editor_user_not_found">未找到此用户</string>
+    <string name="editor_reference_id_invalid">请输入有效的引用 ID</string>
+    <string name="editor_single_line_required">名称或说明请使用单行文字</string>
+    <string name="editor_quotes_invalid">名称或说明中请只使用一种引号</string>
+    <string name="editor_work_missing">未指定作品</string>
+    <string name="editor_chapter_title_required">请填写章节标题</string>
+    <string name="editor_chapter_body_required">请填写章节正文</string>
+    <string name="editor_link_url">链接网址</string>
+    <string name="editor_link_label_hint">链接文字（可选）</string>
+    <string name="editor_image_url">图片网址</string>
+    <string name="editor_image_width_hint">宽度（可选，像素）</string>
+    <string name="editor_image_height_hint">高度（可选，像素）</string>
+    <string name="editor_image_alt_hint">图片说明（可选）</string>
+    <string name="editor_hash_name">话题名称</string>
+    <string name="editor_full_username">完整用户名</string>
+    <string name="editor_collapse_title">折叠区标题</string>
+    <string name="editor_reference_id">引用 ID</string>
+    <string name="editor_reference_description">说明（可选）</string>
+    <string name="editor_table_rows_hint">行数（1–20）</string>
+    <string name="editor_table_columns_hint">列数（1–10）</string>
+    <string name="editor_table_header_row">首行为表头</string>
+    <string name="editor_table_default_dimensions">3 行 × 3 列</string>
+    <string name="editor_hash_required">请填写话题名称</string>
+    <string name="editor_collapse_title_required">请填写折叠区标题</string>
+    <string name="editor_integer_required">请填写有效的整数</string>
+    <string name="editor_username_required">请填写完整用户名</string>
+    <string name="editor_user_lookup_failed">无法查询用户，请重试</string>
+    <string name="editor_body_changed">正文状态已变化，请关闭面板后重新选择</string>
+    <string name="editor_insertion_changed">正文已变化，请重新选择插入位置</string>
+    <string name="editor_link_changed">链接已变化，请关闭面板后重新选择</string>
+    <string name="editor_submission_success">提交成功</string>
+    <string name="editor_loading_online_draft">正在加载在线草稿…</string>
+    <string name="editor_original_login_required">请登录原账号后继续，草稿已保留</string>
+    <string name="editor_work_incomplete">作品数据不完整，请重试</string>
+    <string name="editor_chapter_mismatch">章节与作品不匹配</string>
+    <string name="editor_submission_uncertain_notice">上次提交结果未确认，请先查看网站，避免重复发表。</string>
+    <string name="editor_draft_waiting">草稿等待同步</string>
+    <string name="editor_draft_synced">草稿已同步</string>
+    <string name="editor_no_permission">当前账号没有编辑此作品的权限</string>
+    <string name="editor_sync_login_required">请登录原账号后继续同步</string>
+    <string name="editor_local_backup_failed">本机备份保存失败，请检查存储空间</string>
+    <string name="editor_syncing_draft">正在同步草稿…</string>
+    <string name="editor_local_backup_failed_retry">本机备份保存失败，请检查存储空间后重试</string>
+    <string name="editor_draft_changes_pending">新修改等待同步</string>
+    <string name="editor_draft_conflict_menu">在线草稿已更新，请通过菜单处理同步冲突</string>
+    <string name="editor_conflict_before_publish">请先处理草稿同步冲突，再发表内容</string>
+    <string name="editor_original_account_required">登录已过期或账号已变更，请登录原账号后继续</string>
+    <string name="editor_checking_permission">正在检查发表权限…</string>
+    <string name="editor_permission_reload">您没有编辑此作品的权限，请重试加载</string>
+    <string name="editor_level_required">发表作品需要通过 L2 考试，请到网站完成资格认证</string>
+    <string name="editor_announcement_restricted">仅站务可以发表公告</string>
+    <string name="editor_space_required">发表帖子需要先在网站开通个人空间</string>
+    <string name="editor_captcha_cancelled">已取消验证，草稿已保留</string>
+    <string name="editor_session_changed">登录状态已变更，草稿已保留</string>
+    <string name="editor_submitting">正在提交，请勿重复操作…</string>
+    <string name="editor_submission_uncertain">未能确认提交结果。草稿已保留，请先查看作品是否已发表，再决定是否重试。</string>
+    <string name="editor_draft_cleanup_failed">提交成功，在线草稿清理未完成，请在草稿箱核对</string>
+    <string name="editor_uploading_image">正在上传图片…</string>
+    <string name="editor_image_size_invalid">请选择不超过 4 MB 的图片</string>
+    <string name="editor_upload_session_changed">登录状态已变更，请重新上传</string>
+    <string name="editor_image_url_invalid">图片地址无效，请重试</string>
+    <string name="editor_image_inserted">图片已插入</string>
+    <string name="editor_image_read_failed">无法读取图片，请重新选择</string>
+    <string name="editor_network_error">网络请求失败，草稿已保留，可重试</string>
+    <string name="editor_choose_tags_title">选择标签与角色</string>
+    <string name="editor_type_required">请选择作品类型</string>
+    <string name="editor_preface_required">请填写序言（长简介）</string>
+    <string name="editor_classification_required">请完整填写长度、分级、来源和连载状态</string>
+    <string name="editor_announcement_no_classification">公告无需分类信息</string>
+    <string name="editor_prequel_invalid">前作 ID 无效</string>
+    <string name="editor_account_unconfirmed">无法确认当前账户，请重新登录</string>
+    <string name="editor_table_cell_position">第 %1$d 行，第 %2$d 列</string>
+    <string name="editor_table_picker_description">表格大小：%1$d 行，%2$d 列；可拖动选择或使用下方行列输入框</string>
+    <string name="editor_table_dimensions">%1$d 行 × %2$d 列</string>
+    <string name="editor_draft_load_failed">无法读取在线草稿：%1$s</string>
+    <string name="editor_conflict_failed">冲突处理失败：%1$s</string>
+    <string name="editor_draft_delete_failed">无法删除在线草稿：%1$s</string>
+    <string name="editor_draft_unsynced">草稿未同步：%1$s。本机副本已保留</string>
+    <string name="editor_collapse_heading">▾ %1$s</string>
+    <string name="editor_ordered_bullet">"%1$d. "</string>
+    <string name="editor_unordered_bullet" translatable="false">"• "</string>
+    <string name="editor_url_default" translatable="false">https://</string>
+    <string name="editor_table_default_size" translatable="false">3</string>
+    <string-array name="editor_work_types">
+        <item>@string/work_type_article</item>
+        <item>@string/work_type_gallery</item>
+        <item>@string/work_type_post</item>
+    </string-array>
+    <string-array name="editor_work_types_all">
+        <item>@string/work_type_article</item>
+        <item>@string/work_type_gallery</item>
+        <item>@string/work_type_post</item>
+        <item>@string/work_type_announcement</item>
+    </string-array>
+    <string-array name="editor_length_options">
+        <item>@string/editor_not_selected</item>
+        <item>@string/work_length_long</item>
+        <item>@string/work_length_medium</item>
+        <item>@string/work_length_short</item>
+    </string-array>
+    <string-array name="editor_rating_options">
+        <item>@string/editor_not_selected</item>
+        <item>@string/work_rating_everyone</item>
+        <item>@string/work_rating_teen</item>
+        <item>@string/work_rating_restricted</item>
+    </string-array>
+    <string-array name="editor_origin_options">
+        <item>@string/editor_not_selected</item>
+        <item>@string/work_origin_original</item>
+        <item>@string/work_origin_translation</item>
+        <item>@string/work_origin_repost</item>
+    </string-array>
+    <string-array name="editor_publish_options">
+        <item>@string/editor_not_selected</item>
+        <item>@string/work_status_ongoing</item>
+        <item>@string/work_status_finished</item>
+        <item>@string/work_status_paused</item>
+        <item>@string/work_status_abandoned</item>
+    </string-array>
+    <string-array name="editor_reference_types">
+        <item>@string/work_label</item>
+        <item>@string/work_chapter_label</item>
+        <item>@string/comments_title</item>
+        <item>@string/report_target_channel</item>
+        <item>@string/profile_user_label</item>
+    </string-array>
+</resources>

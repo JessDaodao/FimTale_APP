@@ -1,5 +1,8 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.fimtale.network.ApiErrors;
 import com.fimtale.network.FimTaleApiService;
 import java.io.IOException;
@@ -30,7 +33,7 @@ public final class DraftRemote {
     }
     public OnlineDraft save(OnlineDraft.Save draft) throws IOException {
         OnlineDraft saved = body(api.saveDraft(token, draft).execute());
-        if (saved == null || saved.revision <= 0 || !draft.key.equals(saved.key)) throw new IOException("草稿保存响应无效");
+        if (saved == null || saved.revision <= 0 || !draft.key.equals(saved.key)) throw new IOException(AppStrings.get(R.string.drafts_save_invalid_response));
         return saved;
     }
     public void delete(String key, long revision) throws IOException {

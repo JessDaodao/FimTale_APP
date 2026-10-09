@@ -1,5 +1,7 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+
 import com.fimtale.utils.MdiIcons;
 import com.fimtale.ui.icons.MdiTextInputLayout;
 import com.google.android.material.textfield.TextInputEditText;
@@ -48,22 +50,22 @@ public final class TagPickerDialog {
         int pad = (int) (20 * context.getResources().getDisplayMetrics().density); layout.setPadding(pad, 0, pad, pad);
         category = new Spinner(context);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item,
-                new String[]{"题材", "读者注意", "历史标签", "角色", "其他标签"});
+                new String[]{context.getString(R.string.tags_group_genre), context.getString(R.string.tags_group_warning), context.getString(R.string.tags_group_history), context.getString(R.string.tags_group_character), context.getString(R.string.work_other_tags)});
         category.setAdapter(adapter); layout.addView(category, new LinearLayout.LayoutParams(-1, 48 * pad / 20));
         MdiTextInputLayout searchLayout = new MdiTextInputLayout(context, null);
-        searchLayout.setHint("输入名称搜索");
+        searchLayout.setHint(context.getString(R.string.tags_search_hint));
         search = new TextInputEditText(searchLayout.getContext()); search.setSingleLine(true);
         searchLayout.addView(search, new LinearLayout.LayoutParams(-1, -2));
         layout.addView(searchLayout, new LinearLayout.LayoutParams(-1, -2));
-        MaterialButton find = new MaterialButton(context); find.setText("搜索"); layout.addView(find);
+        MaterialButton find = new MaterialButton(context); find.setText(context.getString(R.string.search_title)); layout.addView(find);
         status = new TextView(context); layout.addView(status);
         android.widget.ScrollView scroll = new android.widget.ScrollView(context);
         tags = new ChipGroup(context); scroll.addView(tags); layout.addView(scroll, new LinearLayout.LayoutParams(-1, 240 * pad / 20));
         pageError = com.fimtale.ui.PageErrorView.wrap(scroll);
         LinearLayout paging = new LinearLayout(context);
-        previous = new MaterialButton(context); previous.setText("上一页"); paging.addView(previous, new LinearLayout.LayoutParams(0, -2, 1));
-        next = new MaterialButton(context); next.setText("下一页"); paging.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); layout.addView(paging);
-        dialog = new MaterialAlertDialogBuilder(context).setTitle("选择标签与角色").setView(layout).setPositiveButton("完成", null).create();
+        previous = new MaterialButton(context); previous.setText(context.getString(R.string.common_previous_page)); paging.addView(previous, new LinearLayout.LayoutParams(0, -2, 1));
+        next = new MaterialButton(context); next.setText(context.getString(R.string.common_next_page)); paging.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); layout.addView(paging);
+        dialog = new MaterialAlertDialogBuilder(context).setTitle(context.getString(R.string.editor_choose_tags_title)).setView(layout).setPositiveButton(context.getString(R.string.common_done), null).create();
         dialog.setOnDismissListener(d -> { generation++; if (call != null) call.cancel(); });
         find.setOnClickListener(v -> { page = 1; load(); });
         search.setOnEditorActionListener((v, action, event) -> { page = 1; load(); return true; });
@@ -79,7 +81,7 @@ public final class TagPickerDialog {
         pageError.hide();
         if (call != null) call.cancel();
         int current = ++generation;
-        tags.removeAllViews(); status.setText("正在加载…"); previous.setEnabled(false); next.setEnabled(false);
+        tags.removeAllViews(); status.setText(context.getString(R.string.common_loading_active)); previous.setEnabled(false); next.setEnabled(false);
         call = RetrofitClient.getInstance().getEditorTags(page, 30, search.getText().toString().trim(),
                 Collections.singletonList(category.getSelectedItem().toString()));
         call.enqueue(new Callback<List<TagGroup>>() {
@@ -96,7 +98,7 @@ public final class TagPickerDialog {
                         else { selected.remove(tag.getId()); groups.remove(tag.getId()); } changed.run();
                     }); tags.addView(chip);
                 }
-                status.setText(count == 0 ? "本页没有标签，可修改关键词或返回上一页" : "第 " + page + " 页，点击选择或取消");
+                status.setText(count == 0 ? context.getString(R.string.tags_empty_page) : context.getString(R.string.tags_page_selection_hint, page));
                 next.setEnabled(count >= 30);
             }
             @Override public void onFailure(Call<List<TagGroup>> c, Throwable t) {

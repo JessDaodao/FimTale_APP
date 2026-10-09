@@ -1,5 +1,8 @@
 package com.fimtale.model;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,8 +43,8 @@ public class FilterNode {
 
     public String summary() {
         if ("tag".equals(op)) return tag == null ? "" : tag;
-        if ("not".equals(op)) return "非（" + childSummary() + "）";
-        String joiner = "and".equals(op) ? " 且 " : " 或 ";
+        if ("not".equals(op)) return AppStrings.get(R.string.filters_not, childSummary());
+        String joiner = "and".equals(op) ? AppStrings.get(R.string.filters_and_separator) : AppStrings.get(R.string.filters_or_separator);
         if (children == null || children.isEmpty()) return "";
         StringBuilder text = new StringBuilder();
         for (FilterNode child : children) {

@@ -118,7 +118,7 @@ public final class MdiIcons {
     @NonNull
     public static IconicsDrawable drawable(@NonNull Context context, @NonNull IIcon icon,
             @IntRange(from = 1) int sizeDp, @ColorInt int color) {
-        if (sizeDp < 1) throw new IllegalArgumentException("Icon size must be positive");
+        if (sizeDp < 1) throw new IllegalArgumentException(context.getString(R.string.common_icon_size_invalid));
 
         int sizePx = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                 sizeDp, context.getResources().getDisplayMetrics()));

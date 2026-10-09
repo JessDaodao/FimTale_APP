@@ -1,5 +1,8 @@
 package com.fimtale.model;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.google.gson.annotations.SerializedName;
 
 /** The timeline's entity is a work, chapter, work comment or channel comment. */
@@ -42,19 +45,19 @@ public class TimelineItem {
     }
     public String actionText() {
         switch (type) {
-            case WORK: return "发布了新作品";
-            case CHAPTER: return "更新了章节";
-            case CHANNEL_WORK: return "频道 " + channelName() + " 收录了新作品";
-            case CHANNEL_COMMENT: return "频道 " + channelName() + " 发布了新公告";
-            case COMMENT: return "转发了评论";
-            default: return "发布了动态";
+            case WORK: return AppStrings.get(R.string.timeline_action_work);
+            case CHAPTER: return AppStrings.get(R.string.timeline_action_chapter);
+            case CHANNEL_WORK: return AppStrings.get(R.string.timeline_channel_work, channelName());
+            case CHANNEL_COMMENT: return AppStrings.get(R.string.timeline_channel_announcement, channelName());
+            case COMMENT: return AppStrings.get(R.string.timeline_action_share_comment);
+            default: return AppStrings.get(R.string.timeline_action_default);
         }
     }
     public String body() {
-        if (!isAvailable()) return "该内容已删除或暂时无法查看";
+        if (!isAvailable()) return AppStrings.get(R.string.timeline_unavailable);
         if (isWork()) return !blank(entity.intro) ? entity.intro : value(entity.preface);
         if (type == CHAPTER || type == COMMENT || type == CHANNEL_COMMENT) return value(entity.content);
-        return "暂不支持此类动态";
+        return AppStrings.get(R.string.timeline_unsupported);
     }
     /** Comment links retain their anchors, including comments attached to chapters. */
     public String path() {

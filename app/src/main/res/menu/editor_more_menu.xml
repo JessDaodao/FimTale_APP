@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/action_save_draft" android:title="保存草稿" />
-    <item android:id="@+id/action_discard_draft" android:title="放弃草稿" />
-    <item android:id="@+id/action_draft_conflict" android:title="处理草稿同步冲突" android:visible="false" />
+    <item android:id="@+id/action_save_draft" android:title="@string/editor_save_draft" />
+    <item android:id="@+id/action_discard_draft" android:title="@string/editor_discard_draft" />
+    <item android:id="@+id/action_draft_conflict" android:title="@string/editor_resolve_conflict" android:visible="false" />
 </menu>

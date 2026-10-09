@@ -66,7 +66,7 @@
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurface"
-                    tools:text="Username" />
+                    tools:text="@string/preview_username" />
                 
                 <TextView
                     android:id="@+id/tvUserRole"
@@ -76,7 +76,7 @@
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorPrimary"
-                    tools:text="Admin" />
+                    tools:text="@string/preview_admin" />
             </LinearLayout>
 
             <com.google.android.material.chip.ChipGroup
@@ -96,7 +96,7 @@
                 android:layout_marginTop="4dp"
                 android:textSize="12sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                tools:text="Last seen: 2024-01-01" />
+                tools:text="@string/preview_last_seen" />
 
             <TextView
                 android:id="@+id/tvIntro"
@@ -105,7 +105,7 @@
                 android:layout_marginTop="16dp"
                 android:gravity="center"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                tools:text="This is a user intro..." />
+                tools:text="@string/preview_user_intro" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -126,11 +126,11 @@
                         android:layout_height="wrap_content"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        tools:text="10" />
+                        tools:text="@string/preview_ten" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="关注"
+                        android:text="@string/profile_following"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -146,11 +146,11 @@
                         android:layout_height="wrap_content"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        tools:text="100" />
+                        tools:text="@string/preview_one_hundred" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="粉丝"
+                        android:text="@string/profile_followers"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -166,11 +166,11 @@
                         android:layout_height="wrap_content"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        tools:text="23" />
+                        tools:text="@string/preview_twenty_three" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="作品"
+                        android:text="@string/work_label"
                         android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -196,7 +196,7 @@
                 android:id="@+id/tvUserTopicsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="发布的文章"
+                android:text="@string/profile_published_works"
                 android:textStyle="bold"
                 android:layout_marginTop="24dp" />
 
@@ -231,7 +231,7 @@
     <TextView android:id="@+id/profileLoadError"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:layout_gravity="center" android:padding="24dp" android:visibility="gone"
-        android:text="加载失败，点击重试" android:textColor="?attr/colorOnSurfaceVariant"/>
+        android:text="@string/common_load_failed_tap" android:textColor="?attr/colorOnSurfaceVariant"/>
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
@@ -277,7 +277,7 @@
                         android:textSize="21sp"
                         android:textColor="?attr/colorOnSurface"
                         android:alpha="0"
-                        tools:text="Username" />
+                        tools:text="@string/preview_username" />
                 </com.fimtale.ui.icons.MdiToolbar>
             </com.google.android.material.card.MaterialCardView>
 

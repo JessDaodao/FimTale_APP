@@ -25,6 +25,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import static org.junit.Assert.*;
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner.class)
+@org.robolectric.annotation.Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 public class AuthoringTest {
     @Rule public TemporaryFolder directory = new TemporaryFolder();
     private final AtomicReference<Request> request = new AtomicReference<>();

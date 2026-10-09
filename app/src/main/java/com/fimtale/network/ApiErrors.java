@@ -1,4 +1,7 @@
 package com.fimtale.network;
+
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import retrofit2.Response;
@@ -11,9 +14,9 @@ public final class ApiErrors {
                 if (error.has("msg") && !error.get("msg").isJsonNull()) return error.get("msg").getAsString();
             } catch (Exception ignored) {}
         }
-        if (response.code() == 401) return "登录已过期，请重新登录";
-        if (response.code() == 403) return "当前账户无权访问";
-        if (response.code() == 429) return "请求过于频繁，请稍后重试";
-        return "请求失败（" + response.code() + "）";
+        if (response.code() == 401) return AppStrings.get(R.string.error_login_expired);
+        if (response.code() == 403) return AppStrings.get(R.string.error_forbidden);
+        if (response.code() == 429) return AppStrings.get(R.string.error_rate_limited);
+        return AppStrings.get(R.string.error_request_failed, response.code());
     }
 }

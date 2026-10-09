@@ -1,5 +1,7 @@
 package com.fimtale.utils;
 
+import com.fimtale.R;
+
 import com.fimtale.network.SiteUrls;
 import org.commonmark.Extension;
 import org.commonmark.ext.gfm.tables.TablesExtension;
@@ -141,7 +143,7 @@ public final class BbCode {
             if (name.equals("font") && value.matches("[\\p{L} ,_-]{1,80}")) style.font = value;
         }
         if (tag.closed && name.equals("collapse")) {
-            String title = value.trim().isEmpty() ? "点击展开" : value.replace('\n', ' ');
+            String title = value.trim().isEmpty() ? AppStrings.get(R.string.bbcode_expand_default) : value.replace('\n', ' ');
             String encoded = Base64.getEncoder().encodeToString(tag.body.getBytes(StandardCharsets.UTF_8));
             // The body is rendered only in its bottom sheet, never in the surrounding article.
             return "<p><span data-collapse=\"" + encoded + "\"" + attribute("data-title", title)
@@ -199,7 +201,7 @@ public final class BbCode {
                 String type = tag.attrs.getOrDefault("type", "");
                 if (id.isEmpty() || !type.matches("[13457]")) return body;
                 String label = plain(tag).trim();
-                if (label.isEmpty()) label = (type.equals("1") ? "作品" : type.equals("3") ? "章节" : type.equals("4") ? "评论" : type.equals("5") ? "频道" : "用户") + " #" + id;
+                if (label.isEmpty()) label = AppStrings.get(R.string.common_entity_number, (type.equals("1") ? AppStrings.get(R.string.work_label) : type.equals("3") ? AppStrings.get(R.string.work_chapter_label) : type.equals("4") ? AppStrings.get(R.string.comments_title) : type.equals("5") ? AppStrings.get(R.string.report_target_channel) : AppStrings.get(R.string.profile_user_label)), id);
                 return "<p><span data-ref=\"" + type + ":" + id + "\">" + escape(label) + "</span></p>";
             case "img":
                 String src = safeUrl(decode(tag.raw).trim(), true);
@@ -208,7 +210,7 @@ public final class BbCode {
                         + dimensionAttr(tag, "width") + dimensionAttr(tag, "height") + "></p>";
             case "code": return "<pre><code>" + escape(decode(tag.raw)).replace("\n", "&#10;") + "</code></pre>";
             case "markdown": return markdown(decode(tag.raw));
-            case "handbook": return "<p>（此处为网站手册，App 暂不提供内嵌手册）</p>";
+            case "handbook": return "<p>" + escape(AppStrings.get(R.string.bbcode_handbook_unavailable)) + "</p>";
             default: return body;
         }
     }

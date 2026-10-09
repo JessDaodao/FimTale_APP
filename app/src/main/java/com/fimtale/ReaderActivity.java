@@ -126,7 +126,7 @@ public class ReaderActivity extends AppCompatActivity {
             if (level < 0 || scale <= 0) return;
             int batteryPct = (int) (level * 100 / (float) scale);
             if (tvBatteryLevel != null) {
-                tvBatteryLevel.setText(batteryPct + "%");
+                tvBatteryLevel.setText(getString(R.string.common_percent, batteryPct));
             }
             if (ivBattery != null) {
                 int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
@@ -329,7 +329,7 @@ public class ReaderActivity extends AppCompatActivity {
                     intent.putExtra(TopicDetailActivity.EXTRA_TOPIC_ID, rootTopicId);
                     startActivity(intent);
                 } else {
-                    Toast.makeText(this, "获取失败", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.common_fetch_failed), Toast.LENGTH_SHORT).show();
                 }
                 return true;
             }
@@ -686,13 +686,13 @@ public class ReaderActivity extends AppCompatActivity {
                     applyNavigation(response.body());
                     CacheManager.getInstance(ReaderActivity.this).cacheChapterMenu(rootTopicId, workData);
                     fetchChapterContent(currentTopicId);
-                } else { showReadError("暂时无法加载作品目录。"); }
+                } else { showReadError(getString(R.string.reader_catalog_failed)); }
             }
             @Override public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
                 CacheManager.getInstance(ReaderActivity.this).getChapterMenu(rootTopicId, data -> {
                     if (isFinishing() || isDestroyed()) return;
                     if (data != null) { applyNavigation(data); fetchChapterContent(currentTopicId); }
-                    else showReadError("网络错误，且没有离线目录");
+                    else showReadError(getString(R.string.reader_catalog_offline_unavailable));
                 });
             }
         });
@@ -729,7 +729,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private LoadedChapter createLoadedChapter(int id, String title, String content) {
-        String source = content == null || content.isEmpty() ? "无内容" : content;
+        String source = content == null || content.isEmpty() ? getString(R.string.common_no_content) : content;
         Spanned rendered = BbCodeText.normalizeTables(markwon.toMarkdown(com.fimtale.utils.BbCode.toMarkdown(source)));
         return new LoadedChapter(id, title, parseSegments(rendered));
     }
@@ -850,11 +850,11 @@ public class ReaderActivity extends AppCompatActivity {
                     CacheManager.getInstance(ReaderActivity.this).cacheChapter(data.chapter.id, rootTopicId,
                             data.chapter.id, data.chapter.title, data.chapter.content, null);
                     acceptLoadedChapter(createLoadedChapter(data.chapter.id, data.chapter.title, data.chapter.content), activate, scrollToEnd);
-                } else if (activate) showReadError("暂时无法加载章节。", () -> requestChapter(chapterId, true, scrollToEnd));
+                } else if (activate) showReadError(getString(R.string.reader_chapter_failed), () -> requestChapter(chapterId, true, scrollToEnd));
             }
             @Override public void onFailure(Call<com.fimtale.model.ChapterResponse> call, Throwable t) {
                 loadingChapterIds.remove(chapterId);
-                if (activate && !isFinishing() && !isDestroyed()) showReadError("暂时无法连接服务器，请检查网络后重试。", () -> requestChapter(chapterId, true, scrollToEnd));
+                if (activate && !isFinishing() && !isDestroyed()) showReadError(getString(R.string.error_network_retry), () -> requestChapter(chapterId, true, scrollToEnd));
             }
         });
     }
@@ -1082,7 +1082,7 @@ public class ReaderActivity extends AppCompatActivity {
         int relative = Math.max(0, Math.min(count - 1, paragraphIndex - chapterStart));
         float percent = count > 1 ? (float) relative * 100f / (count - 1) : 100f;
         currentProgress = count > 1 ? (double) relative / (count - 1) : 1.0;
-        updateHeader(chapter.title, String.format("%.1f%%", percent));
+        updateHeader(chapter.title, getString(R.string.reader_percent, percent));
         if (scrollProgressBar != null) scrollProgressBar.setProgress((int) (percent * 10));
     }
     
@@ -1768,13 +1768,13 @@ public class ReaderActivity extends AppCompatActivity {
                 }
                 
                 if (page.type == ReaderPage.TYPE_LOADING) {
-                    loadingHolder.tvLoading.setText("加载中...");
+                    loadingHolder.tvLoading.setText(getString(R.string.common_loading_dots));
                     if (loadingHolder.pbLoading != null) loadingHolder.pbLoading.setVisibility(View.VISIBLE);
                     loadingHolder.itemView.setOnClickListener(null);
                 } else if (page.type == ReaderPage.TYPE_NEXT_CHAPTER_TRIGGER) {
                     if (loadingHolder.pbLoading != null) loadingHolder.pbLoading.setVisibility(View.GONE);
                     if (isVerticalMode) {
-                        loadingHolder.tvLoading.setText("点击跳转下一章");
+                        loadingHolder.tvLoading.setText(getString(R.string.reader_go_next_chapter));
                         TypedValue typedValue = new TypedValue();
                         holder.itemView.getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, typedValue, true);
                         loadingHolder.itemView.setBackgroundResource(typedValue.resourceId);
@@ -1791,19 +1791,19 @@ public class ReaderActivity extends AppCompatActivity {
                                 if (nextId != -1) {
                                     jumpToChapter(nextId);
                                 } else {
-                                    Toast.makeText(ReaderActivity.this, "没有下一章了", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(ReaderActivity.this, getString(R.string.reader_no_next_chapter), Toast.LENGTH_SHORT).show();
                                 }
                             }
                         });
                     } else {
-                        loadingHolder.tvLoading.setText("加载中...");
+                        loadingHolder.tvLoading.setText(getString(R.string.common_loading_dots));
                         loadingHolder.itemView.setOnClickListener(null);
                         loadingHolder.itemView.setBackground(null);
                     }
                 } else if (page.type == ReaderPage.TYPE_PREV_CHAPTER_TRIGGER) {
                     if (loadingHolder.pbLoading != null) loadingHolder.pbLoading.setVisibility(View.GONE);
                     if (isVerticalMode) {
-                        loadingHolder.tvLoading.setText("点击跳转上一章");
+                        loadingHolder.tvLoading.setText(getString(R.string.reader_go_previous_chapter));
                         TypedValue typedValue = new TypedValue();
                         holder.itemView.getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, typedValue, true);
                         loadingHolder.itemView.setBackgroundResource(typedValue.resourceId);
@@ -1820,12 +1820,12 @@ public class ReaderActivity extends AppCompatActivity {
                                 if (prevId != -1) {
                                     jumpToChapter(prevId, true);
                                 } else {
-                                    Toast.makeText(ReaderActivity.this, "没有上一章了", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(ReaderActivity.this, getString(R.string.reader_no_previous_chapter), Toast.LENGTH_SHORT).show();
                                 }
                             }
                         });
                     } else {
-                        loadingHolder.tvLoading.setText("加载中...");
+                        loadingHolder.tvLoading.setText(getString(R.string.common_loading_dots));
                         loadingHolder.itemView.setOnClickListener(null);
                         loadingHolder.itemView.setBackground(null);
                     }
@@ -1933,7 +1933,7 @@ public class ReaderActivity extends AppCompatActivity {
                     commentsRefresh.setVisibility(View.VISIBLE);
                     commentsHeader.setVisibility(View.VISIBLE);
                     commentsComposer.setVisibility(View.VISIBLE);
-                    tvChapterTitle.setText("评论");
+                    tvChapterTitle.setText(getString(R.string.comments_title));
                     tvChapterTitle.setTextColor(textColor);
                     if (commentsPanel != null) commentsPanel.close();
                     commentsPanel = new ReaderCommentsPanel(ReaderActivity.this, itemView, rootTopicId);
@@ -1947,14 +1947,14 @@ public class ReaderActivity extends AppCompatActivity {
                     tvContinueRead.setOnClickListener(null);
                 } else if (nextChoices(chapterId).size() > 1) {
                     tvContinueRead.setVisibility(View.VISIBLE);
-                    tvContinueRead.setText("选择剧情分支");
+                    tvContinueRead.setText(getString(R.string.reader_choose_branch));
                     tvContinueRead.setOnClickListener(v -> showBranchChoices(chapterId));
                 } else if (nextChapterId != -1) {
-                    tvContinueRead.setText("左滑继续阅读");
+                    tvContinueRead.setText(getString(R.string.reader_swipe_to_continue));
                     tvContinueRead.setOnClickListener(v -> jumpToChapter(nextChapterId));
                     tvContinueRead.setVisibility(View.VISIBLE);
                 } else {
-                    tvContinueRead.setText("当前为最后一章");
+                    tvContinueRead.setText(getString(R.string.reader_last_chapter));
                     tvContinueRead.setOnClickListener(null);
                     tvContinueRead.setVisibility(View.VISIBLE);
                 }
@@ -2037,9 +2037,9 @@ public class ReaderActivity extends AppCompatActivity {
         String[] labels = new String[choices.size()];
         for (int i = 0; i < choices.size(); i++) {
             TopicDetailResponse.ChapterEdge edge = choices.get(i);
-            labels[i] = edge.label == null || edge.label.isEmpty() ? "继续阅读" : edge.label;
+            labels[i] = edge.label == null || edge.label.isEmpty() ? getString(R.string.reader_continue) : edge.label;
         }
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle("选择剧情分支")
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle(getString(R.string.reader_choose_branch))
                 .setItems(labels, (dialog, which) -> jumpToChapter(choices.get(which).to == null ? 0 : choices.get(which).to)).show();
     }
 

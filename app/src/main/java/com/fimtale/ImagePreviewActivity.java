@@ -47,7 +47,7 @@ public class ImagePreviewActivity extends AppCompatActivity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         photo = new PhotoView(this);
-        photo.setContentDescription("图片预览，可双指缩放或双击放大");
+        photo.setContentDescription(getString(R.string.image_preview_description));
         root.addView(photo, new FrameLayout.LayoutParams(-1, -1));
         photo.setOnSingleFlingListener((first, last, vx, vy) -> {
             if (photo.getScale() <= photo.getMinimumScale() + .01f
@@ -62,14 +62,14 @@ public class ImagePreviewActivity extends AppCompatActivity {
         error = new LinearLayout(this);
         error.setOrientation(LinearLayout.VERTICAL);
         error.setGravity(Gravity.CENTER);
-        TextView message = label("图片加载失败");
+        TextView message = label(getString(R.string.image_preview_load_failed));
         error.addView(message);
-        TextView retry = label("重试");
+        TextView retry = label(getString(R.string.common_retry));
         retry.setOnClickListener(v -> load());
         error.addView(retry);
         root.addView(error, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
-        TextView close = label("关闭");
-        close.setContentDescription("关闭图片预览");
+        TextView close = label(getString(R.string.common_close));
+        close.setContentDescription(getString(R.string.image_preview_close_description));
         close.setOnClickListener(v -> finish());
         FrameLayout.LayoutParams closeParams = new FrameLayout.LayoutParams(-2, dp(48), Gravity.TOP | Gravity.END);
         root.addView(close, closeParams);

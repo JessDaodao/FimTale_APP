@@ -3,6 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_filter"
-        android:title="搜索标签"
+        android:title="@string/tags_search"
         app:showAsAction="ifRoom" />
 </menu>

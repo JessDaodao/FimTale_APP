@@ -215,7 +215,7 @@ public class ProfileFragment extends Fragment {
         if (!isAdded() || getActivity() == null || getActivity().isFinishing() || getActivity().isDestroyed()) return;
         if (isLoggedIn && userId != 0 && userName != null) {
             tvUsername.setText(userName);
-            tvBio.setText("欢迎回来");
+            tvBio.setText(getString(R.string.profile_welcome_back));
             layoutUserHeader.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), UserDetailActivity.class);
                 intent.putExtra(UserDetailActivity.EXTRA_USERNAME, userName);
@@ -233,8 +233,8 @@ public class ProfileFragment extends Fragment {
                     .into(ivAvatar);
 
         } else {
-            tvUsername.setText("点击登录");
-            tvBio.setText("登录以使用更多功能");
+            tvUsername.setText(getString(R.string.profile_tap_login));
+            tvBio.setText(getString(R.string.profile_login_more));
             int color = com.google.android.material.color.MaterialColors.getColor(ivAvatar, com.google.android.material.R.attr.colorOnSurfaceVariant);
             ivAvatar.setImageTintList(android.content.res.ColorStateList.valueOf(color));
             ivAvatar.setImageDrawable(MdiIcons.drawable(requireContext(), "account"));

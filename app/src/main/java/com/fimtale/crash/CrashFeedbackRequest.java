@@ -1,5 +1,8 @@
 package com.fimtale.crash;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.google.gson.annotations.SerializedName;
 import java.util.Collections;
 import java.util.List;
@@ -11,7 +14,7 @@ public final class CrashFeedbackRequest {
     @SerializedName("debug_context") public final DebugContext debugContext;
     public CrashFeedbackRequest(CrashReport report, String description) {
         String notes = description.trim();
-        content = escape(report.summary()) + (notes.isEmpty() ? "" : "\n\n用户补充：\n" + escape(notes));
+        content = escape(report.summary()) + (notes.isEmpty() ? "" : AppStrings.get(R.string.crash_feedback_notes, escape(notes)));
         debugContext = new DebugContext(report);
     }
     private static String escape(String value) { return value.replace("&", "&amp;").replace("[", "&#91;").replace("]", "&#93;"); }

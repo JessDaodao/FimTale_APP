@@ -20,7 +20,7 @@ import org.robolectric.android.controller.ActivityController;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
 public class InboxActivityTest {
     @Test public void guestPageAndConversationRenderWithTheSharedHeaderAndComposer() {

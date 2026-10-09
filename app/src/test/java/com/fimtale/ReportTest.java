@@ -41,7 +41,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 /** Local responses only: this suite never submits a real report. */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 public class ReportTest {

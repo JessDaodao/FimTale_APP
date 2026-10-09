@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tags_invert_group">反选此组</string>
+    <string name="tags_list_title">标签列表</string>
+    <string name="tags_label">标签</string>
+    <string name="tags_search">搜索标签</string>
+    <string name="tags_details_failed">暂时无法加载标签信息。</string>
+    <string name="tags_empty_tap">暂无标签，点击刷新</string>
+    <string name="tags_name">标签名称</string>
+    <string name="tags_group_genre" translatable="false">题材</string>
+    <string name="tags_group_warning" translatable="false">读者注意</string>
+    <string name="tags_group_history" translatable="false">历史标签</string>
+    <string name="tags_group_character" translatable="false">角色</string>
+    <string name="tags_search_hint">输入名称搜索</string>
+    <string name="tags_empty_page">本页没有标签，可修改关键词或返回上一页</string>
+    <string name="tags_heading"># %1$s</string>
+    <string name="tags_number">标签 %1$d</string>
+    <string name="tags_page_selection_hint">第 %1$d 页，点击选择或取消</string>
+</resources>

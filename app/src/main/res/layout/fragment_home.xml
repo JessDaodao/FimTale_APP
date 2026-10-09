@@ -27,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:text="加载失败"
+        android:text="@string/common_load_failed"
         android:visibility="gone"/>
 
     <LinearLayout
@@ -43,7 +43,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="登录后查看收藏与阅读历史"
+            android:text="@string/profile_login_message"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:layout_marginBottom="16dp"/>
 
@@ -51,7 +51,7 @@
             android:id="@+id/btnLogin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="登录 FimTale"/>
+            android:text="@string/login_title"/>
 
             </LinearLayout>
 </FrameLayout>

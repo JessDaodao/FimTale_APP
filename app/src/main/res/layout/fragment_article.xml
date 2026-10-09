@@ -51,7 +51,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="登录后查看收藏与阅读历史"
+                    android:text="@string/profile_login_message"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:layout_marginBottom="16dp"/>
 
@@ -59,7 +59,7 @@
                     android:id="@+id/btnLogin"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="登录 FimTale"/>
+                    android:text="@string/login_title"/>
 
             </LinearLayout>
 
@@ -68,7 +68,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="未找到搜索结果"
+                android:text="@string/search_no_results"
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp"
                 android:visibility="gone" />

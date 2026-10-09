@@ -1,5 +1,7 @@
 package com.fimtale.utils;
 
+import com.fimtale.R;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -84,7 +86,7 @@ public final class BbCodeRendering {
                             case "th": spans.add(new StyleSpan(android.graphics.Typeface.BOLD)); break;
                         }
                         if (attrs.containsKey("data-collapse")) {
-                            String title = attrs.getOrDefault("data-title", "点击展开");
+                            String title = attrs.getOrDefault("data-title", context.getString(R.string.bbcode_expand_default));
                             String source = new String(Base64.getDecoder().decode(attrs.get("data-collapse")),
                                     java.nio.charset.StandardCharsets.UTF_8);
                             spans.add(new CollapseSpan(title, source));
@@ -101,8 +103,8 @@ public final class BbCodeRendering {
     public static String fontFamily(String value) {
         String lower = value.toLowerCase(Locale.ROOT);
         if (lower.contains("mono") || lower.contains("courier")) return "monospace";
-        if (lower.contains("sans") || lower.contains("arial") || lower.contains("黑体")) return "sans-serif";
-        if (lower.contains("serif") || lower.contains("times") || lower.contains("宋体")) return "serif";
+        if (lower.contains("sans") || lower.contains("arial") || lower.contains(AppStrings.get(R.string.bbcode_font_alias_sans))) return "sans-serif";
+        if (lower.contains("serif") || lower.contains("times") || lower.contains(AppStrings.get(R.string.bbcode_font_alias_serif))) return "serif";
         return value;
     }
 
@@ -170,10 +172,10 @@ public final class BbCodeRendering {
     private static void openUrl(Context context, String url) {
         if (!alive(context) || BbCode.safeUrl(url, false) == null) return;
         try { context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
-        catch (android.content.ActivityNotFoundException e) { Toast.makeText(context, "没有可打开此链接的应用", Toast.LENGTH_SHORT).show(); }
+        catch (android.content.ActivityNotFoundException e) { Toast.makeText(context, context.getString(R.string.error_no_link_handler), Toast.LENGTH_SHORT).show(); }
     }
     private static void referenceError(Context context) {
-        if (alive(context)) Toast.makeText(context, "引用加载失败，内容可能已删除或无权访问", Toast.LENGTH_SHORT).show();
+        if (alive(context)) Toast.makeText(context, context.getString(R.string.bbcode_reference_failed), Toast.LENGTH_SHORT).show();
     }
     private static void openReference(Context context, String ref) {
         String[] parts = ref.split(":");
@@ -183,7 +185,7 @@ public final class BbCodeRendering {
             case "5": openUrl(context, SiteUrls.SITE + "/channel/" + id); break;
             case "7": openUrl(context, SiteUrls.SITE + "/user/" + id); break;
             case "3":
-                Toast.makeText(context, "正在加载引用…", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, context.getString(R.string.bbcode_loading_reference), Toast.LENGTH_SHORT).show();
                 RetrofitClient.getInstance().getChapter(id).enqueue(new Callback<ChapterResponse>() {
                     @Override public void onResponse(Call<ChapterResponse> call, Response<ChapterResponse> response) {
                         ChapterResponse data = response.body();
@@ -194,7 +196,7 @@ public final class BbCodeRendering {
                     @Override public void onFailure(Call<ChapterResponse> call, Throwable t) { referenceError(context); }
                 }); break;
             case "4":
-                Toast.makeText(context, "正在加载引用…", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, context.getString(R.string.bbcode_loading_reference), Toast.LENGTH_SHORT).show();
                 RetrofitClient.getInstance().getComment(id).enqueue(new Callback<CommentResponse>() {
                     @Override public void onResponse(Call<CommentResponse> call, Response<CommentResponse> response) {
                         CommentResponse data = response.body();

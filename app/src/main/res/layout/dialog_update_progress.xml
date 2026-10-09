@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:layout_marginTop="8dp"
-        android:text="0%"
+        android:text="@string/common_zero_percent"
         android:textAppearance="?attr/textAppearanceLabelSmall"/>
 
 </LinearLayout>

@@ -98,7 +98,7 @@ public final class ReviewQueueAdapter extends RecyclerView.Adapter<RecyclerView.
         text(view, R.id.reviewReason, description); visible(view, R.id.reviewReason, !description.isEmpty());
         String time = entry.status == ReviewEntry.UNSUBMITTED ? "" : ReviewEntry.date(entry.updatedAt);
         if (time.isEmpty() && entry.status != ReviewEntry.UNSUBMITTED) time = ReviewEntry.date(entry.createdAt);
-        text(view, R.id.reviewUpdated, activity.getString(R.string.review_updated, time.isEmpty() ? "—" : time));
+        text(view, R.id.reviewUpdated, activity.getString(R.string.review_updated, time.isEmpty() ? activity.getString(R.string.common_missing_value) : time));
         String after = entry.status == ReviewEntry.REJECTED && entry.payload != null ? ReviewEntry.date(entry.payload.resubmitAfter) : "";
         text(view, R.id.reviewResubmit, activity.getString(R.string.review_resubmit_selected, after));
         visible(view, R.id.reviewResubmit, !after.isEmpty());

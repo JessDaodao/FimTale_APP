@@ -62,7 +62,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { back(); }
         });
-        for (String title : Inbox.TITLES) tabs.addTab(tabs.newTab().setText(title));
+        for (int title : Inbox.TITLES) tabs.addTab(tabs.newTab().setText(title));
         tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override public void onTabSelected(TabLayout.Tab tab) {
                 if (!binding) { model.select(tab.getPosition()); render(); }
@@ -91,7 +91,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         model.changes.observe(this, ignored -> render());
     }
     private void back() {
-        if (model.mutating) { Toast.makeText(this, "正在提交，请稍候", Toast.LENGTH_SHORT).show(); return; }
+        if (model.mutating) { Toast.makeText(this, getString(R.string.common_submitting_wait), Toast.LENGTH_SHORT).show(); return; }
         if (standaloneConversation() || model.conversation == null) finish(); else model.back();
     }
     @Override protected void onResume() {
@@ -108,7 +108,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         if (list.isComputingLayout()) { list.post(this::render); return; }
         binding = true;
         boolean chat = model.conversation != null;
-        String title = chat ? model.conversation.title(UserPreferences.getUserId(this)) : "消息";
+        String title = chat ? model.conversation.title(UserPreferences.getUserId(this)) : getString(R.string.inbox_title);
         TextView conversationTitle = findViewById(R.id.conversationTitle);
         if (conversationTitle != null) conversationTitle.setText(title); else toolbar.setTitle(title);
         tabs.setVisibility(chat ? View.GONE : View.VISIBLE);
@@ -167,7 +167,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         row.addView(button); return button;
     }
     private void user(LinearLayout row, AuthorInfo author) {
-        if (author == null) { text(row, "FimTale", 15, true); return; }
+        if (author == null) { text(row, getString(R.string.app_name), 15, true); return; }
         LinearLayout identity = new LinearLayout(this); identity.setGravity(Gravity.CENTER_VERTICAL);
         ImageView avatar = new ImageView(this); identity.addView(avatar, new LinearLayout.LayoutParams(dp(36), dp(36)));
         Glide.with(this).load(author.getAvatar()).circleCrop().into(avatar);
@@ -181,7 +181,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         catch (RuntimeException e) { return iso; }
     }
     private void loadAvatar(ImageView view, AuthorInfo author) {
-        view.setContentDescription(author == null ? "用户头像" : author.getUserName() + "的头像");
+        view.setContentDescription(author == null ? getString(R.string.profile_avatar_description) : getString(R.string.profile_named_avatar_description, author.getUserName()));
         Glide.with(this).load(author == null ? null : author.getAvatar())
                 .placeholder(MdiIcons.drawable(this, "account")).circleCrop().into(view);
     }
@@ -190,10 +190,10 @@ public abstract class InboxActivity extends AppCompatActivity {
         try {
             java.time.ZonedDateTime time = java.time.OffsetDateTime.parse(iso).atZoneSameInstant(java.time.ZoneId.systemDefault());
             java.time.LocalDate today = java.time.LocalDate.now();
-            String clock = time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            String clock = time.format(java.time.format.DateTimeFormatter.ofPattern(getString(R.string.common_time)));
             if (time.toLocalDate().equals(today)) return clock;
-            if (time.toLocalDate().equals(today.minusDays(1))) return "昨天 " + clock;
-            return time.format(java.time.format.DateTimeFormatter.ofPattern(time.getYear() == today.getYear() ? "M月d日 HH:mm" : "yyyy年M月d日 HH:mm"));
+            if (time.toLocalDate().equals(today.minusDays(1))) return getString(R.string.inbox_yesterday, clock);
+            return time.format(java.time.format.DateTimeFormatter.ofPattern(time.getYear() == today.getYear() ? getString(R.string.inbox_date_current_year) : getString(R.string.inbox_date_full)));
         } catch (RuntimeException ignored) { return date(iso); }
     }
     private void bindConversation(LinearLayout row, Inbox.Conversation conversation) {
@@ -204,10 +204,10 @@ public abstract class InboxActivity extends AppCompatActivity {
         TextView preview = view.findViewById(R.id.conversationPreview);
         Inbox.Message latest = conversation.latest_message;
         time.setText(latest == null ? "" : chatTime(latest.created_at));
-        String content = latest == null || latest.message == null ? "暂无消息"
+        String content = latest == null || latest.message == null ? getString(R.string.inbox_no_messages)
                 : com.fimtale.utils.BbCodeText.plainPreview(renderer.toMarkdown(BbCode.toMarkdown(latest.message)));
         boolean group = conversation.participants != null && conversation.participants.size() > 2;
-        if (group && latest != null && latest.user != null) content = latest.user.getUserName() + "：" + content;
+        if (group && latest != null && latest.user != null) content = getString(R.string.inbox_sender_preview, latest.user.getUserName(), content);
         preview.setText(content);
         view.findViewById(R.id.conversationUnread).setVisibility(conversation.latest_unread_message_id == null ? View.GONE : View.VISIBLE);
         FrameLayout avatars = view.findViewById(R.id.conversationAvatars);
@@ -247,7 +247,7 @@ public abstract class InboxActivity extends AppCompatActivity {
         int maxWidth = Math.max(dp(80), Math.min(availableWidth - dp(112), (int) (availableWidth * 0.72f)));
         TextView sender = view.findViewById(R.id.messageSender);
         sender.setMaxWidth(maxWidth);
-        sender.setText(message.user == null ? "用户" : message.user.getUserName());
+        sender.setText(message.user == null ? getString(R.string.profile_user_label) : message.user.getUserName());
         boolean group = model.conversation != null && model.conversation.participants != null && model.conversation.participants.size() > 2;
         sender.setVisibility(!mine && group ? View.VISIBLE : View.GONE);
         TextView bubble = view.findViewById(R.id.messageBubble); bubble.setMaxWidth(maxWidth);
@@ -299,7 +299,7 @@ public abstract class InboxActivity extends AppCompatActivity {
                     : MaterialColors.getColor(row, com.google.android.material.R.attr.colorSurface));
             if (item instanceof String) {
                 switch ((String)item) {
-                    case "login": text(row, "登录后查看消息", 18, true); button(row, "登录 FimTale", () -> DialogHelper.openLogin(InboxActivity.this)); break;
+                    case "login": text(row, getString(R.string.inbox_login_message), 18, true); button(row, getString(R.string.login_title), () -> DialogHelper.openLogin(InboxActivity.this)); break;
                     case "loading":
                         ShimmerSkeletonView skeleton = new ShimmerSkeletonView(InboxActivity.this);
                         skeleton.setSkeletonLayout(model.conversation != null ? ShimmerSkeletonView.Layout.CHAT
@@ -307,14 +307,14 @@ public abstract class InboxActivity extends AppCompatActivity {
                         int height = model.loaded ? dp(160) : Math.max(dp(320), list.getHeight());
                         row.addView(skeleton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
                         break;
-                    case "error": text(row, model.error, 14, false); button(row, "重试", model::retry); break;
-                    case "empty": text(row, model.tab == 3 ? "暂无私信" : "暂无通知", 16, false); break;
-                    case "more": button(row, "加载更多", () -> model.load(true)); break;
-                    case "earlier": button(row, "加载更早消息", () -> model.load(true)); break;
+                    case "error": text(row, model.error, 14, false); button(row, getString(R.string.common_retry), model::retry); break;
+                    case "empty": text(row, model.tab == 3 ? getString(R.string.inbox_no_conversations) : getString(R.string.inbox_no_notifications), 16, false); break;
+                    case "more": button(row, getString(R.string.common_load_more), () -> model.load(true)); break;
+                    case "earlier": button(row, getString(R.string.inbox_load_earlier), () -> model.load(true)); break;
                     case "summary":
                         if (model.tab != 3) {
-                            int count = Inbox.unread(model.notices).size(); text(row, "此页 " + count + " 条未读", 13, false);
-                            if (count > 0) button(row, "标记全部已读", () -> model.markRead(model.notices));
+                            int count = Inbox.unread(model.notices).size(); text(row, getString(R.string.inbox_page_unread, count), 13, false);
+                            if (count > 0) button(row, getString(R.string.inbox_mark_all_read), () -> model.markRead(model.notices));
                         }
                         break;
                 }
@@ -336,11 +336,11 @@ public abstract class InboxActivity extends AppCompatActivity {
                     if (n.type == 23) renderer.setMarkdown(body, n.preview()); else BbCodeRendering.setText(renderer, body, n.preview());
                 }
                 if (n.type == 24 && Inbox.number(n.object(), "id") > 0) {
-                    if (n.acted == null) { button(row, "接受", () -> model.invite(n, "accept")); button(row, "拒绝", () -> model.invite(n, "reject")); }
-                    else text(row, n.acted.equals("accept") ? "已接受" : "已拒绝", 14, false);
+                    if (n.acted == null) { button(row, getString(R.string.common_accept), () -> model.invite(n, "accept")); button(row, getString(R.string.common_reject), () -> model.invite(n, "reject")); }
+                    else text(row, n.acted.equals("accept") ? getString(R.string.inbox_invite_accepted) : getString(R.string.inbox_invite_rejected), 14, false);
                 }
                 text(row, date(n.created_at), 12, false);
-                if (!Inbox.unread(group).isEmpty()) button(row, "标记已读", () -> model.markRead(group));
+                if (!Inbox.unread(group).isEmpty()) button(row, getString(R.string.inbox_mark_read), () -> model.markRead(group));
             }
         }
         final class Holder extends RecyclerView.ViewHolder {

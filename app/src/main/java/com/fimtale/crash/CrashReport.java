@@ -1,5 +1,8 @@
 package com.fimtale.crash;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import android.app.Application;
 import android.content.Context;
 import android.os.Build;
@@ -31,9 +34,9 @@ public final class CrashReport {
         static Environment current(Context context) {
             String process = Application.getProcessName();
             return new Environment(System.currentTimeMillis(), Process.myPid(), process == null ? context.getPackageName() : process,
-                    BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")",
-                    "Android " + Build.VERSION.RELEASE + " / API " + Build.VERSION.SDK_INT,
-                    limit(Build.MANUFACTURER + " " + Build.MODEL, 160));
+                    AppStrings.get(R.string.crash_feedback_app_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                    AppStrings.get(R.string.crash_feedback_android_version, Build.VERSION.RELEASE, Build.VERSION.SDK_INT),
+                    limit(AppStrings.get(R.string.crash_feedback_device_name, Build.MANUFACTURER, Build.MODEL), 160));
         }
     }
 
@@ -42,13 +45,13 @@ public final class CrashReport {
         Throwable current = error;
         // Bound both cause depth and frames, and never call Throwable.toString()/getMessage().
         for (int depth = 0; current != null && depth < 8 && stack.length() < MAX_STACK; depth++) {
-            if (depth > 0) stack.append("Caused by: ");
+            if (depth > 0) stack.append(AppStrings.get(R.string.crash_feedback_stack_cause));
             stack.append(current.getClass().getName()).append('\n');
             StackTraceElement[] frames = current.getStackTrace();
             int count = Math.min(frames.length, 8);
             for (int i = 0; i < count && stack.length() < MAX_STACK; i++)
-                stack.append("  at ").append(frames[i]).append('\n');
-            if (count < frames.length) stack.append("  …\n");
+                stack.append(AppStrings.get(R.string.crash_feedback_stack_frame, frames[i]));
+            if (count < frames.length) stack.append(AppStrings.get(R.string.crash_feedback_stack_truncated));
             Throwable next = current.getCause();
             if (next == current) break;
             current = next;
@@ -61,7 +64,7 @@ public final class CrashReport {
         boolean nativeCrash = exit.reason == android.app.ApplicationExitInfo.REASON_CRASH_NATIVE;
         return new CrashReport("exit:" + exit.pid + ":" + exit.timestamp,
                 nativeCrash ? "android.native_crash" : "android.java_crash",
-                "系统记录了" + (nativeCrash ? "原生崩溃" : "应用崩溃") + "，未获取到 Java 异常堆栈。",
+                AppStrings.get(nativeCrash ? R.string.crash_feedback_native_exit : R.string.crash_feedback_java_exit),
                 limit(screen, 160), exit.timestamp, environment);
     }
 
@@ -72,16 +75,14 @@ public final class CrashReport {
     }
 
     public String summary() {
-        return "Android 崩溃反馈\n时间：" + Instant.ofEpochMilli(timestamp) + "\n应用版本：" + environment.appVersion
-                + "\n系统：" + environment.androidVersion + "\n设备：" + environment.device
-                + "\n页面：" + (screen.isEmpty() ? "启动阶段" : screen) + "\n错误类型：" + kind;
+        return AppStrings.get(R.string.crash_feedback_summary, Instant.ofEpochMilli(timestamp), environment.appVersion, environment.androidVersion, environment.device, screen.isEmpty() ? AppStrings.get(R.string.crash_feedback_startup_screen) : screen, kind);
     }
-    public String diagnostics() { return summary() + "\n\n" + stack; }
+    public String diagnostics() { return AppStrings.get(R.string.crash_feedback_diagnostics, summary(), stack); }
     static String limit(String value, int max) {
         if (value == null) return "";
         if (value.length() <= max) return value;
         int end = max - 1;
         if (Character.isHighSurrogate(value.charAt(end - 1))) end--;
-        return value.substring(0, end) + "…";
+        return value.substring(0, end) + '\u2026';
     }
 }

@@ -1,5 +1,6 @@
 package com.fimtale.ui;
 
+
 import android.graphics.Rect;
 import android.view.View;
 import android.widget.TextView;
@@ -60,12 +61,12 @@ public final class WorkCommentsSection {
         next.setOnClickListener(v -> changePage(page + 1));
         sort.setOnClickListener(v -> {
             descending = !descending;
-            sort.setText(descending ? "从晚到早" : "从早到晚");
+            sort.setText(descending ? activity.getString(R.string.comments_newest_first) : activity.getString(R.string.comments_oldest_first));
             changePage(1);
         });
     }
 
-    public void setCount(int count) { title.setText("评论（" + count + "）"); }
+    public void setCount(int count) { title.setText(activity.getString(R.string.comments_count, count)); }
 
     public void loadIfVisible() {
         if (!started && !closed && root.isShown() && root.getGlobalVisibleRect(visibleBounds)) load(1);
@@ -85,7 +86,7 @@ public final class WorkCommentsSection {
     public void refreshLatest() {
         if (closed) return;
         descending = true;
-        sort.setText("从晚到早");
+        sort.setText(activity.getString(R.string.comments_newest_first));
         load(1);
     }
 
@@ -125,13 +126,13 @@ public final class WorkCommentsSection {
                     skeleton.setVisibility(View.GONE); list.setVisibility(View.VISIBLE);
                     countUpdated.accept(result.total);
                     if (result.getItems().isEmpty()) {
-                        status.setText("暂无评论，点击刷新"); status.setVisibility(View.VISIBLE);
+                        status.setText(activity.getString(R.string.comments_empty_tap)); status.setVisibility(View.VISIBLE);
                         status.setOnClickListener(v -> load(1));
                     }
                 } else showError(requestedPage, ApiErrors.message(response));
             }
             @Override public void onFailure(Call<WorkCommentsResponse> call, Throwable error) {
-                if (valid(call)) showError(requestedPage, "评论加载失败");
+                if (valid(call)) showError(requestedPage, activity.getString(R.string.comments_load_failed));
             }
         });
     }
@@ -148,7 +149,7 @@ public final class WorkCommentsSection {
         previous.setEnabled(!loading && page > 1);
         next.setEnabled(!loading && page < totalPages);
         sort.setEnabled(!loading);
-        pageLabel.setText(page + " / " + totalPages);
+        pageLabel.setText(activity.getString(R.string.common_pagination, page, totalPages));
     }
 
     public void close() {

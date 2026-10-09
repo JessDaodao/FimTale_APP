@@ -6,7 +6,7 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="10dp">
         <ImageView android:id="@+id/timelineAvatar"
-            android:layout_width="40dp" android:layout_height="40dp" android:contentDescription="查看个人资料" />
+            android:layout_width="40dp" android:layout_height="40dp" android:contentDescription="@string/profile_view_description" />
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="12dp">
             <TextView android:id="@+id/timelineAuthor" android:layout_width="match_parent"
@@ -43,7 +43,7 @@
                     android:textAppearance="?attr/textAppearanceLabelSmall" android:textColor="?attr/colorOnSurfaceVariant" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/timelineOpen"
                     style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:layout_gravity="end" android:text="查看详情" />
+                    android:layout_height="wrap_content" android:layout_gravity="end" android:text="@string/common_view_details" />
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -54,6 +54,6 @@
             android:ellipsize="end" android:maxLines="1" android:visibility="gone" app:chipStrokeWidth="0dp" />
         <com.google.android.material.button.MaterialButton android:id="@+id/timelineRepost"
             style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:text="转发" android:visibility="gone" />
+            android:layout_height="wrap_content" android:text="@string/timeline_share" android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

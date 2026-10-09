@@ -1,5 +1,7 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -267,7 +269,7 @@ public final class BbCodeEditText extends AppCompatEditText {
         int start = Math.min(getSelectionStart(), getSelectionEnd()), end = Math.max(getSelectionStart(), getSelectionEnd());
         android.content.ClipboardManager clipboard = getContext().getSystemService(android.content.ClipboardManager.class);
         if (id == android.R.id.copy || id == android.R.id.cut) {
-            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("内容", VisualEditing.selectedText(getText().toString(), start, end)));
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText(getContext().getString(R.string.common_content), VisualEditing.selectedText(getText().toString(), start, end)));
             if (id == android.R.id.cut) deleteVisual(true);
             return true;
         }
@@ -406,7 +408,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                         }
                     }
                     if (!sourceVisible) {
-                        span(text, new InlineLabelSpan("[图片]", getLinkTextColors().getDefaultColor()), node.start, node.end);
+                        span(text, new InlineLabelSpan(getContext().getString(R.string.bbcode_image_placeholder), getLinkTextColors().getDefaultColor()), node.start, node.end);
                         continue;
                     }
                     span(text, new ForegroundColorSpan(getLinkTextColors().getDefaultColor()), node.contentStart, node.contentEnd);
@@ -429,7 +431,7 @@ public final class BbCodeEditText extends AppCompatEditText {
             while (emojis.find()) {
                 if (insideLiteral(emojis.start(), emojis.end()) || insidePreview(emojis.start(), emojis.end()) || insideNode("spoiler", emojis.start(), emojis.end()) || sourceVisible) continue;
                 if (!isAttachedToWindow()) {
-                    span(text, new InlineLabelSpan("[表情]", getCurrentTextColor()), emojis.start(), emojis.end()); continue;
+                    span(text, new InlineLabelSpan(getContext().getString(R.string.bbcode_emoji_placeholder), getCurrentTextColor()), emojis.start(), emojis.end()); continue;
                 }
                 String url = SiteUrls.media("/img/ftemoji/" + emojis.group(1) + ".png");
                 if (url == null) continue;
@@ -442,7 +444,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                 if (image.drawable != null) {
                     image.drawable.setBounds(0, 0, Math.round(getTextSize() * 1.2f), Math.round(getTextSize() * 1.2f));
                     span(text, new ImageSpan(image.drawable), emojis.start(), emojis.end());
-                } else span(text, new InlineLabelSpan("[表情]", getCurrentTextColor()), emojis.start(), emojis.end());
+                } else span(text, new InlineLabelSpan(getContext().getString(R.string.bbcode_emoji_placeholder), getCurrentTextColor()), emojis.start(), emojis.end());
             }
             if (!sourceVisible) {
                 Matcher entities = VisualEditing.ENTITIES.matcher(source);
@@ -762,7 +764,7 @@ public final class BbCodeEditText extends AppCompatEditText {
                         for (BbCodeSyntax.Node item : nodes) if (item.name.equals("*") && item.start >= parent.contentStart
                                 && item.start < node.start) number++;
                     }
-                    span(text, new LiteralSpan(ordered ? number + ". " : "• "), node.start, node.contentStart);
+                    span(text, new LiteralSpan(ordered ? getContext().getString(R.string.editor_ordered_bullet, number) : getContext().getString(R.string.editor_unordered_bullet)), node.start, node.contentStart);
                     syntax(text, node.contentEnd, node.end, new int[]{-1, -1});
                 }
                 return false;

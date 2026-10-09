@@ -48,7 +48,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="画廊"
+                        android:text="@string/reader_gallery"
                         android:textSize="12sp"/>
                 </LinearLayout>
 
@@ -72,7 +72,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="帖子"
+                        android:text="@string/work_type_post"
                         android:textSize="12sp"/>
                 </LinearLayout>
 
@@ -96,7 +96,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="标签"
+                        android:text="@string/tags_label"
                         android:textSize="12sp"/>
                 </LinearLayout>
             </LinearLayout>
@@ -114,12 +114,12 @@
                 <com.google.android.material.tabs.TabItem
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="推荐作品" />
+                    android:text="@string/home_recommendations" />
 
                 <com.google.android.material.tabs.TabItem
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="最近更新" />
+                    android:text="@string/home_recent_updates" />
             </com.google.android.material.tabs.TabLayout>
 
 </LinearLayout>

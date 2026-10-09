@@ -1,5 +1,8 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -27,23 +30,23 @@ public final class DraftCodec {
         public String slot;
     }
     public static Target target(String key, JsonObject payload) {
-        if (key == null) throw new IllegalArgumentException("草稿缺少标识");
+        if (key == null) throw new IllegalArgumentException(AppStrings.get(R.string.drafts_key_missing));
         String[] parts = key.split(":"); Target target = new Target();
         if (parts.length == 2 && parts[0].equals("work")) target.workId = positive(parts[1]);
         else if (parts.length == 3 && parts[0].equals("work") && parts[1].equals("new")) target.slot = parts[2];
         else if (parts.length == 2 && parts[0].equals("chapter")) {
             target.chapterId = positive(parts[1]);
-            if (payload == null || !payload.has("work_id")) throw new IllegalArgumentException("章节草稿缺少作品 ID");
+            if (payload == null || !payload.has("work_id")) throw new IllegalArgumentException(AppStrings.get(R.string.drafts_work_id_missing));
             target.workId = positive(payload.get("work_id").getAsString());
         } else if (parts.length == 4 && parts[0].equals("chapter") && parts[1].equals("new")) {
             target.chapterId = 0; target.workId = positive(parts[2]); target.slot = parts[3];
-        } else throw new IllegalArgumentException("不支持的草稿类型");
+        } else throw new IllegalArgumentException(AppStrings.get(R.string.drafts_unsupported_type));
         if (target.slot != null && !target.slot.matches("(?i)[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}"))
-            throw new IllegalArgumentException("草稿标识无效");
+            throw new IllegalArgumentException(AppStrings.get(R.string.drafts_key_invalid));
         return target;
     }
     private static int positive(String number) {
-        int value = Integer.parseInt(number); if (value <= 0) throw new IllegalArgumentException("草稿 ID 无效"); return value;
+        int value = Integer.parseInt(number); if (value <= 0) throw new IllegalArgumentException(AppStrings.get(R.string.drafts_id_invalid)); return value;
     }
     public static JsonObject payload(EditorDocument document, boolean chapter) {
         JsonObject result = document.onlinePayload == null ? new JsonObject() : copy(document.onlinePayload);
@@ -61,7 +64,7 @@ public final class DraftCodec {
                 JsonObject tag = findTag(oldTags, id);
                 if (tag == null) { tag = new JsonObject(); tag.addProperty("id", id); tag.addProperty("name", name); }
                 String group = document.tagGroups.get(id);
-                boolean isRegular = "题材".equals(group) || "读者注意".equals(group) || "历史标签".equals(group);
+                boolean isRegular = AppStrings.get(R.string.tags_group_genre).equals(group) || AppStrings.get(R.string.tags_group_warning).equals(group) || AppStrings.get(R.string.tags_group_history).equals(group);
                 if (isRegular) regular.add(tag); else characters.add(tag);
             });
             JsonObject selected = new JsonObject(); selected.add("regular", regular); selected.add("characters", characters); result.add("selected_tags", selected);
@@ -79,9 +82,9 @@ public final class DraftCodec {
         return null;
     }
     public static EditorDocument document(OnlineDraft draft, int workId, int chapterId) {
-        if (draft == null || draft.payload == null || draft.revision <= 0) throw new IllegalArgumentException("在线草稿数据不完整");
+        if (draft == null || draft.payload == null || draft.revision <= 0) throw new IllegalArgumentException(AppStrings.get(R.string.drafts_incomplete));
         Target target = target(draft.key, draft.payload);
-        if (target.workId != workId || target.chapterId != chapterId) throw new IllegalArgumentException("草稿与作品不匹配");
+        if (target.workId != workId || target.chapterId != chapterId) throw new IllegalArgumentException(AppStrings.get(R.string.drafts_work_mismatch));
         EditorDocument result = new EditorDocument(); result.draftKey = draft.key; result.revision = draft.revision;
         result.pendingSync = false; result.onlinePayload = copy(draft.payload);
         if (chapterId >= 0) {
@@ -99,8 +102,8 @@ public final class DraftCodec {
                 if (tags == null || !tags.isJsonArray()) continue;
                 for (JsonElement value : tags.getAsJsonArray()) {
                     JsonObject tag = value.getAsJsonObject(); int id = tag.get("id").getAsInt();
-                    result.tags.put(id, tag.has("name") ? tag.get("name").getAsString() : "标签 " + id);
-                    result.tagGroups.put(id, group.equals("regular") ? "题材" : "角色");
+                    result.tags.put(id, tag.has("name") ? tag.get("name").getAsString() : AppStrings.get(R.string.tags_number, id));
+                    result.tagGroups.put(id, group.equals("regular") ? AppStrings.get(R.string.tags_group_genre) : AppStrings.get(R.string.tags_group_character));
                 }
             }
             result.syncTags();

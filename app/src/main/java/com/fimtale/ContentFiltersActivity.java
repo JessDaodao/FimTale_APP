@@ -52,7 +52,7 @@ import retrofit2.Response;
 
 /** Native content-filter editor backed by the current user API. */
 public class ContentFiltersActivity extends AppCompatActivity {
-    private static final String[] RATING_LABELS = {"不限制", "仅 Everyone（全年龄）", "Everyone + Teen（隐藏限制级）"};
+    private String[] ratingLabels;
     private static final int[] RATING_VALUES = {0, 1, 2};
     private CircularProgressIndicator progress;
     private TextView currentLabel, expressionSummary, presetEmpty, blockedEmpty;
@@ -79,12 +79,13 @@ public class ContentFiltersActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        ratingLabels = getResources().getStringArray(R.array.filters_rating_options);
         setContentView(R.layout.activity_content_filters);
         com.fimtale.utils.EditorWindowStyle.apply(this);
         MaterialToolbar toolbar = findViewById(R.id.filterToolbar);
         toolbar.setTitle("");
         toolbar.setBackground(null);
-        ((TextView) findViewById(R.id.filterToolbarTitle)).setText("内容过滤");
+        ((TextView) findViewById(R.id.filterToolbarTitle)).setText(getString(R.string.filters_title));
         toolbar.setNavigationOnClickListener(v -> finish());
         ScrollView scroll = findViewById(R.id.filterScroll);
         pageError = com.fimtale.ui.PageErrorView.wrap(scroll);
@@ -109,7 +110,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
         tags = findViewById(R.id.filterTags);
         presets = findViewById(R.id.filterPresets);
         blocked = findViewById(R.id.filterBlocked);
-        rating.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, RATING_LABELS));
+        rating.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, ratingLabels));
         rating.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
                 if (!suppressRating) renderEditorSummary();
@@ -123,9 +124,9 @@ public class ContentFiltersActivity extends AppCompatActivity {
         });
         operator.setOnCheckedChangeListener((group, checkedId) -> renderEditorSummary());
         invert.setOnCheckedChangeListener((button, checked) -> renderEditorSummary());
-        findViewById(R.id.filterDefault).setOnClickListener(v -> saveFilter(null, filterPresets, "已恢复默认过滤"));
-        findViewById(R.id.filterNone).setOnClickListener(v -> saveFilter(new ContentFilterDef(0, null), filterPresets, "已关闭内容过滤"));
-        findViewById(R.id.filterApply).setOnClickListener(v -> saveFilter(editorDefinition(), filterPresets, "过滤设置已应用"));
+        findViewById(R.id.filterDefault).setOnClickListener(v -> saveFilter(null, filterPresets, getString(R.string.filters_default_restored)));
+        findViewById(R.id.filterNone).setOnClickListener(v -> saveFilter(new ContentFilterDef(0, null), filterPresets, getString(R.string.filters_disabled)));
+        findViewById(R.id.filterApply).setOnClickListener(v -> saveFilter(editorDefinition(), filterPresets, getString(R.string.filters_applied)));
         findViewById(R.id.filterSavePreset).setOnClickListener(v -> showSavePresetDialog());
         com.fimtale.ui.PullToRefresh.attach(scroll, () -> load(true),
                 () -> !closed && userCall == null && defaultCall == null && blockCall == null && saveCall == null);
@@ -172,7 +173,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
             }
             @Override public void onFailure(@NonNull Call<CurrentUser> call, @NonNull Throwable error) {
                 if (!valid(call, userCall)) return;
-                userCall = null; setLoading(false); showLoadError("过滤设置加载失败，请重试");
+                userCall = null; setLoading(false); showLoadError(getString(R.string.filters_load_failed));
             }
         });
     }
@@ -190,7 +191,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
             }
             @Override public void onFailure(@NonNull Call<ContentFilterDef> call, @NonNull Throwable error) {
                 if (!valid(call, defaultCall)) return;
-                defaultCall = null; showLoadError("暂时无法加载默认过滤设置。");
+                defaultCall = null; showLoadError(getString(R.string.filters_default_load_failed));
             }
         });
     }
@@ -204,7 +205,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
                 else showLoadError(ApiErrors.message(response));
             }
             @Override public void onFailure(@NonNull Call<List<BlockedUser>> call, @NonNull Throwable error) {
-                if (valid(call, blockCall)) { blockCall = null; showLoadError("暂时无法加载屏蔽用户列表。"); }
+                if (valid(call, blockCall)) { blockCall = null; showLoadError(getString(R.string.filters_blocked_users_load_failed)); }
             }
         });
     }
@@ -228,12 +229,12 @@ public class ContentFiltersActivity extends AppCompatActivity {
 
     private void renderAll() { renderCurrent(); renderTags(); renderPresets(); renderBlocked(); renderEditorSummary(); }
     private void renderCurrent() {
-        String label = activeFilter == null ? "默认" : isZero(activeFilter) ? "无过滤" : presetName(activeFilter);
-        currentLabel.setText("当前过滤：" + label);
+        String label = activeFilter == null ? getString(R.string.common_default) : isZero(activeFilter) ? getString(R.string.filters_none) : presetName(activeFilter);
+        currentLabel.setText(getString(R.string.filters_current, label));
     }
     private String presetName(ContentFilterDef definition) {
-        for (NamedContentFilter preset : filterPresets) if (same(definition, preset)) return preset.name == null ? "自定义" : preset.name;
-        return "自定义";
+        for (NamedContentFilter preset : filterPresets) if (same(definition, preset)) return preset.name == null ? getString(R.string.common_custom) : preset.name;
+        return getString(R.string.common_custom);
     }
     private boolean isZero(ContentFilterDef definition) { return definition != null && definition.ratingCap == 0 && definition.hiddenExpr == null; }
     private boolean same(ContentFilterDef a, ContentFilterDef b) {
@@ -248,9 +249,11 @@ public class ContentFiltersActivity extends AppCompatActivity {
         }
     }
     private void renderEditorSummary() {
-        StringBuilder text = new StringBuilder("当前编辑：").append(RATING_LABELS[Math.max(0, Math.min(RATING_LABELS.length - 1, selectedRating()))]);
-        if (!editorTags.isEmpty()) text.append(" · 屏蔽 ").append(editorTags.size()).append(" 个标签（").append(operator.getCheckedRadioButtonId() == R.id.filterAll ? "全部" : "任一").append(invert.isChecked() ? "，反选" : "").append("）");
-        expressionSummary.setText(text.toString());
+        String label = ratingLabels[Math.max(0, Math.min(ratingLabels.length - 1, selectedRating()))];
+        String condition = getString(operator.getCheckedRadioButtonId() == R.id.filterAll ? R.string.common_all : R.string.filters_any);
+        expressionSummary.setText(editorTags.isEmpty() ? getString(R.string.filters_editor_summary, label)
+                : getString(invert.isChecked() ? R.string.filters_editor_summary_inverted : R.string.filters_editor_summary_blocked,
+                        label, editorTags.size(), condition));
     }
     private void addTagFromInput() {
         String value = tagInput.getText() == null ? "" : tagInput.getText().toString().trim();
@@ -284,7 +287,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
             }
             @Override public void onFailure(@NonNull Call<UserMaterial> call, @NonNull Throwable error) {
                 if (!valid(call, saveCall)) return;
-                saveCall = null; setLoading(false); showError("保存失败，请重试");
+                saveCall = null; setLoading(false); showError(getString(R.string.common_save_failed_retry));
             }
         });
     }
@@ -293,13 +296,13 @@ public class ContentFiltersActivity extends AppCompatActivity {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         android.view.View content = android.view.LayoutInflater.from(builder.getContext()).inflate(R.layout.dialog_text_input, null);
         com.google.android.material.textfield.TextInputLayout field = content.findViewById(R.id.dialogTextInputLayout);
-        field.setHint("预设名称");
+        field.setHint(getString(R.string.filters_preset_name));
         EditText input = content.findViewById(R.id.dialogTextInput);
-        builder.setTitle("保存为预设").setView(content)
-                .setNegativeButton("取消", null).setPositiveButton("保存", (dialog, which) -> {
-                    String name = input.getText().toString().trim(); if (name.isEmpty()) { showError("请输入预设名称"); return; }
+        builder.setTitle(getString(R.string.filters_save_preset)).setView(content)
+                .setNegativeButton(getString(R.string.common_cancel), null).setPositiveButton(getString(R.string.common_save), (dialog, which) -> {
+                    String name = input.getText().toString().trim(); if (name.isEmpty()) { showError(getString(R.string.filters_preset_name_required)); return; }
                     List<NamedContentFilter> next = new ArrayList<>(); for (NamedContentFilter item : filterPresets) if (!name.equals(item.name)) next.add(item);
-                    next.add(new NamedContentFilter(name, editorDefinition())); saveFilter(activeFilter, next, "预设已保存");
+                    next.add(new NamedContentFilter(name, editorDefinition())); saveFilter(activeFilter, next, getString(R.string.filters_preset_saved));
                 }).show();
     }
 
@@ -307,22 +310,25 @@ public class ContentFiltersActivity extends AppCompatActivity {
         presets.removeAllViews(); presetEmpty.setVisibility(filterPresets.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
         for (NamedContentFilter preset : filterPresets) {
             LinearLayout row = new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(0, dp(6), 0, dp(6));
-            TextView name = new TextView(this); name.setText((preset.name == null ? "未命名" : preset.name) + "  ·  " + summary(preset));
+            TextView name = new TextView(this); name.setText(getString(R.string.filters_preset_summary, preset.name == null ? getString(R.string.common_unnamed) : preset.name, summary(preset)));
             row.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
-            MaterialButton edit = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); edit.setText("编辑"); edit.setOnClickListener(v -> { seedEditor(preset); }); row.addView(edit);
-            MaterialButton apply = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); apply.setText("应用"); apply.setOnClickListener(v -> saveFilter(preset, filterPresets, "预设已应用")); row.addView(apply);
-            MaterialButton remove = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); remove.setText("删除"); remove.setOnClickListener(v -> deletePreset(preset)); row.addView(remove);
+            MaterialButton edit = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); edit.setText(getString(R.string.common_edit)); edit.setOnClickListener(v -> { seedEditor(preset); }); row.addView(edit);
+            MaterialButton apply = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); apply.setText(getString(R.string.filters_apply)); apply.setOnClickListener(v -> saveFilter(preset, filterPresets, getString(R.string.filters_preset_applied))); row.addView(apply);
+            MaterialButton remove = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); remove.setText(getString(R.string.common_delete)); remove.setOnClickListener(v -> deletePreset(preset)); row.addView(remove);
             presets.addView(row, new LinearLayout.LayoutParams(-1, -2));
         }
     }
-    private String summary(ContentFilterDef definition) { return RATING_LABELS[Math.max(0, Math.min(RATING_LABELS.length - 1, definition.ratingCap))] + (definition.hiddenExpr == null ? "" : " · " + definition.hiddenExpr.summary()); }
-    private void deletePreset(NamedContentFilter preset) { List<NamedContentFilter> next = new ArrayList<>(filterPresets); next.remove(preset); saveFilter(activeFilter, next, "预设已删除"); }
+    private String summary(ContentFilterDef definition) {
+        String label = ratingLabels[Math.max(0, Math.min(ratingLabels.length - 1, definition.ratingCap))];
+        return definition.hiddenExpr == null ? label : getString(R.string.filters_definition_summary, label, definition.hiddenExpr.summary());
+    }
+    private void deletePreset(NamedContentFilter preset) { List<NamedContentFilter> next = new ArrayList<>(filterPresets); next.remove(preset); saveFilter(activeFilter, next, getString(R.string.filters_preset_deleted)); }
     private void renderBlocked() {
         blocked.removeAllViews(); blockedEmpty.setVisibility(blockedUsers.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
         for (BlockedUser item : blockedUsers) {
             LinearLayout row = new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL);
-            TextView name = new TextView(this); name.setText("@" + item.username); row.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
-            MaterialButton remove = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); remove.setText("取消屏蔽"); remove.setOnClickListener(v -> toggleBlock(item.userId)); row.addView(remove);
+            TextView name = new TextView(this); name.setText(getString(R.string.profile_handle, item.username)); row.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
+            MaterialButton remove = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle); remove.setText(getString(R.string.filters_unblock)); remove.setOnClickListener(v -> toggleBlock(item.userId)); row.addView(remove);
             blocked.addView(row, new LinearLayout.LayoutParams(-1, -2));
         }
     }
@@ -331,7 +337,7 @@ public class ContentFiltersActivity extends AppCompatActivity {
         String token = UserPreferences.getToken(this); blockCall = RetrofitClient.getInstance().updateBlocklist(token, new BlockUserRequest(userId));
         blockCall.enqueue(new Callback<List<BlockedUser>>() {
             @Override public void onResponse(@NonNull Call<List<BlockedUser>> call, @NonNull Response<List<BlockedUser>> response) { if (!valid(call, blockCall)) return; blockCall = null; if (response.isSuccessful()) { blockedUsers = response.body() == null ? new ArrayList<>() : response.body(); renderBlocked(); } else showError(ApiErrors.message(response)); }
-            @Override public void onFailure(@NonNull Call<List<BlockedUser>> call, @NonNull Throwable error) { if (valid(call, blockCall)) { blockCall = null; showError("更新屏蔽用户失败"); } }
+            @Override public void onFailure(@NonNull Call<List<BlockedUser>> call, @NonNull Throwable error) { if (valid(call, blockCall)) { blockCall = null; showError(getString(R.string.filters_update_blocked_failed)); } }
         });
     }
     private boolean valid(Call<?> call, Call<?> current) { return !closed && !isFinishing() && !isDestroyed() && !call.isCanceled() && call == current; }

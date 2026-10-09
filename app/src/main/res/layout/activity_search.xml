@@ -25,7 +25,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="搜索文章"
+                android:hint="@string/search_works"
                 app:endIconMode="clear_text">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -43,7 +43,7 @@
                 android:layout_width="52dp"
                 android:layout_height="52dp"
                 android:layout_marginStart="8dp"
-                android:contentDescription="提交搜索"
+                android:contentDescription="@string/search_submit_description"
                 app:backgroundTint="@android:color/transparent"
                 app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="magnify"
                 app:iconTint="?attr/colorPrimary" />
@@ -87,7 +87,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="搜索历史"
+                            android:text="@string/search_history"
                             android:textAppearance="?attr/textAppearanceTitleMedium"
                             android:textColor="?attr/colorOnSurface" />
 
@@ -96,7 +96,7 @@
                             style="@style/Widget.Material3.Button.TextButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="清除全部" />
+                            android:text="@string/search_clear_all" />
                     </LinearLayout>
 
                     <androidx.recyclerview.widget.RecyclerView
@@ -159,7 +159,7 @@
                     app:navigationIconTint="?attr/colorOnSurface"
                     app:titleTextColor="?attr/colorOnSurface"
                     app:titleCentered="false"
-                    app:title="搜索" />
+                    app:title="@string/search_title" />
             </com.google.android.material.card.MaterialCardView>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>

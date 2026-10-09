@@ -46,7 +46,7 @@
                     android:layout_marginEnd="8dp"
                     android:maxLines="1"
                     android:ellipsize="end"
-                    android:text="第1章"
+                    android:text="@string/preview_chapter_one"
                     android:textColor="?android:attr/textColorSecondary"
                     android:textSize="12sp" />
 
@@ -105,7 +105,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="4dp"
-                    android:text="100%"
+                    android:text="@string/common_full_percent"
                     android:textColor="?android:attr/textColorSecondary"
                     android:textSize="12sp" />
 
@@ -143,7 +143,7 @@
                 android:background="@drawable/bg_reader_menu_rounded"
                 app:mdiNavigationIcon="arrow-left"
                 app:navigationIconTint="?attr/colorOnBackground"
-                app:title="阅读"
+                app:title="@string/work_read_label"
                 app:titleTextColor="?attr/colorOnBackground" />
 
             <LinearLayout
@@ -168,7 +168,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"
-                        android:text="目录"
+                        android:text="@string/reader_catalog"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnBackground"/>
@@ -199,7 +199,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="亮度"
+                            android:text="@string/reader_brightness"
                             android:textColor="?attr/colorOnBackground"
                             android:textSize="16sp" />
 
@@ -213,7 +213,7 @@
                             android:valueTo="1.0"
                             android:stepSize="0.0"
                             android:value="0.5"
-                            android:contentDescription="屏幕亮度" />
+                            android:contentDescription="@string/reader_screen_brightness" />
                     </LinearLayout>
 
                     <View
@@ -232,7 +232,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="字号"
+                            android:text="@string/reader_text_size"
                             android:textColor="?attr/colorOnBackground"
                             android:textSize="16sp" />
 
@@ -264,7 +264,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="行距"
+                            android:text="@string/reader_line_spacing"
                             android:textColor="?attr/colorOnBackground"
                             android:textSize="16sp" />
 
@@ -296,7 +296,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="配色"
+                            android:text="@string/reader_theme"
                             android:textColor="?attr/colorOnBackground"
                             android:textSize="16sp" />
 
@@ -312,22 +312,22 @@
                                 <com.google.android.material.tabs.TabItem
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="默认" />
+                                    android:text="@string/common_default" />
 
                                 <com.google.android.material.tabs.TabItem
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="纸黄" />
+                                    android:text="@string/reader_theme_paper" />
 
                                 <com.google.android.material.tabs.TabItem
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="抹茶" />
+                                    android:text="@string/reader_theme_matcha" />
 
                                 <com.google.android.material.tabs.TabItem
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="海蓝" />
+                                    android:text="@string/reader_theme_ocean" />
                             </com.google.android.material.tabs.TabLayout>
                     </LinearLayout>
 
@@ -347,7 +347,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="翻页"
+                            android:text="@string/reader_pagination"
                             android:textColor="?attr/colorOnBackground"
                             android:textSize="16sp" />
 
@@ -363,12 +363,12 @@
                             <com.google.android.material.tabs.TabItem
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="左右" />
+                                android:text="@string/reader_horizontal" />
 
                             <com.google.android.material.tabs.TabItem
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="上下" />
+                                android:text="@string/reader_vertical" />
                         </com.google.android.material.tabs.TabLayout>
                     </LinearLayout>
 
@@ -389,7 +389,7 @@
                         app:mdiDrawableTop="book-open-page-variant"
                         app:drawableTint="?attr/colorOnBackground"
                         android:gravity="center"
-                        android:text="目录"
+                        android:text="@string/reader_catalog"
                         android:textColor="?attr/colorOnBackground"
                         android:clickable="true"
                         android:focusable="true"
@@ -403,7 +403,7 @@
                         app:mdiDrawableTop="cog"
                         app:drawableTint="?attr/colorOnBackground"
                         android:gravity="center"
-                        android:text="设置"
+                        android:text="@string/settings_title"
                         android:textColor="?attr/colorOnBackground"
                         android:clickable="true"
                         android:focusable="true"
@@ -426,7 +426,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="点击屏幕中间唤出菜单"
+            android:text="@string/reader_menu_hint"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:padding="16dp"

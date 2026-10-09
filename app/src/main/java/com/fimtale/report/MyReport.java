@@ -1,5 +1,8 @@
 package com.fimtale.report;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,25 +27,25 @@ public final class MyReport {
         public Reply(long id, String content) { report_id = id; this.content = ReportRequest.trim(content); }
     }
     public String statusLabel() {
-        return status == PENDING ? "待处理" : status == RESOLVED ? "已处理" : status == REJECTED ? "已驳回" : "未知";
+        return status == PENDING ? AppStrings.get(R.string.report_status_pending) : status == RESOLVED ? AppStrings.get(R.string.report_status_resolved) : status == REJECTED ? AppStrings.get(R.string.report_status_rejected) : AppStrings.get(R.string.common_unknown);
     }
     public String kindLabel() {
         String kind = payload == null ? "" : payload.kind;
-        return "report".equals(kind) ? "内容报告" : "recovery_request".equals(kind) ? "恢复请求" : "system_feedback".equals(kind) ? "反馈" : "报告";
+        return "report".equals(kind) ? AppStrings.get(R.string.report_kind_content) : "recovery_request".equals(kind) ? AppStrings.get(R.string.report_kind_recovery) : "system_feedback".equals(kind) ? AppStrings.get(R.string.report_kind_feedback) : AppStrings.get(R.string.report_label);
     }
     public String targetLabel() {
-        if (target_type == 0 || target_id <= 0) return "站点";
+        if (target_type == 0 || target_id <= 0) return AppStrings.get(R.string.report_target_site);
         String name;
         switch (target_type) {
-            case 1: name = "作品"; break;
-            case 3: name = "章节"; break;
-            case 4: name = "评论"; break;
-            case 5: name = "频道"; break;
-            case 6: name = "频道评论"; break;
-            case 7: name = "用户"; break;
-            default: name = "实体";
+            case 1: name = AppStrings.get(R.string.work_label); break;
+            case 3: name = AppStrings.get(R.string.work_chapter_label); break;
+            case 4: name = AppStrings.get(R.string.comments_title); break;
+            case 5: name = AppStrings.get(R.string.report_target_channel); break;
+            case 6: name = AppStrings.get(R.string.report_target_channel_comment); break;
+            case 7: name = AppStrings.get(R.string.profile_user_label); break;
+            default: name = AppStrings.get(R.string.report_target_entity);
         }
-        return name + " #" + target_id;
+        return AppStrings.get(R.string.common_entity_number, name, target_id);
     }
     public String targetPath() {
         if (target_id <= 0) return null;

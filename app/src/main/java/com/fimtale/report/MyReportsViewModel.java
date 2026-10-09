@@ -1,5 +1,7 @@
 package com.fimtale.report;
 
+import com.fimtale.R;
+
 import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -38,7 +40,7 @@ public final class MyReportsViewModel extends AndroidViewModel {
         page = currentPage == null ? 1 : Math.max(1, currentPage); requestedPage = page;
         Long id = saved.get("reportId"); reportId = id == null ? 0 : id;
         detail = Boolean.TRUE.equals(saved.get("detail"));
-        if (Boolean.TRUE.equals(saved.get("submitting"))) { uncertain = true; replyError = "发送结果未确认，请刷新报告核对消息记录"; }
+        if (Boolean.TRUE.equals(saved.get("submitting"))) { uncertain = true; replyError = getApplication().getString(R.string.report_send_uncertain); }
         saved.set("submitting", false);
     }
     public void initialize(long id) {
@@ -86,9 +88,9 @@ public final class MyReportsViewModel extends AndroidViewModel {
                         detail = false; reportId = 0; page = 1; requestedPage = 1; replyError = ""; uncertain = false; persist();
                     }
                     saved.set("owner", owner); restoreDetailTarget(); load(page);
-                } else { loading = false; error = response.isSuccessful() ? "无法确认当前账户，请重新登录" : ApiErrors.message(response); changed(); }
+                } else { loading = false; error = response.isSuccessful() ? getApplication().getString(R.string.editor_account_unconfirmed) : ApiErrors.message(response); changed(); }
             }
-            @Override public void onFailure(Call<CurrentUser> c, Throwable t) { if (acceptRead(c)) failRead("账户加载失败，请重试"); }
+            @Override public void onFailure(Call<CurrentUser> c, Throwable t) { if (acceptRead(c)) failRead(getApplication().getString(R.string.sessions_load_failed)); }
         });
     }
     private boolean acceptRead(Call<?> call) {
@@ -133,11 +135,11 @@ public final class MyReportsViewModel extends AndroidViewModel {
                     page = nextPage; loaded = true; uncertain = false; replyError = ""; persist();
                 } else {
                     if (response.code() == 403) { reports.clear(); selected = null; detail = false; }
-                    error = response.isSuccessful() ? "报告数据异常，请重试" : ApiErrors.message(response);
+                    error = response.isSuccessful() ? getApplication().getString(R.string.report_invalid_data) : ApiErrors.message(response);
                 }
                 changed();
             }
-            @Override public void onFailure(Call<MyReport.Page> c, Throwable t) { if (acceptRead(c)) failRead("报告加载失败，请重试"); }
+            @Override public void onFailure(Call<MyReport.Page> c, Throwable t) { if (acceptRead(c)) failRead(getApplication().getString(R.string.report_load_failed)); }
         });
     }
     private void failRead(String message) { loading = false; error = message; changed(); }
@@ -155,7 +157,7 @@ public final class MyReportsViewModel extends AndroidViewModel {
     public void send() {
         if (!canReply()) return;
         String content = ReportRequest.trim(draft());
-        if (content.isEmpty()) { replyError = "请填写消息内容"; changed(); return; }
+        if (content.isEmpty()) { replyError = getApplication().getString(R.string.report_message_required); changed(); return; }
         long id = selected.id; submitting = true; replyError = ""; saved.set("submitting", true); changed();
         Call<MyReport> call = api.appendReportMessage(session, new MyReport.Reply(id, content)); replyCall = call;
         call.enqueue(new Callback<MyReport>() {
@@ -170,14 +172,14 @@ public final class MyReportsViewModel extends AndroidViewModel {
                 MyReport updated = response.body();
                 if (response.isSuccessful() && updated != null && updated.id == id && updated.source_user_id == owner) {
                     for (int i = 0; i < reports.size(); i++) if (reports.get(i).id == id) reports.set(i, updated);
-                    selected = updated; saved.remove("draft"); saved.remove("draftReport"); notice = "消息已发送";
-                } else if (response.isSuccessful()) { uncertain = true; replyError = "发送结果未确认，请刷新报告核对消息记录"; }
+                    selected = updated; saved.remove("draft"); saved.remove("draftReport"); notice = getApplication().getString(R.string.report_message_sent);
+                } else if (response.isSuccessful()) { uncertain = true; replyError = getApplication().getString(R.string.report_send_uncertain); }
                 else replyError = ApiErrors.message(response);
                 changed();
             }
             @Override public void onFailure(Call<MyReport> c, Throwable t) {
                 if (!accept(c)) return;
-                uncertain = true; replyError = "发送结果未确认，请刷新报告核对消息记录"; changed();
+                uncertain = true; replyError = getApplication().getString(R.string.report_send_uncertain); changed();
             }
         });
     }

@@ -49,7 +49,7 @@
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="#E0E0E0"
-                    android:text="推荐者: "
+                    android:text="@string/work_recommender_prefix"
                     android:layout_marginEnd="16dp"/>
 
                 <TextView
@@ -58,7 +58,7 @@
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="#E0E0E0"
-                    android:text="作者: " />
+                    android:text="@string/work_author_prefix" />
             </LinearLayout>
 
             <TextView
@@ -69,7 +69,7 @@
                 android:textColor="@android:color/white"
                 android:maxLines="2"
                 android:ellipsize="end"
-                android:text="小说标题" />
+                android:text="@string/preview_novel_title" />
 
             <TextView
                 android:id="@+id/bannerIntroTextView"
@@ -80,7 +80,7 @@
                 android:textColor="@android:color/white"
                 android:maxLines="2"
                 android:ellipsize="end"
-                android:text="这里是小说的简介或推荐语..." />
+                android:text="@string/preview_work_intro" />
         </LinearLayout>
     </FrameLayout>
 </com.google.android.material.card.MaterialCardView>

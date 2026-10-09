@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timeline_share">转发</string>
+    <string name="timeline_post">发帖</string>
+    <string name="timeline_channel_tab">频道动态</string>
+    <string name="timeline_sharing">转发中…</string>
+    <string name="timeline_action_work">发布了新作品</string>
+    <string name="timeline_action_chapter">更新了章节</string>
+    <string name="timeline_action_share_comment">转发了评论</string>
+    <string name="timeline_action_default">发布了动态</string>
+    <string name="timeline_unavailable">该内容已删除或暂时无法查看</string>
+    <string name="timeline_unsupported">暂不支持此类动态</string>
+    <string name="timeline_load_failed">动态加载失败，请检查网络后重试</string>
+    <string name="timeline_permission_failed">暂时无法加载发帖权限。</string>
+    <string name="timeline_space_opened">空间已开通</string>
+    <string name="timeline_open_space_uncertain">暂时无法确认开通结果，请下拉刷新后重试</string>
+    <string name="timeline_shared">已转发</string>
+    <string name="timeline_share_uncertain">未能确认转发结果，请稍后查看动态</string>
+    <string name="timeline_login_message">登录后查看关注动态</string>
+    <string name="timeline_post_hint">发个帖子，分享此刻……</string>
+    <string name="timeline_space_required">开通空间后即可发帖</string>
+    <string name="timeline_opening_space">开通中…</string>
+    <string name="timeline_open_space">开通空间</string>
+    <string name="timeline_empty">"暂无动态\n关注更多用户/频道，最新动态不错过"</string>
+    <string name="timeline_unread_tab">动态 · %1$s</string>
+    <string name="timeline_channel_work">频道 %1$s 收录了新作品</string>
+    <string name="timeline_channel_announcement">频道 %1$s 发布了新公告</string>
+</resources>

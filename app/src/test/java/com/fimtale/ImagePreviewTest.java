@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 public class ImagePreviewTest {
     private Application app() { return RuntimeEnvironment.getApplication(); }
     @Test public void inlineImagesOpenPreviewAndBindingIsIdempotent() {

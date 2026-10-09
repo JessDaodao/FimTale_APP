@@ -9,6 +9,8 @@ import java.util.regex.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner.class)
+@org.robolectric.annotation.Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 public class BbCodeTest {
     @Test public void onlyMarkdownBlocksInterpretMarkdownOrHtml() {
         String html = BbCode.toMarkdown("# literal *stars* _underscores_ <b>x</b> &#91;b&#93;literal&#91;/b&#93;\n[markdown]**bold** [b]literal[/b]\n\n<script>alert(1)</script>[/markdown]");

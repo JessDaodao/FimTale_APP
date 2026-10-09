@@ -22,7 +22,7 @@ import org.robolectric.annotation.*;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class, qualifiers = "zh-rCN")
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class, qualifiers = "zh-rCN")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class ReaderPaginationTest {
     private Markwon markwon;

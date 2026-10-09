@@ -1,5 +1,8 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,7 +31,7 @@ public final class EditorDraftStore {
     }
     public EditorDraftStore(File directory, String api, String userId, int workId, int chapterId, String draftId) {
         if (draftId != null && !draftId.isEmpty() && !draftId.matches("[a-zA-Z0-9-]{1,64}"))
-            throw new IllegalArgumentException("Invalid draft ID");
+            throw new IllegalArgumentException(AppStrings.get(R.string.drafts_identifier_invalid));
         scope = api + "\n" + userId + "\n" + workId + "\n" + chapterId
                 + (draftId == null || draftId.isEmpty() ? "" : "\n" + draftId);
         try {
@@ -45,15 +48,15 @@ public final class EditorDraftStore {
                 Envelope data = gson.fromJson(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8), Envelope.class);
                 if (data == null || data.version != 1 || !scope.equals(data.scope) || data.document == null
                         || data.document.work == null || data.document.chapter == null || data.document.tags == null)
-                    throw new IOException("草稿格式无效");
+                    throw new IOException(AppStrings.get(R.string.drafts_format_invalid));
                 return data.document;
-            } catch (RuntimeException e) { throw new IOException("无法读取草稿", e); }
+            } catch (RuntimeException e) { throw new IOException(AppStrings.get(R.string.drafts_read_failed), e); }
         }
     }
     public void write(EditorDocument document) throws IOException {
         synchronized (EditorDraftStore.class) {
             File directory = file.getParentFile();
-            if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("无法创建草稿目录");
+            if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException(AppStrings.get(R.string.drafts_create_directory_failed));
             Envelope envelope = new Envelope(); envelope.scope = scope; envelope.document = document;
             File temp = new File(directory, file.getName() + ".tmp");
             try (FileOutputStream out = new FileOutputStream(temp)) {
@@ -79,7 +82,7 @@ public final class EditorDraftStore {
         private Entry(EditorDraftStore store, int workId, int chapterId, String draftId, EditorDocument document) {
             this.store = store; this.workId = workId; this.chapterId = chapterId; this.draftId = draftId;
             String name = chapterId >= 0 ? document.chapter.title : document.work.title;
-            title = WorkInput.blank(name) ? (chapterId >= 0 ? "未命名章节" : "未命名文章") : name;
+            title = WorkInput.blank(name) ? (chapterId >= 0 ? AppStrings.get(R.string.editor_unnamed_chapter) : AppStrings.get(R.string.editor_unnamed_work)) : name;
             String content = chapterId >= 0 ? document.chapter.content : document.work.preface;
             if (content == null) content = "";
             preview = content.substring(0, Math.min(content.length(), 300))
@@ -99,7 +102,7 @@ public final class EditorDraftStore {
             List<Entry> entries = new ArrayList<>();
             if (!directory.exists()) return entries;
             File[] files = directory.listFiles((dir, name) -> name.endsWith(".json"));
-            if (files == null) throw new IOException("无法读取草稿目录");
+            if (files == null) throw new IOException(AppStrings.get(R.string.drafts_directory_read_failed));
             Gson gson = new Gson();
             for (File file : files) {
                 try {

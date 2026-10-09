@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_following">关注</string>
+    <string name="profile_followers">粉丝</string>
+    <string name="profile_published_works">发布的文章</string>
+    <string name="profile_login_message">登录后查看收藏与阅读历史</string>
+    <string name="profile_tap_login">点击登录</string>
+    <string name="profile_login_more">登录以使用更多功能</string>
+    <string name="profile_username">用户名</string>
+    <string name="profile_intro">介绍</string>
+    <string name="profile_view_description">查看个人资料</string>
+    <string name="profile_logged_in">当前已登录 FimTale 账户</string>
+    <string name="profile_title">我的</string>
+    <string name="profile_empty_intro">暂无详情介绍</string>
+    <string name="profile_works_failed">暂时无法加载该用户的作品。</string>
+    <string name="profile_avatar_description">用户头像</string>
+    <string name="profile_user_label">用户</string>
+    <string name="profile_unknown_user">未知用户</string>
+    <string name="profile_welcome_back">欢迎回来</string>
+    <string name="profile_handle">"@%1$s"</string>
+    <string name="profile_named_avatar_description">%1$s的头像</string>
+    <string name="profile_named_description">查看 %1$s 的个人资料</string>
+    <string name="profile_level">LV.%1$d</string>
+    <string name="profile_last_seen">最后活动: %1$s</string>
+    <string name="profile_user_number">用户 #%1$d</string>
+</resources>

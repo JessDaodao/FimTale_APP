@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="filters_explanation">过滤器会隐藏超出分级上限或命中屏蔽标签的作品。</string>
+    <string name="filters_none">无过滤</string>
+    <string name="filters_custom_title">自定义过滤</string>
+    <string name="filters_max_rating">分级上限</string>
+    <string name="filters_tag_conditions">屏蔽标签条件</string>
+    <string name="filters_match_any">任一命中</string>
+    <string name="filters_match_all">全部命中</string>
+    <string name="filters_tag_hint">输入标签名称</string>
+    <string name="filters_add_tag">添加标签</string>
+    <string name="filters_apply">应用</string>
+    <string name="filters_save_preset">保存为预设</string>
+    <string name="filters_presets">我的预设</string>
+    <string name="filters_no_presets">暂无预设</string>
+    <string name="filters_blocked_users">屏蔽用户</string>
+    <string name="filters_no_blocked_users">暂无屏蔽用户</string>
+    <string name="filters_title">内容过滤</string>
+    <string name="filters_preset_title">过滤器</string>
+    <string name="filters_unrestricted">不限制</string>
+    <string name="filters_rating_everyone">仅 Everyone（全年龄）</string>
+    <string name="filters_rating_teen">Everyone + Teen（隐藏限制级）</string>
+    <string name="filters_default_restored">已恢复默认过滤</string>
+    <string name="filters_disabled">已关闭内容过滤</string>
+    <string name="filters_applied">过滤设置已应用</string>
+    <string name="filters_load_failed">过滤设置加载失败，请重试</string>
+    <string name="filters_default_load_failed">暂时无法加载默认过滤设置。</string>
+    <string name="filters_blocked_users_load_failed">暂时无法加载屏蔽用户列表。</string>
+    <string name="filters_any">任一</string>
+    <string name="filters_preset_name">预设名称</string>
+    <string name="filters_preset_name_required">请输入预设名称</string>
+    <string name="filters_preset_saved">预设已保存</string>
+    <string name="filters_preset_applied">预设已应用</string>
+    <string name="filters_preset_deleted">预设已删除</string>
+    <string name="filters_unblock">取消屏蔽</string>
+    <string name="filters_update_blocked_failed">更新屏蔽用户失败</string>
+    <string name="filters_and_separator">" 且 "</string>
+    <string name="filters_or_separator">" 或 "</string>
+    <string name="filters_current">当前过滤：%1$s</string>
+    <string name="filters_preset_summary">"%1$s  ·  %2$s"</string>
+    <string name="filters_not">非（%1$s）</string>
+    <string name="filters_editor_summary">当前编辑：%1$s</string>
+    <string name="filters_editor_summary_blocked">当前编辑：%1$s · 屏蔽 %2$d 个标签（%3$s）</string>
+    <string name="filters_editor_summary_inverted">当前编辑：%1$s · 屏蔽 %2$d 个标签（%3$s，反选）</string>
+    <string name="filters_definition_summary">%1$s · %2$s</string>
+    <string-array name="filters_rating_options">
+        <item>@string/filters_unrestricted</item>
+        <item>@string/filters_rating_everyone</item>
+        <item>@string/filters_rating_teen</item>
+    </string-array>
+</resources>

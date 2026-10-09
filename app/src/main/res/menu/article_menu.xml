@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_filter"
-        android:title="过滤器"
+        android:title="@string/filters_preset_title"
         app:showAsAction="ifRoom"
         app:iconTint="?attr/colorControlNormal" />
 </menu>

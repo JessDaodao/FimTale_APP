@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="drafts_partial_sync">部分本机草稿尚未同步，打开草稿可重试</string>
+    <string name="drafts_offline_notice">无法读取在线草稿，显示本机副本；点击提示可重试</string>
+    <string name="drafts_online_load_failed_tap">无法读取在线草稿，点击重试</string>
+    <string name="drafts_online_load_failed">暂时无法读取在线草稿。</string>
+    <string name="drafts_load_failed_tap">无法读取草稿，点击重试</string>
+    <string name="drafts_deleted_online">在线草稿已删除，请刷新列表</string>
+    <string name="drafts_delete_title">删除在线草稿？</string>
+    <string name="drafts_unnamed">未命名草稿</string>
+    <string name="drafts_empty_body">尚未填写正文</string>
+    <string name="drafts_chapter_kind">章节草稿</string>
+    <string name="drafts_work_kind">文章草稿</string>
+    <string name="drafts_not_saved">尚未保存</string>
+    <string name="drafts_uncertain_suffix">" · 提交结果待核对"</string>
+    <string name="drafts_pending_suffix">" · 待同步"</string>
+    <string name="drafts_delete">删除草稿</string>
+    <string name="drafts_key_missing">草稿缺少标识</string>
+    <string name="drafts_work_id_missing">章节草稿缺少作品 ID</string>
+    <string name="drafts_unsupported_type">不支持的草稿类型</string>
+    <string name="drafts_key_invalid">草稿标识无效</string>
+    <string name="drafts_id_invalid">草稿 ID 无效</string>
+    <string name="drafts_incomplete">在线草稿数据不完整</string>
+    <string name="drafts_work_mismatch">草稿与作品不匹配</string>
+    <string name="drafts_save_invalid_response">草稿保存响应无效</string>
+    <string name="drafts_local_restored">无法读取在线草稿，已恢复本机副本</string>
+    <string name="drafts_conflict_notice">在线草稿已在其他设备修改，请处理同步冲突</string>
+    <string name="drafts_conflict_updated">在线草稿已更新，请处理同步冲突</string>
+    <string name="drafts_format_invalid">草稿格式无效</string>
+    <string name="drafts_read_failed">无法读取草稿</string>
+    <string name="drafts_create_directory_failed">无法创建草稿目录</string>
+    <string name="drafts_directory_read_failed">无法读取草稿目录</string>
+    <string name="drafts_storage_unavailable">无法访问应用存储</string>
+    <string name="drafts_count">%1$d 篇草稿</string>
+    <string name="drafts_delete_message">删除“%1$s”的草稿后，网站和 App 均不再保留此草稿。已发表内容不受影响。</string>
+    <string name="drafts_delete_failed">删除失败：%1$s</string>
+    <string name="drafts_item_summary">%1$s · %2$s%3$s</string>
+    <string name="drafts_identifier_invalid" translatable="false">Invalid draft ID</string>
+</resources>

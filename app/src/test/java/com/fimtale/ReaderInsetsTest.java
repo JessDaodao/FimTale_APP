@@ -19,7 +19,7 @@ import org.robolectric.annotation.GraphicsMode;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class ReaderInsetsTest {
     private ViewGroup root;

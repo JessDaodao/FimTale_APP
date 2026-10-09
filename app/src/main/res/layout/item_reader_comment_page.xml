@@ -19,7 +19,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="评论"
+            android:text="@string/comments_title"
             android:textAppearance="?attr/textAppearanceTitleLarge"
             android:textStyle="bold"
             android:textColor="?attr/colorOnBackground" />
@@ -29,7 +29,7 @@
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="从早到晚" />
+            android:text="@string/comments_oldest_first" />
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
@@ -37,7 +37,7 @@
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="查看评论"
+        android:text="@string/comments_view"
         android:visibility="gone" />
 
     <com.fimtale.ui.PullRefreshLayout
@@ -89,7 +89,7 @@
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="上一页" />
+            android:text="@string/common_previous_page" />
 
         <TextView
             android:id="@+id/readerCommentsPage"
@@ -104,7 +104,7 @@
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="下一页" />
+            android:text="@string/common_next_page" />
     </LinearLayout>
 
     <LinearLayout
@@ -122,7 +122,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="发表评论">
+            android:hint="@string/comments_post_hint">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/readerCommentComposerInput"
@@ -141,7 +141,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="6dp"
-            android:contentDescription="插入表情"
+            android:contentDescription="@string/editor_tool_emoji"
             app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="emoticon-happy-outline" />
 
         <com.fimtale.ui.icons.MdiButton
@@ -150,7 +150,7 @@
             android:layout_width="52dp"
             android:layout_height="52dp"
             android:layout_marginStart="8dp"
-            android:contentDescription="发送评论"
+            android:contentDescription="@string/comments_send_description"
             app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="send" />
     </LinearLayout>
 
@@ -160,7 +160,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:paddingVertical="8dp"
-        android:text="左滑继续阅读"
+        android:text="@string/reader_swipe_to_continue"
         android:textColor="?android:attr/textColorSecondary"
         android:textSize="14sp"
         android:visibility="gone" />

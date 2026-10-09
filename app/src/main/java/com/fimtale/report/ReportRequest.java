@@ -1,5 +1,9 @@
 package com.fimtale.report;
 
+import com.fimtale.R;
+
+import com.fimtale.utils.AppStrings;
+
 import com.google.gson.annotations.SerializedName;
 
 /** EntityType and CreateReportReq from ft-front/schema/openapi.json. */
@@ -12,8 +16,8 @@ public final class ReportRequest {
 
     public ReportRequest(int targetType, long targetId, String content) {
         if ((targetType != WORK && targetType != USER) || targetId <= 0)
-            throw new IllegalArgumentException("Invalid report target");
-        if (trim(content).isEmpty()) throw new IllegalArgumentException("Empty report");
+            throw new IllegalArgumentException(AppStrings.get(R.string.report_target_invalid));
+        if (trim(content).isEmpty()) throw new IllegalArgumentException(AppStrings.get(R.string.report_empty_content));
         this.targetType = targetType;
         this.targetId = targetId;
         this.content = trim(content);

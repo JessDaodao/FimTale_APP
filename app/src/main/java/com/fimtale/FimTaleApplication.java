@@ -22,6 +22,7 @@ public class FimTaleApplication extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        com.fimtale.utils.AppStrings.initialize(this);
         crashFeedback = com.fimtale.crash.CrashFeedback.install(this);
         Iconics.registerFont(CommunityMaterial.INSTANCE);
         Iconics.init(this);

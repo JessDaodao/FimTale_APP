@@ -33,7 +33,7 @@
                 android:layout_weight="1"
                 android:textStyle="bold"
                 android:textColor="?attr/colorOnSurface"
-                tools:text="用户名" />
+                tools:text="@string/profile_username" />
                 
             <TextView
                 android:id="@+id/tvTime"
@@ -41,7 +41,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
                 android:textColor="?android:attr/textColorSecondary"
-                tools:text="2小时前" />
+                tools:text="@string/preview_two_hours_ago" />
         </LinearLayout>
 
         <TextView
@@ -50,7 +50,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="这是一条评论内容..." />
+            tools:text="@string/preview_comment_content" />
 
         <TextView
             android:id="@+id/tvChapter"
@@ -62,7 +62,7 @@
             android:background="@drawable/bg_comment_chapter_tag"
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
-            tools:text="评于：第一章" />
+            tools:text="@string/preview_comment_chapter" />
 
     </LinearLayout>
 

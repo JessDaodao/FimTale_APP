@@ -23,7 +23,7 @@
             android:id="@+id/tvTagName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tag"
+            android:text="@string/preview_tag"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="?attr/colorOnSurface"/>
@@ -33,7 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="介绍"
+            android:text="@string/profile_intro"
             android:textSize="14sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:maxLines="3"

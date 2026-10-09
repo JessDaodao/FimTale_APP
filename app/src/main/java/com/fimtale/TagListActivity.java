@@ -141,7 +141,7 @@ public class TagListActivity extends AppCompatActivity {
                     finishLoading();
                     if (page == 1) recyclerView.scrollToPosition(0);
                     if (tagList.isEmpty()) {
-                        loadingStatus.setText("暂无标签，点击刷新");
+                        loadingStatus.setText(getString(R.string.tags_empty_tap));
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
                 } else showLoadError(page);
@@ -183,14 +183,14 @@ public class TagListActivity extends AppCompatActivity {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         View content = android.view.LayoutInflater.from(builder.getContext()).inflate(R.layout.dialog_text_input, null);
         com.google.android.material.textfield.TextInputLayout field = content.findViewById(R.id.dialogTextInputLayout);
-        field.setHint("标签名称");
+        field.setHint(getString(R.string.tags_name));
         android.widget.EditText input = content.findViewById(R.id.dialogTextInput);
         input.setText(keyword);
-        builder.setTitle("搜索标签").setView(content)
-                .setPositiveButton("搜索", (dialog, which) -> {
+        builder.setTitle(getString(R.string.tags_search)).setView(content)
+                .setPositiveButton(getString(R.string.search_title), (dialog, which) -> {
                     keyword = input.getText().toString().trim(); currentPage = 1; totalPages = 1;
                     tagList.clear(); adapter.notifyDataSetChanged(); loadTags(1);
-                }).setNegativeButton("取消", null).show();
+                }).setNegativeButton(getString(R.string.common_cancel), null).show();
     }
 
     @Override

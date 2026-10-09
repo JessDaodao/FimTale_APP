@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_preview_description">图片预览，可双指缩放或双击放大</string>
+    <string name="image_preview_load_failed">图片加载失败</string>
+    <string name="image_preview_close_description">关闭图片预览</string>
+</resources>

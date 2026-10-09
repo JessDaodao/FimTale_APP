@@ -8,7 +8,7 @@
             android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
     </LinearLayout>
     <com.google.android.material.button.MaterialButton android:id="@+id/workListSort" style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="时间：从早到晚"/>
+        android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/comments_order_label"/>
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
         <androidx.recyclerview.widget.RecyclerView android:id="@+id/workList" android:layout_width="match_parent"
             android:layout_height="match_parent" android:clipToPadding="false" android:paddingBottom="8dp"/>
@@ -21,10 +21,10 @@
     <LinearLayout android:id="@+id/workListPager" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:gravity="center_vertical" android:paddingHorizontal="16dp" android:orientation="horizontal">
         <com.google.android.material.button.MaterialButton android:id="@+id/workListPrevious" style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="上一页"/>
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/common_previous_page"/>
         <TextView android:id="@+id/workListPage" android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:gravity="center" android:textColor="?attr/colorOnSurfaceVariant"/>
         <com.google.android.material.button.MaterialButton android:id="@+id/workListNext" style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="下一页"/>
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/common_next_page"/>
     </LinearLayout>
 </LinearLayout>

@@ -139,14 +139,14 @@ public class FavoritesActivity extends AppCompatActivity {
                     finishLoading();
                     if (page == 1) recyclerView.scrollToPosition(0);
                     if (adapter.getItemCount() == 0) {
-                        loadingStatus.setText("暂无收藏，点击刷新");
+                        loadingStatus.setText(getString(R.string.favorites_empty));
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
                 } else showLoadError(page, com.fimtale.network.ApiErrors.message(response));
             }
             @Override public void onFailure(Call<FavoritesResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || call.isCanceled() || call != activeCall) return;
-                showLoadError(page, "暂时无法连接服务器，请检查网络后重试。");
+                showLoadError(page, getString(R.string.error_network_retry));
             }
         });
     }

@@ -52,7 +52,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 /** Author-side fixtures only: never reads or submits real review records. */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 public class ReviewQueueTest {

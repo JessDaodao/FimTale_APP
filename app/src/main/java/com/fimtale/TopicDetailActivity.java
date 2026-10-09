@@ -330,19 +330,19 @@ public class TopicDetailActivity extends AppCompatActivity {
             else return false;
             return true;
         });
-        ViewCompat.setAccessibilityPaneTitle(editorActionsSheet.findViewById(R.id.bottomMenuItems), "编辑文章与章节");
+        ViewCompat.setAccessibilityPaneTitle(editorActionsSheet.findViewById(R.id.bottomMenuItems), getString(R.string.editor_edit_work_and_chapters));
         editorActionsSheet.setOnDismissListener(dialog -> editorActionsSheet = null);
         editorActionsSheet.show();
     }
 
     private void showChapterEditorPicker() {
         List<ChapterMenuItem> chapters = editableWork.getMenu();
-        if (chapters.isEmpty()) { Toast.makeText(this, "还没有章节，可先发表新章节", Toast.LENGTH_SHORT).show(); return; }
+        if (chapters.isEmpty()) { Toast.makeText(this, getString(R.string.editor_no_chapters_hint), Toast.LENGTH_SHORT).show(); return; }
         String[] titles = new String[chapters.size()];
         for (int i = 0; i < titles.length; i++) titles[i] = chapters.get(i).getTitle();
-        new MaterialAlertDialogBuilder(this).setTitle("选择要编辑的章节")
+        new MaterialAlertDialogBuilder(this).setTitle(getString(R.string.editor_choose_chapter))
                 .setItems(titles, (dialog, index) -> startActivity(EditorActivity.chapterIntent(this, currentTopicId, chapters.get(index).getId())))
-                .setNegativeButton("取消", null).show();
+                .setNegativeButton(getString(R.string.common_cancel), null).show();
     }
 
     @Override
@@ -368,10 +368,10 @@ public class TopicDetailActivity extends AppCompatActivity {
         btnCopyLink.setOnClickListener(v -> {
             String link = com.fimtale.network.SiteUrls.work(currentTopicId);
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("FimTale Link", link);
+            ClipData clip = ClipData.newPlainText(getString(R.string.work_link_clipboard_label), link);
             if (clipboard != null) {
                 clipboard.setPrimaryClip(clip);
-                Toast.makeText(this, "链接已复制", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.common_link_copied), Toast.LENGTH_SHORT).show();
             }
             bottomSheetDialog.dismiss();
         });
@@ -549,10 +549,10 @@ public class TopicDetailActivity extends AppCompatActivity {
         previewImageView.setImageBitmap(bitmap);
 
         new MaterialAlertDialogBuilder(this)
-                .setTitle("分享图预览")
+                .setTitle(getString(R.string.work_share_preview))
                 .setView(dialogView)
-                .setNegativeButton("取消", (dialog, which) -> dialog.dismiss())
-                .setPositiveButton("保存", (dialog, which) -> {
+                .setNegativeButton(getString(R.string.common_cancel), (dialog, which) -> dialog.dismiss())
+                .setPositiveButton(getString(R.string.common_save), (dialog, which) -> {
                     saveBitmapToGallery(bitmap);
                     dialog.dismiss();
                 })
@@ -570,13 +570,13 @@ public class TopicDetailActivity extends AppCompatActivity {
         if (uri != null) {
             try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-                runOnUiThread(() -> Toast.makeText(this, "分享图已保存至相册", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, getString(R.string.work_share_saved), Toast.LENGTH_SHORT).show());
             } catch (IOException e) {
                 e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "保存失败", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, getString(R.string.common_save_failed), Toast.LENGTH_SHORT).show());
             }
         } else {
-            runOnUiThread(() -> Toast.makeText(this, "保存失败", Toast.LENGTH_SHORT).show());
+            runOnUiThread(() -> Toast.makeText(this, getString(R.string.common_save_failed), Toast.LENGTH_SHORT).show());
         }
     }
 
@@ -588,7 +588,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         loadingSkeleton.setVisibility(pulling ? View.GONE : View.VISIBLE);
         loadError.setVisibility(View.GONE);
         scrollView.setVisibility(pulling ? View.VISIBLE : View.INVISIBLE);
-        if (editableWork == null && getSupportActionBar() != null) getSupportActionBar().setTitle("文章详情");
+        if (editableWork == null && getSupportActionBar() != null) getSupportActionBar().setTitle(getString(R.string.work_detail_title));
         readingActionsBar.setVisibility(View.INVISIBLE);
         commentMode = false;
         commentComposerBar.setVisibility(View.GONE);
@@ -618,7 +618,7 @@ public class TopicDetailActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<TopicDetailResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || call.isCanceled() || call != detailCall) return;
-                showDetailLoadError("加载失败，请重试");
+                showDetailLoadError(getString(R.string.common_load_failed_retry));
             }
         });
     }
@@ -679,7 +679,7 @@ public class TopicDetailActivity extends AppCompatActivity {
             authorNameTextView.setText(author.getUserName());
             
             String authorAvatarUrl = author.getAvatar();
-            authorAvatarImageView.setContentDescription("查看 " + author.getUserName() + " 的个人资料");
+            authorAvatarImageView.setContentDescription(getString(R.string.profile_named_description, author.getUserName()));
             authorAvatarImageView.setOnClickListener(v -> authorLayout.performClick());
             Glide.with(this)
                     .load(authorAvatarUrl)
@@ -761,12 +761,12 @@ public class TopicDetailActivity extends AppCompatActivity {
         sheet.setContentView(content);
         content.setLayoutParams(new android.widget.FrameLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 (int) (getResources().getDisplayMetrics().heightPixels * .82f)));
-        ((TextView) content.findViewById(R.id.workListTitle)).setText("章节目录（" + chapters.size() + "）");
+        ((TextView) content.findViewById(R.id.workListTitle)).setText(getString(R.string.reader_catalog_count, chapters.size()));
         content.findViewById(R.id.workListSort).setVisibility(View.GONE);
         content.findViewById(R.id.workListPager).setVisibility(View.GONE);
         content.findViewById(R.id.workListSkeleton).setVisibility(View.GONE);
         TextView empty = content.findViewById(R.id.workListStatus);
-        empty.setText("暂无章节"); empty.setVisibility(chapters.isEmpty() ? View.VISIBLE : View.GONE);
+        empty.setText(getString(R.string.reader_no_chapters)); empty.setVisibility(chapters.isEmpty() ? View.VISIBLE : View.GONE);
         RecyclerView list = content.findViewById(R.id.workList);
         list.setLayoutManager(new LinearLayoutManager(this)); list.setItemAnimator(null);
         list.setAdapter(new ChapterAdapter(chapters, item -> {
@@ -985,7 +985,7 @@ public class TopicDetailActivity extends AppCompatActivity {
         String content = commentComposerInput.getText() == null
                 ? "" : commentComposerInput.getText().toString().trim();
         if (content.isEmpty()) {
-            MdiIcons.setError(commentComposerInput, "评论内容不能为空");
+            MdiIcons.setError(commentComposerInput, getString(R.string.comments_content_required));
             return;
         }
         if (!UserPreferences.isLoggedIn(this)) {
@@ -1012,7 +1012,7 @@ public class TopicDetailActivity extends AppCompatActivity {
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     if (imm != null) imm.hideSoftInputFromWindow(commentComposerInput.getWindowToken(), 0);
                     commentsSection.refreshLatest();
-                    Toast.makeText(TopicDetailActivity.this, "评论已发送", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(TopicDetailActivity.this, getString(R.string.comments_sent), Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(TopicDetailActivity.this, ApiErrors.message(response), Toast.LENGTH_LONG).show();
                     if (response.code() == 401) startActivity(new Intent(TopicDetailActivity.this, LoginActivity.class));
@@ -1025,7 +1025,7 @@ public class TopicDetailActivity extends AppCompatActivity {
                 commentSending = false;
                 commentComposerInput.setEnabled(true);
                 commentComposerSend.setEnabled(true);
-                Toast.makeText(TopicDetailActivity.this, "评论发送失败，请重试", Toast.LENGTH_SHORT).show();
+                Toast.makeText(TopicDetailActivity.this, getString(R.string.comments_send_failed), Toast.LENGTH_SHORT).show();
             }
         });
     }

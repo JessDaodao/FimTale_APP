@@ -1,4 +1,7 @@
 package com.fimtale.model;
+
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
@@ -12,11 +15,11 @@ public class Tags {
     
     public static Tags from(int type, int origin, int rating, int length, int publish, List<TagGroup> groups) {
         Tags result = new Tags();
-        result.type = label(type, "文章", "图集", "帖子", "公告");
-        result.source = label(origin, "原创", "翻译", "转载");
-        result.rating = label(rating, "Everyone", "Teen", "Restricted");
-        result.length = label(length, "长篇", "中篇", "短篇");
-        result.status = label(publish, "连载中", "已完结", "已暂停", "已弃坑");
+        result.type = label(type, AppStrings.array(R.array.work_type_labels));
+        result.source = label(origin, AppStrings.array(R.array.work_origin_labels));
+        result.rating = label(rating, AppStrings.array(R.array.work_rating_labels));
+        result.length = label(length, AppStrings.array(R.array.work_length_labels));
+        result.status = label(publish, AppStrings.array(R.array.work_status_labels));
         result.otherTags = new java.util.ArrayList<>();
         if (groups != null) for (TagGroup group : groups) {
             if (group.tags != null) for (TagInfo tag : group.tags) result.otherTags.add(tag.getName());

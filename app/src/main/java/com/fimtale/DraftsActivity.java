@@ -152,7 +152,7 @@ public class DraftsActivity extends AppCompatActivity {
                         try {
                             DraftSync sync = entry.synchronizer(); EditorDocument pending = sync.load(remote);
                             if (pending != null) sync.save(remote, pending);
-                        } catch (Exception ignored) { warning = "部分本机草稿尚未同步，打开草稿可重试"; }
+                        } catch (Exception ignored) { warning = getString(R.string.drafts_partial_sync); }
                     }
                 }
                 boolean offline = false;
@@ -162,7 +162,7 @@ public class DraftsActivity extends AppCompatActivity {
                         Row row = new Row(); row.key = summary.key; row.title = summary.title; row.preview = summary.preview;
                         row.revision = summary.revision; row.savedAt = time(summary.updatedAt); rows.put(row.key, row);
                     }
-                } catch (Exception e) { offline = true; warning = "无法读取在线草稿，显示本机副本；点击提示可重试"; }
+                } catch (Exception e) { offline = true; warning = getString(R.string.drafts_offline_notice); }
                 for (EditorDraftStore.Entry entry : EditorDraftStore.list(directory, SiteUrls.API, userId)) {
                     Row row = rows.get(entry.onlineKey);
                     if (entry.pendingSync || entry.submissionUncertain || (offline && row == null)) {
@@ -180,21 +180,21 @@ public class DraftsActivity extends AppCompatActivity {
                     items.clear(); items.addAll(drafts); adapter.notifyDataSetChanged();
                     setDraftsLoading(false);
                     TextView empty = findViewById(R.id.draftsEmpty); empty.setText(R.string.drafts_empty);
-                    if (notice != null && items.isEmpty()) empty.setText("无法读取在线草稿，点击重试");
+                    if (notice != null && items.isEmpty()) empty.setText(getString(R.string.drafts_online_load_failed_tap));
                     empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-                    summaryText = notice == null ? items.size() + " 篇草稿" : notice;
+                    summaryText = notice == null ? getString(R.string.drafts_count, items.size()) : notice;
                     summaryAdapter.notifyItemChanged(0);
                     if (onlineFailed) {
                         empty.setVisibility(View.GONE);
-                        pageError.show("暂时无法读取在线草稿。", DraftsActivity.this::refresh, !items.isEmpty());
+                        pageError.show(getString(R.string.drafts_online_load_failed), DraftsActivity.this::refresh, !items.isEmpty());
                     }
                 });
             } catch (Exception e) {
                 main.post(() -> {
                     if (isFinishing() || isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
                     setDraftsLoading(false);
-                    TextView empty = findViewById(R.id.draftsEmpty); empty.setText("无法读取草稿，点击重试");
-                    summaryText = "无法读取草稿，点击重试";
+                    TextView empty = findViewById(R.id.draftsEmpty); empty.setText(getString(R.string.drafts_load_failed_tap));
+                    summaryText = getString(R.string.drafts_load_failed_tap);
                     summaryAdapter.notifyItemChanged(0);
                     empty.setVisibility(View.GONE);
                     pageError.show(null, DraftsActivity.this::refresh, !items.isEmpty());
@@ -221,7 +221,7 @@ public class DraftsActivity extends AppCompatActivity {
         io.execute(() -> {
             try {
                 OnlineDraft draft = new DraftRemote(RetrofitClient.getInstance(), token).get(row.key);
-                if (draft == null) throw new java.io.IOException("在线草稿已删除，请刷新列表");
+                if (draft == null) throw new java.io.IOException(getString(R.string.drafts_deleted_online));
                 DraftCodec.Target target = DraftCodec.target(draft.key, draft.payload);
                 main.post(() -> {
                     if (isFinishing() || isDestroyed() || current != generation || !token.equals(UserPreferences.getToken(this))) return;
@@ -235,9 +235,9 @@ public class DraftsActivity extends AppCompatActivity {
     }
     private void remove(Row row) {
         if (!accountMatches()) return;
-        new MaterialAlertDialogBuilder(this).setTitle("删除在线草稿？")
-                .setMessage("删除“" + row.title + "”的草稿后，网站和 App 均不再保留此草稿。已发表内容不受影响。")
-                .setNegativeButton("取消", null).setPositiveButton("删除", (d, w) -> {
+        new MaterialAlertDialogBuilder(this).setTitle(getString(R.string.drafts_delete_title))
+                .setMessage(getString(R.string.drafts_delete_message, row.title))
+                .setNegativeButton(getString(R.string.common_cancel), null).setPositiveButton(getString(R.string.common_delete), (d, w) -> {
                     String token = UserPreferences.getToken(this);
                     io.execute(() -> {
                         try {
@@ -246,7 +246,7 @@ public class DraftsActivity extends AppCompatActivity {
                             main.post(() -> { if (!isDestroyed()) refresh(); });
                         } catch (Exception e) { main.post(() -> {
                             if (isDestroyed()) return;
-                            Toast.makeText(this, "删除失败：" + e.getMessage(), Toast.LENGTH_LONG).show(); refresh();
+                            Toast.makeText(this, getString(R.string.drafts_delete_failed, e.getMessage()), Toast.LENGTH_LONG).show(); refresh();
                         }); }
                     });
                 }).show();
@@ -270,14 +270,14 @@ public class DraftsActivity extends AppCompatActivity {
         }
         @Override public void onBindViewHolder(@NonNull DraftHolder holder, int position) {
             Row entry = items.get(position);
-            holder.title.setText(com.fimtale.editor.WorkInput.blank(entry.title) ? "未命名草稿" : entry.title);
-            holder.preview.setText(com.fimtale.editor.WorkInput.blank(entry.preview) ? "尚未填写正文" : entry.preview);
-            String kind = entry.key.startsWith("chapter:") ? "章节草稿" : "文章草稿";
-            String time = entry.savedAt > 0 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(entry.savedAt)) : "尚未保存";
-            holder.time.setText(kind + " · " + time + (entry.uncertain ? " · 提交结果待核对" : entry.pending ? " · 待同步" : ""));
+            holder.title.setText(com.fimtale.editor.WorkInput.blank(entry.title) ? getString(R.string.drafts_unnamed) : entry.title);
+            holder.preview.setText(com.fimtale.editor.WorkInput.blank(entry.preview) ? getString(R.string.drafts_empty_body) : entry.preview);
+            String kind = entry.key.startsWith("chapter:") ? getString(R.string.drafts_chapter_kind) : getString(R.string.drafts_work_kind);
+            String time = entry.savedAt > 0 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(entry.savedAt)) : getString(R.string.drafts_not_saved);
+            holder.time.setText(getString(R.string.drafts_item_summary, kind, time, entry.uncertain ? getString(R.string.drafts_uncertain_suffix) : entry.pending ? getString(R.string.drafts_pending_suffix) : ""));
             holder.itemView.setOnClickListener(v -> open(entry));
             holder.more.setOnClickListener(v -> {
-                PopupMenu menu = new PopupMenu(DraftsActivity.this, v); menu.getMenu().add("删除草稿");
+                PopupMenu menu = new PopupMenu(DraftsActivity.this, v); menu.getMenu().add(getString(R.string.drafts_delete));
                 menu.setOnMenuItemClickListener(item -> { remove(entry); return true; }); menu.show();
             });
         }

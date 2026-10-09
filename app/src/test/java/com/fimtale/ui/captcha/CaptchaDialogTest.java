@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 @LooperMode(LooperMode.Mode.PAUSED)
 public class CaptchaDialogTest {
     private ActivityController<AppCompatActivity> controller;

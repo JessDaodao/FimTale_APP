@@ -7,5 +7,5 @@
         android:textAppearance="?attr/textAppearanceBodyMedium" android:textColor="?attr/colorOnSurfaceVariant" />
     <com.google.android.material.button.MaterialButton android:id="@+id/timelineLoadMore"
         style="@style/Widget.Material3.Button.TonalButton" android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="加载更多" />
+        android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/common_load_more" />
 </LinearLayout>

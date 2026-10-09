@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 public class ParagraphInputTest {
     private ActivityController<AppCompatActivity> controller;
     private BbCodeEditText body;

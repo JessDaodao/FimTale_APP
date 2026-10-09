@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preview_version" translatable="false">1.0.0</string>
+    <string name="preview_chapter_one" translatable="false">第1章</string>
+    <string name="preview_rating" translatable="false">E</string>
+    <string name="preview_author" translatable="false">作者名</string>
+    <string name="preview_twelve_thousand" translatable="false">1.2万</string>
+    <string name="preview_one_thousand" translatable="false">1000</string>
+    <string name="preview_fifty" translatable="false">50</string>
+    <string name="preview_twenty" translatable="false">20</string>
+    <string name="preview_work_preface" translatable="false">小说前言内容...</string>
+    <string name="preview_username" translatable="false">Username</string>
+    <string name="preview_admin" translatable="false">Admin</string>
+    <string name="preview_last_seen" translatable="false">Last seen: 2024-01-01</string>
+    <string name="preview_user_intro" translatable="false">This is a user intro...</string>
+    <string name="preview_ten" translatable="false">10</string>
+    <string name="preview_one_hundred" translatable="false">100</string>
+    <string name="preview_twenty_three" translatable="false">23</string>
+    <string name="preview_novel_title" translatable="false">小说标题</string>
+    <string name="preview_work_intro" translatable="false">这里是小说的简介或推荐语...</string>
+    <string name="preview_long_title" translatable="false">小说标题非常长长长长长长</string>
+    <string name="preview_twelve_k" translatable="false">12k</string>
+    <string name="preview_three_point_five_k" translatable="false">3.5k</string>
+    <string name="preview_one_twenty_eight" translatable="false">128</string>
+    <string name="preview_fifty_six" translatable="false">56</string>
+    <string name="preview_two_hours_ago" translatable="false">2小时前</string>
+    <string name="preview_comment_content" translatable="false">这是一条评论内容...</string>
+    <string name="preview_comment_chapter" translatable="false">评于：第一章</string>
+    <string name="preview_tag" translatable="false">Tag</string>
+    <string name="preview_work_title" translatable="false">作品标题</string>
+</resources>

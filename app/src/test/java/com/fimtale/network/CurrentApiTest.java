@@ -15,6 +15,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import static org.junit.Assert.*;
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner.class)
+@org.robolectric.annotation.Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 public class CurrentApiTest {
     @Test public void timelineUsesAuthenticatedPaginationAndDiscriminatedEntities() throws Exception {
         List<TimelineItem> items = api("[{\"type\":7,\"entity_id\":101,\"created_at\":\"2026-10-05T01:00:00Z\","

@@ -1,4 +1,7 @@
 package com.fimtale.network;
+
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -22,9 +25,9 @@ public final class ApiDataConverter extends Converter.Factory {
     public Object decode(String json, Type type) throws IOException {
         try {
             JsonObject envelope = new JsonParser().parse(json).getAsJsonObject();
-            if (!envelope.has("data")) throw new IOException("服务器响应缺少 data");
+            if (!envelope.has("data")) throw new IOException(AppStrings.get(R.string.error_response_missing_data));
             JsonElement data = envelope.get("data");
             return gson.fromJson(data, type);
-        } catch (RuntimeException e) { throw new IOException("无法解析服务器响应", e); }
+        } catch (RuntimeException e) { throw new IOException(AppStrings.get(R.string.error_response_parse), e); }
     }
 }

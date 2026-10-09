@@ -95,21 +95,21 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         toolbar.setNavigationOnClickListener(v -> leave());
         androidx.appcompat.widget.Toolbar.OnMenuItemClickListener menuActions = item -> {
             if (item.getItemId() == R.id.action_more) { moreMenu.show(); return true; }
-            if (model.busy) { toast("请等待当前操作完成"); return true; }
+            if (model.busy) { toast(getString(R.string.editor_wait_operation)); return true; }
             if (item.getItemId() == R.id.action_editor_metadata) { showMetadata(true); }
             else if (item.getItemId() == R.id.action_editor_submit) submit();
             else if (item.getItemId() == R.id.action_save_draft) { collect(); model.saveDraft(() -> toast(model.message)); }
             else if (item.getItemId() == R.id.action_draft_conflict) {
-                new MaterialAlertDialogBuilder(this).setTitle("草稿已在其他设备修改")
-                        .setMessage("读取在线版本会放弃本机未同步的修改；使用本机版本会更新在线草稿。")
-                        .setNegativeButton("取消", null)
-                        .setNeutralButton("读取在线版本", (d, w) -> model.resolveDraftConflict(false))
-                        .setPositiveButton("使用本机版本", (d, w) -> model.resolveDraftConflict(true)).show();
+                new MaterialAlertDialogBuilder(this).setTitle(getString(R.string.editor_draft_conflict_title))
+                        .setMessage(getString(R.string.editor_draft_conflict_message))
+                        .setNegativeButton(getString(R.string.common_cancel), null)
+                        .setNeutralButton(getString(R.string.editor_use_online_draft), (d, w) -> model.resolveDraftConflict(false))
+                        .setPositiveButton(getString(R.string.editor_use_local_draft), (d, w) -> model.resolveDraftConflict(true)).show();
             }
             else if (item.getItemId() == R.id.action_discard_draft) {
-                new MaterialAlertDialogBuilder(this).setTitle("放弃草稿？")
-                        .setMessage("此操作会删除在线草稿及本机待同步修改，并重新读取已发表的内容。")
-                        .setNegativeButton("取消", null).setPositiveButton("放弃草稿", (d, w) -> model.discardDraft()).show();
+                new MaterialAlertDialogBuilder(this).setTitle(getString(R.string.editor_discard_draft_title))
+                        .setMessage(getString(R.string.editor_discard_draft_message))
+                        .setNegativeButton(getString(R.string.common_cancel), null).setPositiveButton(getString(R.string.editor_discard_draft), (d, w) -> model.discardDraft()).show();
             }
             else return false;
             return true;
@@ -129,11 +129,11 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         originLink = findViewById(R.id.editorOriginLink); prequel = findViewById(R.id.editorPrequel);
         type = findViewById(R.id.editorType); length = findViewById(R.id.editorLength);
         rating = findViewById(R.id.editorRating); origin = findViewById(R.id.editorOrigin); publish = findViewById(R.id.editorPublish);
-        options(type, "文章", "图集", "帖子");
-        options(length, "未选择", "长篇", "中篇", "短篇");
-        options(rating, "未选择", "Everyone", "Teen", "Restricted");
-        options(origin, "未选择", "原创", "翻译", "转载");
-        options(publish, "未选择", "连载中", "已完结", "已暂停", "已弃坑");
+        options(type, getResources().getStringArray(R.array.editor_work_types));
+        options(length, getResources().getStringArray(R.array.editor_length_options));
+        options(rating, getResources().getStringArray(R.array.editor_rating_options));
+        options(origin, getResources().getStringArray(R.array.editor_origin_options));
+        options(publish, getResources().getStringArray(R.array.editor_publish_options));
         TextWatcher watcher = new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             public void onTextChanged(CharSequence s, int start, int before, int count) { collect(); }
@@ -206,10 +206,10 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         findViewById(R.id.editorRetry).setVisibility(model.error && !model.loadError ? View.VISIBLE : View.GONE);
         findViewById(R.id.editorForm).setVisibility(model.ready ? View.VISIBLE : View.GONE);
         findViewById(R.id.editorWorkFields).setVisibility(chapter ? View.GONE : View.VISIBLE);
-        ((TextView) findViewById(R.id.editorHint)).setText(chapter ? "编辑当前章节的正文，提交后将更新到作品目录。"
-                : "这里编辑作品序言（长简介）。章节正文可在发表作品后，通过作品详情页的编辑菜单添加。");
-        ((TextView) findViewById(R.id.editorSubmit)).setText(chapter ? (model.chapterId > 0 ? "保存章节修改" : "发表章节")
-                : (model.workId > 0 ? "保存作品修改" : "发表作品"));
+        ((TextView) findViewById(R.id.editorHint)).setText(chapter ? getString(R.string.editor_chapter_hint)
+                : getString(R.string.editor_preface_hint));
+        ((TextView) findViewById(R.id.editorSubmit)).setText(chapter ? (model.chapterId > 0 ? getString(R.string.editor_save_chapter) : getString(R.string.editor_publish_chapter))
+                : (model.workId > 0 ? getString(R.string.editor_save_work) : getString(R.string.editor_publish_work)));
         setEnabled(findViewById(R.id.editorForm), model.ready && !model.busy);
         if (model.loadError && !model.busy) pageError.show(model.message, () -> {
             if (model.needsLogin) login.launch(new Intent(this, LoginActivity.class)); else model.load();
@@ -227,7 +227,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
             boolean announcement = model.allowAnnouncement || model.document.work.type == 4;
             if (announcement != typeHasAnnouncement) {
                 typeHasAnnouncement = announcement;
-                if (announcement) options(type, "文章", "图集", "帖子", "公告"); else options(type, "文章", "图集", "帖子");
+                if (announcement) options(type, getResources().getStringArray(R.array.editor_work_types_all)); else options(type, getResources().getStringArray(R.array.editor_work_types));
                 type.setSelection(Math.max(0, model.document.work.type - 1));
             }
             if (boundVersion != model.documentVersion) {
@@ -288,9 +288,9 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
     private void updateToolbar() {
         if (toolbar == null) return;
         String name = model.document == null ? "" : model.isChapter() ? model.document.chapter.title : model.document.work.title;
-        toolbar.setTitle(metadataVisible ? (model.isChapter() ? "章节信息" : "文章信息")
-                : WorkInput.blank(name) ? (model.isChapter() ? "未命名章节" : "未命名文章") : name);
-        toolbar.getMenu().findItem(R.id.action_editor_metadata).setTitle(metadataVisible ? "返回正文" : model.isChapter() ? "章节信息" : "文章信息");
+        toolbar.setTitle(metadataVisible ? (model.isChapter() ? getString(R.string.editor_chapter_metadata) : getString(R.string.editor_metadata))
+                : WorkInput.blank(name) ? (model.isChapter() ? getString(R.string.editor_unnamed_chapter) : getString(R.string.editor_unnamed_work)) : name);
+        toolbar.getMenu().findItem(R.id.action_editor_metadata).setTitle(metadataVisible ? getString(R.string.editor_return_body) : model.isChapter() ? getString(R.string.editor_chapter_metadata) : getString(R.string.editor_metadata));
         toolbar.getMenu().findItem(R.id.action_editor_submit).setTitle(
                 (model.isChapter() ? model.chapterId > 0 : model.workId > 0)
                         ? R.string.editor_save_action : R.string.editor_submit_action);
@@ -338,11 +338,11 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         Spinner sheetOrigin = sheet.findViewById(R.id.editorOrigin);
         Spinner sheetPublish = sheet.findViewById(R.id.editorPublish);
         boolean announcement = model.allowAnnouncement || (model.document != null && model.document.work.type == 4);
-        options(sheetType, announcement ? new String[]{"文章", "图集", "帖子", "公告"} : new String[]{"文章", "图集", "帖子"});
-        options(sheetLength, "未选择", "长篇", "中篇", "短篇");
-        options(sheetRating, "未选择", "Everyone", "Teen", "Restricted");
-        options(sheetOrigin, "未选择", "原创", "翻译", "转载");
-        options(sheetPublish, "未选择", "连载中", "已完结", "已暂停", "已弃坑");
+        options(sheetType, announcement ? getResources().getStringArray(R.array.editor_work_types_all) : getResources().getStringArray(R.array.editor_work_types));
+        options(sheetLength, getResources().getStringArray(R.array.editor_length_options));
+        options(sheetRating, getResources().getStringArray(R.array.editor_rating_options));
+        options(sheetOrigin, getResources().getStringArray(R.array.editor_origin_options));
+        options(sheetPublish, getResources().getStringArray(R.array.editor_publish_options));
         binding = true;
         sheetTitle.setText(title.getText()); sheetIntro.setText(intro.getText()); sheetCover.setText(cover.getText());
         sheetOriginLink.setText(originLink.getText()); sheetPrequel.setText(prequel.getText());
@@ -351,11 +351,11 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         sheetPublish.setSelection(publish.getSelectedItemPosition());
         sheet.findViewById(R.id.editorWorkFields).setVisibility(model.isChapter() ? View.GONE : View.VISIBLE);
         ((TextView) sheet.findViewById(R.id.editorHint)).setText(model.isChapter()
-                ? "编辑当前章节的正文，提交后将更新到作品目录。"
-                : "这里编辑作品序言（长简介）。章节正文可在发表作品后，通过作品详情页的编辑菜单添加。");
+                ? getString(R.string.editor_chapter_hint)
+                : getString(R.string.editor_preface_hint));
         ((TextView) sheet.findViewById(R.id.editorSubmit)).setText(model.isChapter()
-                ? (model.chapterId > 0 ? "保存章节修改" : "发表章节")
-                : (model.workId > 0 ? "保存作品修改" : "发表作品"));
+                ? (model.chapterId > 0 ? getString(R.string.editor_save_chapter) : getString(R.string.editor_publish_chapter))
+                : (model.workId > 0 ? getString(R.string.editor_save_work) : getString(R.string.editor_publish_work)));
         ((MaterialCheckBox) sheet.findViewById(R.id.editorHandbook)).setChecked(((MaterialCheckBox) findViewById(R.id.editorHandbook)).isChecked());
         binding = false;
         TextWatcher watcher = new TextWatcher() {
@@ -442,23 +442,23 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
                 MdiIcons.setError((EditText) metadataSheetView.findViewById(fieldId), null);
         }
         if ((model.isChapter() || model.document.work.type != 3) && WorkInput.blank(text(title))) {
-            showMetadataError(R.id.editorTitle, "请填写标题"); return;
+            showMetadataError(R.id.editorTitle, getString(R.string.editor_title_required)); return;
         }
         if (!model.isChapter()) {
             if (model.document.work.type != 3 && WorkInput.blank(text(intro))) {
-                showMetadataError(R.id.editorIntro, "请填写简介"); return;
+                showMetadataError(R.id.editorIntro, getString(R.string.editor_intro_required)); return;
             }
             try {
                 String value = model.document.prequelText.trim();
                 model.document.work.prequelId = value.isEmpty() ? 0 : Integer.valueOf(value);
-            } catch (NumberFormatException e) { showMetadataError(R.id.editorPrequel, "请输入有效的作品 ID"); return; }
-            if (!model.document.handbookAccepted) { showMetadata(true); toast("请先阅读并同意用户手册"); return; }
+            } catch (NumberFormatException e) { showMetadataError(R.id.editorPrequel, getString(R.string.editor_work_id_invalid)); return; }
+            if (!model.document.handbookAccepted) { showMetadata(true); toast(getString(R.string.editor_handbook_required)); return; }
         }
         if (model.document.submissionUncertain) {
-            new MaterialAlertDialogBuilder(this).setTitle("上次提交结果未确认")
-                    .setMessage("请先核对已发表内容。再次提交可能产生重复作品或章节。")
-                    .setNegativeButton("取消", null).setNeutralButton("查看已发表", (d, w) -> checkPublished())
-                    .setPositiveButton("已核对，重新提交", (d, w) -> model.prepareSubmit()).show();
+            new MaterialAlertDialogBuilder(this).setTitle(getString(R.string.editor_submission_uncertain_title))
+                    .setMessage(getString(R.string.editor_resubmit_message))
+                    .setNegativeButton(getString(R.string.common_cancel), null).setNeutralButton(getString(R.string.editor_view_published), (d, w) -> checkPublished())
+                    .setPositiveButton(getString(R.string.editor_confirm_resubmit), (d, w) -> model.prepareSubmit()).show();
         } else model.prepareSubmit();
     }
     private void showMetadataError(int fieldId, String message) {
@@ -509,7 +509,7 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
         button.setTooltipText(button.getContentDescription());
     }
     private void leave() {
-        if (model.busy) { toast("请等待当前操作完成，避免丢失提交结果"); return; }
+        if (model.busy) { toast(getString(R.string.editor_wait_before_exit)); return; }
         if (metadataSheet != null && metadataSheet.isShowing()) { metadataSheet.dismiss(); return; }
         if (metadataVisible) { showMetadata(false); return; }
         collect(); model.saveDraft(this::finish);

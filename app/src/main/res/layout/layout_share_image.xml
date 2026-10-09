@@ -218,7 +218,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="长按或扫描二维码阅读"
+                android:text="@string/work_share_qr_hint"
                 android:textColor="#acacac"
                 android:textSize="36px"
                 android:textStyle="bold"

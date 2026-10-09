@@ -1,5 +1,6 @@
 package com.fimtale.adapter;
 
+
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
@@ -50,13 +51,13 @@ public final class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.
         Context context = holder.itemView.getContext();
         AuthorInfo user = item.fromUser;
         boolean hasUser = user != null && !TextUtils.isEmpty(user.getUserName());
-        holder.author.setText(hasUser ? user.getUserName() : "频道动态");
+        holder.author.setText(hasUser ? user.getUserName() : context.getString(R.string.timeline_channel_tab));
         holder.action.setText(item.actionText());
         holder.time.setText(time(item.createdAt));
         View.OnClickListener openUser = view -> openUser(context, user);
         holder.author.setOnClickListener(hasUser ? openUser : null);
         holder.avatar.setOnClickListener(hasUser ? openUser : null);
-        holder.avatar.setContentDescription(hasUser ? "查看 " + user.getUserName() + " 的个人资料" : "频道动态");
+        holder.avatar.setContentDescription(hasUser ? context.getString(R.string.profile_named_description, user.getUserName()) : context.getString(R.string.timeline_channel_tab));
         Glide.with(context).load(hasUser ? user.getAvatar() : null).circleCrop()
                 .placeholder(MdiIcons.drawable(context, hasUser ? "account" : "wifi"))
                 .error(MdiIcons.drawable(context, hasUser ? "account" : "wifi")).into(holder.avatar);
@@ -75,25 +76,24 @@ public final class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.
         Glide.with(context).clear(holder.cover);
         if (!TextUtils.isEmpty(cover)) Glide.with(context).load(cover)
                 .placeholder(MdiIcons.coverPlaceholder(context)).error(MdiIcons.coverPlaceholder(context)).into(holder.cover);
-        String stats = work ? entity.characters + " 字 · " + entity.views + " 阅读 · " + entity.comments
-                + " 评论 · " + entity.favorites + " 收藏"
-                : available && item.type == TimelineItem.CHAPTER && entity.characters > 0 ? entity.characters + " 字" : null;
+        String stats = work ? context.getString(R.string.work_statistics, entity.characters, entity.views, entity.comments, entity.favorites)
+                : available && item.type == TimelineItem.CHAPTER && entity.characters > 0 ? context.getString(R.string.work_character_count, entity.characters) : null;
         setOptional(holder.stats, stats);
 
         View.OnClickListener open = view -> openItem(context, item);
         holder.card.setOnClickListener(item.path() == null ? null : open);
         holder.title.setOnClickListener(item.path() == null ? null : open);
         holder.open.setVisibility(item.path() == null ? View.GONE : View.VISIBLE);
-        holder.open.setText(item.type == TimelineItem.CHAPTER ? "阅读章节"
-                : item.type == TimelineItem.COMMENT || item.type == TimelineItem.CHANNEL_COMMENT ? "查看评论" : "查看作品");
+        holder.open.setText(item.type == TimelineItem.CHAPTER ? context.getString(R.string.reader_read_chapter)
+                : item.type == TimelineItem.COMMENT || item.type == TimelineItem.CHANNEL_COMMENT ? context.getString(R.string.comments_view) : context.getString(R.string.work_view));
         holder.open.setOnClickListener(open);
         String contextPath = item.contextPath();
         holder.context.setVisibility(contextPath == null ? View.GONE : View.VISIBLE);
-        holder.context.setText(TextUtils.isEmpty(item.contextLabel()) ? "查看原文" : item.contextLabel());
+        holder.context.setText(TextUtils.isEmpty(item.contextLabel()) ? context.getString(R.string.common_view_original) : item.contextLabel());
         holder.context.setOnClickListener(view -> openSite(context, contextPath));
         holder.repost.setVisibility(item.canHighlight() ? View.VISIBLE : View.GONE);
         holder.repost.setEnabled(!reposting.contains(item.key()));
-        holder.repost.setText(reposting.contains(item.key()) ? "转发中…" : "转发");
+        holder.repost.setText(reposting.contains(item.key()) ? context.getString(R.string.timeline_sharing) : context.getString(R.string.timeline_share));
         holder.repost.setOnClickListener(view -> onRepost.accept(item));
     }
     private static void setOptional(TextView view, String text) {

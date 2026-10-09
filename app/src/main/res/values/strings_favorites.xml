@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="favorites_title">我的收藏</string>
+    <string name="favorites_short_title">收藏</string>
+    <string name="favorites_empty">暂无收藏，点击刷新</string>
+</resources>

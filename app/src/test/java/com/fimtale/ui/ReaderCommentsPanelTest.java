@@ -43,7 +43,7 @@ import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class, qualifiers = "w400dp-h800dp-mdpi")
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class, qualifiers = "w400dp-h800dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 public class ReaderCommentsPanelTest {

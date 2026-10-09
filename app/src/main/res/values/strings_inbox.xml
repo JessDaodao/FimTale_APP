@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="inbox_title">消息</string>
+    <string name="inbox_message_hint">发送私信…</string>
+    <string name="inbox_unread_description">未读消息</string>
+    <string name="inbox_date_current_year">M月d日 HH:mm</string>
+    <string name="inbox_date_full">yyyy年M月d日 HH:mm</string>
+    <string name="inbox_no_messages">暂无消息</string>
+    <string name="inbox_login_message">登录后查看消息</string>
+    <string name="inbox_no_conversations">暂无私信</string>
+    <string name="inbox_no_notifications">暂无通知</string>
+    <string name="inbox_load_earlier">加载更早消息</string>
+    <string name="inbox_mark_all_read">标记全部已读</string>
+    <string name="inbox_invite_accepted">已接受</string>
+    <string name="inbox_invite_rejected">已拒绝</string>
+    <string name="inbox_mark_read">标记已读</string>
+    <string name="inbox_system">系统</string>
+    <string name="inbox_replies">回复</string>
+    <string name="inbox_mentions">提到</string>
+    <string name="inbox_interactions">互动</string>
+    <string name="inbox_private_messages">私信</string>
+    <string name="inbox_action_default">发来了通知</string>
+    <string name="inbox_action_comment">评论了</string>
+    <string name="inbox_action_comment_mention">在评论中提到了你</string>
+    <string name="inbox_action_comment_reply">回复了你的评论</string>
+    <string name="inbox_action_like_comment">赞了你的评论</string>
+    <string name="inbox_action_comment_sh">给你的评论点了SH</string>
+    <string name="inbox_action_work">发布了作品</string>
+    <string name="inbox_action_chapter">发布了章节</string>
+    <string name="inbox_action_channel_work">在频道中添加了作品</string>
+    <string name="inbox_action_work_mention">在作品中提到了你</string>
+    <string name="inbox_action_chapter_mention">在章节中提到了你</string>
+    <string name="inbox_action_like_work">赞了你的作品</string>
+    <string name="inbox_action_hp">给你的作品HP</string>
+    <string name="inbox_action_like_channel">赞了频道</string>
+    <string name="inbox_action_channel_comment">评论了频道</string>
+    <string name="inbox_action_channel_comment_mention">在频道评论中提到了你</string>
+    <string name="inbox_action_like_channel_comment">赞了你的频道评论</string>
+    <string name="inbox_action_recommend">推荐了你的作品</string>
+    <string name="inbox_action_follow">关注了你</string>
+    <string name="inbox_action_message">发来了私信</string>
+    <string name="inbox_action_collaborator">邀请你成为频道协作者</string>
+    <string name="inbox_action_review">发送了审核通知</string>
+    <string name="inbox_action_report">发送了报告</string>
+    <string name="inbox_action_system">发布了系统通知</string>
+    <string name="inbox_action_prequel">希望将你的作品设为其前作</string>
+    <string name="inbox_view_review">查看审核</string>
+    <string name="inbox_view_report">查看报告</string>
+    <string name="inbox_action_report_updated">提交/更新了报告</string>
+    <string name="inbox_action_report_rejected">驳回了你的报告</string>
+    <string name="inbox_action_report_resolved">处理了你的报告</string>
+    <string name="inbox_action_report_reply">回复了你的报告</string>
+    <string name="inbox_message_sent">私信已发送</string>
+    <string name="inbox_mutation_uncertain">操作结果未确认，请刷新消息核对后再重试</string>
+    <string name="inbox_load_failed">消息加载失败，请重试</string>
+    <string name="inbox_yesterday">昨天 %1$s</string>
+    <string name="inbox_page_unread">此页 %1$d 条未读</string>
+    <string name="inbox_sender_preview">%1$s：%2$s</string>
+    <string name="inbox_participant_separator">、</string>
+    <string-array name="inbox_notice_actions">
+        <item>@string/inbox_action_default</item>
+        <item>@string/inbox_action_comment</item>
+        <item>@string/inbox_action_comment_mention</item>
+        <item>@string/inbox_action_comment_reply</item>
+        <item>@string/inbox_action_like_comment</item>
+        <item>@string/inbox_action_comment_sh</item>
+        <item>@string/inbox_action_work</item>
+        <item>@string/inbox_action_chapter</item>
+        <item>@string/inbox_action_channel_work</item>
+        <item>@string/inbox_action_work_mention</item>
+        <item>@string/inbox_action_chapter_mention</item>
+        <item>@string/inbox_action_like_work</item>
+        <item>@string/inbox_action_hp</item>
+        <item>@string/inbox_action_like_channel</item>
+        <item>@string/inbox_action_channel_comment</item>
+        <item>@string/inbox_action_channel_comment_mention</item>
+        <item>@string/inbox_action_like_channel_comment</item>
+        <item>@string/inbox_action_recommend</item>
+        <item>@string/inbox_action_follow</item>
+        <item>@string/inbox_action_message</item>
+        <item>@string/inbox_action_collaborator</item>
+        <item>@string/inbox_action_review</item>
+        <item>@string/inbox_action_report</item>
+        <item>@string/inbox_action_system</item>
+        <item>@string/inbox_action_prequel</item>
+    </string-array>
+</resources>

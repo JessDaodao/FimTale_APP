@@ -19,7 +19,7 @@ import retrofit2.*;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk=34, application=Application.class)
+@Config(sdk=34, application = com.fimtale.ResourceApplication.class)
 public class MyReportsTest {
     private Application app;
     private MyReportsViewModel model;

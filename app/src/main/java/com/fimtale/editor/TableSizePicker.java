@@ -1,5 +1,7 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -22,7 +24,7 @@ public final class TableSizePicker extends View {
     public void setSelection(int rows, int columns) {
         this.rows = Math.max(1, Math.min(20, rows));
         this.columns = Math.max(1, Math.min(10, columns));
-        setContentDescription("表格大小：" + this.rows + " 行，" + this.columns + " 列；可拖动选择或使用下方行列输入框");
+        setContentDescription(getContext().getString(R.string.editor_table_picker_description, this.rows, this.columns));
         invalidate();
     }
     @Override protected void onMeasure(int width, int height) {

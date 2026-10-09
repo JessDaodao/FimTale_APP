@@ -34,7 +34,7 @@ public final class BbCodeText {
                 if (!Character.isWhitespace(result.charAt(i))) result.setCharAt(i, '\u2588');
             }
         }
-        return result.toString().replace('\n', ' ').replace("\ufffc", "[图片]");
+        return result.toString().replace('\n', ' ').replace("\ufffc", AppStrings.get(R.string.bbcode_image_placeholder));
     }
 
     public static Spanned normalizeTables(Spanned rendered) {

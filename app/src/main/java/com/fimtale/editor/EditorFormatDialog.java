@@ -123,7 +123,7 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         root.findViewById(R.id.editorFormatInsert).setVisibility(format == null ? View.GONE : View.VISIBLE);
         ((TextView) root.findViewById(R.id.editorFormatInsert)).setText(editingLink() ? R.string.editor_format_save : R.string.editor_format_insert);
         ((TextView) root.findViewById(R.id.editorFormatTitle)).setText(editingLink() ? getString(R.string.editor_edit_link)
-                : format == null ? getString(R.string.editor_more_formats) : format.label);
+                : format == null ? getString(R.string.editor_more_formats) : getString(format.label));
         if (format == null) palette(); else form();
         if (restoredValues != null) {
             for (int i = 0; i < inputs.size() && i < restoredValues.length; i++) inputs.get(i).setText(restoredValues[i]);
@@ -132,7 +132,7 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         ((androidx.core.widget.NestedScrollView) root.findViewById(R.id.editorFormatScroll)).scrollTo(0, 0);
     }
     private void palette() {
-        String[] groups = {"文字样式", "标题与段落", "插入内容"};
+        String[] groups = getResources().getStringArray(R.array.editor_format_groups);
         for (int group = 0; group < groups.length; group++) {
             TextView heading = new TextView(content.getContext()); heading.setText(groups[group]);
             heading.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
@@ -146,7 +146,7 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                 button.setCompoundDrawablesWithIntrinsicBounds(null, MdiIcons.drawable(button.getContext(), item.icon), null, null);
                 button.setCompoundDrawablePadding(dp(6)); button.setPadding(dp(2), dp(10), dp(2), dp(8));
                 TypedValue ripple = new TypedValue(); button.getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true);
-                button.setBackgroundResource(ripple.resourceId); button.setFocusable(true); button.setContentDescription(item.label);
+                button.setBackgroundResource(ripple.resourceId); button.setFocusable(true); button.setContentDescription(getString(item.label));
                 button.setTag(item.name()); button.setOnClickListener(v -> choose(item));
                 row.addView(button, new LinearLayout.LayoutParams(0, dp(80), 1)); column = (column + 1) % 4;
             }
@@ -178,8 +178,8 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         int text = InputType.TYPE_CLASS_TEXT, url = text | InputType.TYPE_TEXT_VARIATION_URI;
         switch (format) {
             case LINK:
-                field("链接网址", editingLink() ? requireArguments().getString("link_url") : "https://", url);
-                field("链接文字（可选）", editingLink() ? requireArguments().getString("link_text") : selected(), text);
+                field(getString(R.string.editor_link_url), editingLink() ? requireArguments().getString("link_url") : getString(R.string.editor_url_default), url);
+                field(getString(R.string.editor_link_label_hint), editingLink() ? requireArguments().getString("link_text") : selected(), text);
                 if (editingLink()) {
                     com.google.android.material.button.MaterialButton remove = new com.google.android.material.button.MaterialButton(content.getContext());
                     remove.setId(R.id.editorRemoveLink); remove.setText(R.string.editor_remove_link);
@@ -188,13 +188,13 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                 }
                 break;
             case IMAGE:
-                field("图片网址", "https://", url); field("宽度（可选，像素）", "", InputType.TYPE_CLASS_NUMBER);
-                field("高度（可选，像素）", "", InputType.TYPE_CLASS_NUMBER); field("图片说明（可选）", "", text); break;
+                field(getString(R.string.editor_image_url), getString(R.string.editor_url_default), url); field(getString(R.string.editor_image_width_hint), "", InputType.TYPE_CLASS_NUMBER);
+                field(getString(R.string.editor_image_height_hint), "", InputType.TYPE_CLASS_NUMBER); field(getString(R.string.editor_image_alt_hint), "", text); break;
             case COLOR: case BACKGROUND:
-                field("颜色", format == EditorFormat.COLOR ? "#E53935" : "#FFF59D", text);
+                field(getString(R.string.editor_color_hint), format == EditorFormat.COLOR ? getString(R.string.editor_color_value_red) : getString(R.string.editor_color_value_yellow), text);
                 ChipGroup colors = new ChipGroup(content.getContext());
-                String[] names = {"红", "橙", "黄", "绿", "蓝", "紫", "黑", "白"};
-                String[] values = {"#E53935", "#F57C00", "#FFF59D", "#388E3C", "#1976D2", "#8E24AA", "#000000", "#FFFFFF"};
+                String[] names = getResources().getStringArray(R.array.editor_format_names);
+                String[] values = getResources().getStringArray(R.array.editor_color_values);
                 for (int i = 0; i < names.length; i++) {
                     Chip color = new Chip(content.getContext()); color.setText(names[i]); color.setChipStrokeWidth(0);
                     color.setChipIcon(MdiIcons.drawable(color.getContext(), "circle"));
@@ -203,18 +203,18 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                     color.setOnClickListener(v -> inputs.get(0).setText(value)); colors.addView(color);
                 }
                 content.addView(colors); break;
-            case HASH: field("话题名称", selected(), text); break;
-            case MENTION: field("完整用户名", selected().replaceFirst("^@", ""), text); break;
-            case COLLAPSE: field("折叠区标题", "展开内容", text); break;
+            case HASH: field(getString(R.string.editor_hash_name), selected(), text); break;
+            case MENTION: field(getString(R.string.editor_full_username), selected().replaceFirst("^@", ""), text); break;
+            case COLLAPSE: field(getString(R.string.editor_collapse_title), getString(R.string.reader_expand_content), text); break;
             case REFERENCE:
-                options("作品", "章节", "评论", "频道", "用户");
-                field("引用 ID", "", InputType.TYPE_CLASS_NUMBER); field("说明（可选）", selected(), text); break;
+                options(getResources().getStringArray(R.array.editor_reference_types));
+                field(getString(R.string.editor_reference_id), "", InputType.TYPE_CLASS_NUMBER); field(getString(R.string.editor_reference_description), selected(), text); break;
             case TABLE:
-                field("行数（1–20）", "3", InputType.TYPE_CLASS_NUMBER); field("列数（1–10）", "3", InputType.TYPE_CLASS_NUMBER);
+                field(getString(R.string.editor_table_rows_hint), getString(R.string.editor_table_default_size), InputType.TYPE_CLASS_NUMBER); field(getString(R.string.editor_table_columns_hint), getString(R.string.editor_table_default_size), InputType.TYPE_CLASS_NUMBER);
                 headerRow = new MaterialCheckBox(content.getContext()); headerRow.setId(R.id.editorFormatHeaderRow);
-                headerRow.setText("首行为表头"); headerRow.setChecked(restoredHeader); content.addView(headerRow);
+                headerRow.setText(getString(R.string.editor_table_header_row)); headerRow.setChecked(restoredHeader); content.addView(headerRow);
                 TextView dimensions = new TextView(content.getContext()); dimensions.setId(R.id.editorTableDimensions);
-                dimensions.setText("3 行 × 3 列"); dimensions.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+                dimensions.setText(getString(R.string.editor_table_default_dimensions)); dimensions.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
                 content.addView(dimensions);
                 TableSizePicker picker = new TableSizePicker(content.getContext()); picker.setId(R.id.editorTableSizePicker);
                 content.addView(picker, new LinearLayout.LayoutParams(-1, -2));
@@ -225,7 +225,7 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                         try {
                             int rows = Integer.parseInt(value(0)), columns = Integer.parseInt(value(1));
                             if (rows >= 1 && rows <= 20 && columns >= 1 && columns <= 10) {
-                                picker.setSelection(rows, columns); dimensions.setText(rows + " 行 × " + columns + " 列");
+                                picker.setSelection(rows, columns); dimensions.setText(getString(R.string.editor_table_dimensions, rows, columns));
                             }
                         } catch (NumberFormatException ignored) {}
                     }
@@ -249,15 +249,15 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                 case IMAGE: apply(BbCodeInsertion.image(value(0), value(1), value(2), value(3))); break;
                 case COLOR: case BACKGROUND:
                     String color = value(0).trim();
-                    if (BbCodeRendering.cssColor(color) == null) throw new IllegalArgumentException("请输入有效颜色，例如 #E53935");
+                    if (BbCodeRendering.cssColor(color) == null) throw new IllegalArgumentException(getString(R.string.editor_color_invalid));
                     apply(BbCodeInsertion.wrap((format == EditorFormat.COLOR ? "color=" : "bg-color=") + BbCodeInsertion.attribute(color), selected(), false)); break;
                 case HASH:
                     String name = value(0).trim().replaceAll("^#+|#+$", "");
-                    if (name.isEmpty()) throw new IllegalArgumentException("请填写话题名称");
+                    if (name.isEmpty()) throw new IllegalArgumentException(getString(R.string.editor_hash_required));
                     apply(BbCodeInsertion.atom("[hash]" + BbCodeInsertion.literal(name) + "[/hash]", false)); break;
                 case COLLAPSE:
                     String title = value(0).trim();
-                    if (title.isEmpty()) throw new IllegalArgumentException("请填写折叠区标题");
+                    if (title.isEmpty()) throw new IllegalArgumentException(getString(R.string.editor_collapse_title_required));
                     apply(BbCodeInsertion.wrap("collapse=" + BbCodeInsertion.attribute(title), selected(), true)); break;
                 case REFERENCE:
                     apply(BbCodeInsertion.reference(new int[]{1, 3, 4, 5, 7}[choice.getSelectedItemPosition()], Integer.parseInt(value(0)), value(1))); break;
@@ -265,12 +265,12 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                 case MENTION: mention(); break;
                 default: break;
             }
-        } catch (NumberFormatException e) { error("请填写有效的整数"); }
+        } catch (NumberFormatException e) { error(getString(R.string.editor_integer_required)); }
         catch (IllegalArgumentException e) { error(e.getMessage()); }
     }
     private void mention() {
         String username = value(0).trim().replaceFirst("^@", "");
-        if (username.isEmpty()) { error("请填写完整用户名"); return; }
+        if (username.isEmpty()) { error(getString(R.string.editor_username_required)); return; }
         error(""); loading(true);
         Call<UserDetailResponse> request = RetrofitClient.getInstance().getUserDetail(username); lookup = request;
         request.enqueue(new Callback<UserDetailResponse>() {
@@ -280,24 +280,24 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                 UserDetailResponse user = response.body();
                 if (response.isSuccessful() && user != null && user.getId() > 0 && user.getUserName() != null)
                     apply(BbCodeInsertion.mention(user.getId(), user.getUserName()));
-                else error(response.isSuccessful() ? "未找到此用户" : ApiErrors.message(response));
+                else error(response.isSuccessful() ? getString(R.string.editor_user_not_found) : ApiErrors.message(response));
             }
             @Override public void onFailure(Call<UserDetailResponse> call, Throwable t) {
                 if (lookup != call || !isAdded() || root == null) return;
-                lookup = null; loading(false); error("无法查询用户，请重试");
+                lookup = null; loading(false); error(getString(R.string.editor_user_lookup_failed));
             }
         });
     }
     private void apply(BbCodeInsertion.Fragment fragment) {
         if (applied) return;
         if (!host().canInsertFormat() || host().formatVersion() != requireArguments().getInt("version")) {
-            error("正文状态已变化，请关闭面板后重新选择"); return;
+            error(getString(R.string.editor_body_changed)); return;
         }
         BbCodeEditText body = host().formatBody();
         int start = requireArguments().getInt("start"), end = requireArguments().getInt("end");
-        if (end > body.length()) { error("正文已变化，请重新选择插入位置"); return; }
+        if (end > body.length()) { error(getString(R.string.editor_insertion_changed)); return; }
         if (editingLink() && !body.getText().subSequence(start, end).toString().equals(requireArguments().getString("link_source"))) {
-            error("链接已变化，请关闭面板后重新选择"); return;
+            error(getString(R.string.editor_link_changed)); return;
         }
         applied = true;
         host().applyFormat(BbCodeInsertion.at(body.getText().toString(), start, end, fragment)); dismiss();

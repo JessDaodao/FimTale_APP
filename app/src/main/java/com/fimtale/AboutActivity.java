@@ -24,13 +24,13 @@ public class AboutActivity extends AppCompatActivity {
         try {
             PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             String version = pInfo.versionName;
-            tvVersion.setText("v" + version);
+            tvVersion.setText(getString(R.string.about_version, version));
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
 
         findViewById(R.id.btnCheckUpdate).setOnClickListener(v -> {
-            Toast.makeText(this, "正在检查更新...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.update_checking), Toast.LENGTH_SHORT).show();
             UpdateChecker.checkUpdate(this, true);
         });
     }

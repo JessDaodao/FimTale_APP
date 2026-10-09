@@ -1,5 +1,9 @@
 package com.fimtale.crash;
 
+import com.fimtale.R;
+
+import com.fimtale.utils.AppStrings;
+
 import android.app.ApplicationExitInfo;
 import android.content.Context;
 import android.util.AtomicFile;
@@ -87,7 +91,7 @@ public final class CrashStore {
     public void setDeliveryUncertain(String id, boolean uncertain) throws IOException {
         synchronized (LOCK) {
             State state = read();
-            if (state.pending == null || !state.pending.id.equals(id)) throw new IOException("Incident no longer pending");
+            if (state.pending == null || !state.pending.id.equals(id)) throw new IOException(AppStrings.get(R.string.crash_feedback_incident_not_pending));
             state.pending.deliveryUncertain = uncertain; write(state);
         }
     }
@@ -106,7 +110,7 @@ public final class CrashStore {
     }
     private void write(State state) throws IOException {
         byte[] bytes = gson.toJson(state).getBytes(StandardCharsets.UTF_8);
-        if (bytes.length > MAX_BYTES) throw new IOException("Diagnostic snapshot too large");
+        if (bytes.length > MAX_BYTES) throw new IOException(AppStrings.get(R.string.crash_feedback_snapshot_too_large));
         FileOutputStream output = null;
         try { output = file.startWrite(); output.write(bytes); file.finishWrite(output); }
         catch (IOException | RuntimeException error) { if (output != null) file.failWrite(output); throw error; }

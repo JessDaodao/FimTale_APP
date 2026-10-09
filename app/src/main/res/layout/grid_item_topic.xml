@@ -43,7 +43,7 @@
                     android:layout_height="wrap_content"
                     android:visibility="gone"
                     tools:visibility="visible"
-                    tools:text="文"
+                    tools:text="@string/reader_font_label"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/white"
@@ -56,7 +56,7 @@
                     android:layout_height="wrap_content"
                     android:visibility="gone"
                     tools:visibility="visible"
-                    tools:text="著"
+                    tools:text="@string/work_author_suffix"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/white"
@@ -69,7 +69,7 @@
                     android:layout_height="wrap_content"
                     android:visibility="gone"
                     tools:visibility="visible"
-                    tools:text="中"
+                    tools:text="@string/reader_medium_size"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/white"
@@ -82,7 +82,7 @@
                     android:layout_height="wrap_content"
                     android:visibility="gone"
                     tools:visibility="visible"
-                    tools:text="E"
+                    tools:text="@string/preview_rating"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/white"
@@ -105,7 +105,7 @@
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:maxLines="1"
                 android:ellipsize="end"
-                tools:text="小说标题非常长长长长长长" />
+                tools:text="@string/preview_long_title" />
 
             <TextView
                 android:id="@+id/authorTextView"
@@ -116,7 +116,7 @@
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:maxLines="1"
                 android:ellipsize="end"
-                tools:text="作者名" />
+                tools:text="@string/preview_author" />
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/tagChipGroup"
@@ -143,7 +143,7 @@
                     android:gravity="center_vertical"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    tools:text="12k" />
+                    tools:text="@string/preview_twelve_k" />
 
                 <com.fimtale.ui.icons.MdiTextView
                     android:id="@+id/viewCountTextView"
@@ -155,7 +155,7 @@
                     android:gravity="center_vertical"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    tools:text="3.5k" />
+                    tools:text="@string/preview_three_point_five_k" />
 
                 <com.fimtale.ui.icons.MdiTextView
                     android:id="@+id/commentCountTextView"
@@ -167,7 +167,7 @@
                     android:gravity="center_vertical"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    tools:text="128" />
+                    tools:text="@string/preview_one_twenty_eight" />
 
                 <com.fimtale.ui.icons.MdiTextView
                     android:id="@+id/favoriteCountTextView"
@@ -179,7 +179,7 @@
                     android:gravity="center_vertical"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    tools:text="56" />
+                    tools:text="@string/preview_fifty_six" />
 
             </LinearLayout>
         </LinearLayout>

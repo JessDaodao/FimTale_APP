@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bbcode_image_placeholder">[图片]</string>
+    <string name="bbcode_emoji_placeholder">[表情]</string>
+    <string name="bbcode_expand_default">点击展开</string>
+    <string name="bbcode_reference_failed">引用加载失败，内容可能已删除或无权访问</string>
+    <string name="bbcode_loading_reference">正在加载引用…</string>
+    <string name="bbcode_handbook_unavailable">（此处为网站手册，App 暂不提供内嵌手册）</string>
+    <string name="bbcode_font_alias_serif" translatable="false">宋体</string>
+    <string name="bbcode_font_alias_sans" translatable="false">黑体</string>
+</resources>

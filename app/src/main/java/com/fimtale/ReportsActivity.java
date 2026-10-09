@@ -70,7 +70,7 @@ public abstract class ReportsActivity extends AppCompatActivity {
             @Override public void onScrolled(@NonNull RecyclerView view, int dx, int dy) { updateHeaderElevation(); }
         });
         tabs = findViewById(R.id.myReportsTabs);
-        for (String title : new String[]{"全部", "待处理", "已处理", "已驳回"}) tabs.addTab(tabs.newTab().setText(title));
+        for (String title : getResources().getStringArray(R.array.report_status_options)) tabs.addTab(tabs.newTab().setText(title));
         tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override public void onTabSelected(TabLayout.Tab tab) { if (!binding) { model.filter(tab.getPosition()); render(); } }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
@@ -96,7 +96,7 @@ public abstract class ReportsActivity extends AppCompatActivity {
         if (!isDetailPage() && model.loaded) model.refresh();
     }
     private void back() {
-        if (model.submitting) { Toast.makeText(this, "正在发送，请稍候", Toast.LENGTH_SHORT).show(); return; }
+        if (model.submitting) { Toast.makeText(this, getString(R.string.common_sending_wait), Toast.LENGTH_SHORT).show(); return; }
         finish();
     }
     @Override protected void onSaveInstanceState(@NonNull Bundle out) {
@@ -108,10 +108,10 @@ public abstract class ReportsActivity extends AppCompatActivity {
         if (list.isComputingLayout()) { list.post(this::render); return; }
         binding = true;
         boolean detail = isDetailPage() && model.selected != null;
-        toolbar.setTitle(isDetailPage() ? "报告 #" + getIntent().getLongExtra(EXTRA_REPORT_ID, 0) : getString(R.string.my_reports_title));
+        toolbar.setTitle(isDetailPage() ? getString(R.string.report_number, getIntent().getLongExtra(EXTRA_REPORT_ID, 0)) : getString(R.string.my_reports_title));
         tabs.setVisibility(isDetailPage() ? View.GONE : View.VISIBLE); tabs.selectTab(tabs.getTabAt(model.status));
         composer.setVisibility(detail && !model.needsLogin && model.selected.status == MyReport.PENDING ? View.VISIBLE : View.GONE);
-        send.setEnabled(model.canReply()); send.setText(model.submitting ? "正在发送…" : "发送消息"); input.setEnabled(!model.submitting);
+        send.setEnabled(model.canReply()); send.setText(model.submitting ? getString(R.string.common_sending) : getString(R.string.report_send_message)); input.setEnabled(!model.submitting);
         LinearLayout formatting = findViewById(R.id.myReportFormatting);
         for (int i=0;i<formatting.getChildCount();i++) formatting.getChildAt(i).setEnabled(!model.submitting);
         String draft = model.draft();
@@ -158,17 +158,17 @@ public abstract class ReportsActivity extends AppCompatActivity {
     }
     private void setupFormatting() {
         LinearLayout bar = findViewById(R.id.myReportFormatting);
-        formatButton(bar, "加粗", "format-bold", () -> surround("[b]", "[/b]"));
-        formatButton(bar, "斜体", "format-italic", () -> surround("[i]", "[/i]"));
-        formatButton(bar, "引用", "format-quote-close", () -> surround("[quote]", "[/quote]"));
-        formatButton(bar, "链接", "link", () -> surround("[url=https://]", "[/url]"));
-        formatButton(bar, "表情", "emoticon-outline", () -> FtemojiPicker.show(this, name -> surround(":ftemoji_" + name + ":", "")));
-        formatButton(bar, "预览", "eye-outline", () -> {
+        formatButton(bar, getString(R.string.editor_format_bold_action), "format-bold", () -> surround("[b]", "[/b]"));
+        formatButton(bar, getString(R.string.editor_tool_italic), "format-italic", () -> surround("[i]", "[/i]"));
+        formatButton(bar, getString(R.string.editor_format_quote), "format-quote-close", () -> surround("[quote]", "[/quote]"));
+        formatButton(bar, getString(R.string.editor_format_link), "link", () -> surround("[url=https://]", "[/url]"));
+        formatButton(bar, getString(R.string.emoji_title), "emoticon-outline", () -> FtemojiPicker.show(this, name -> surround(":ftemoji_" + name + ":", "")));
+        formatButton(bar, getString(R.string.common_preview), "eye-outline", () -> {
             TextView preview = new TextView(this); preview.setPadding(dp(20), dp(16), dp(20), dp(16));
             BbCodeRendering.setText(renderer, preview, model.draft());
             ScrollView scroll = new ScrollView(this); scroll.addView(preview);
-            SpoilerSpan.observe(new MaterialAlertDialogBuilder(this).setTitle("消息预览")
-                    .setView(scroll).setPositiveButton("关闭", null).show().getWindow());
+            SpoilerSpan.observe(new MaterialAlertDialogBuilder(this).setTitle(getString(R.string.report_message_preview))
+                    .setView(scroll).setPositiveButton(getString(R.string.common_close), null).show().getWindow());
         });
     }
     private void formatButton(LinearLayout bar, String label, String icon, Runnable action) {
@@ -184,8 +184,8 @@ public abstract class ReportsActivity extends AppCompatActivity {
         input.requestFocus(); input.setSelection(start+before.length()+selected.length());
     }
     private String date(String value) {
-        if (value == null || value.isEmpty()) return "—";
-        try { return OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")); }
+        if (value == null || value.isEmpty()) return getString(R.string.common_missing_value);
+        try { return OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern(getString(R.string.common_date_time))); }
         catch (RuntimeException ignored) { return value; }
     }
     private void openTarget(MyReport report) {
@@ -205,7 +205,7 @@ public abstract class ReportsActivity extends AppCompatActivity {
     }
     private void copy(String label, String value) {
         ((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText(label,value));
-        Toast.makeText(this,"已复制",Toast.LENGTH_SHORT).show();
+        Toast.makeText(this,getString(R.string.common_copied),Toast.LENGTH_SHORT).show();
     }
     private final class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.Holder> {
         final List<Object> rows = new ArrayList<>();
@@ -244,59 +244,59 @@ public abstract class ReportsActivity extends AppCompatActivity {
             holder.itemView.setOnClickListener(null); holder.itemView.setClickable(false); holder.itemView.setFocusable(false);
             if (item instanceof MyReport) {
                 MyReport report = (MyReport)item;
-                text(row,"报告 #"+report.id+" · "+report.statusLabel(),17,true);
-                text(row,report.kindLabel()+" · "+report.targetLabel(),14,false);
-                text(row,"更新于 "+date(report.updated_at),12,false);
+                text(row,getString(R.string.report_status_heading, report.id, report.statusLabel()),17,true);
+                text(row,getString(R.string.report_kind_target, report.kindLabel(), report.targetLabel()),14,false);
+                text(row,getString(R.string.common_updated_at, date(report.updated_at)),12,false);
                 holder.itemView.setFocusable(true); holder.itemView.setOnClickListener(v -> {
                     if (!model.loading) startActivity(new Intent(ReportsActivity.this, ReportDetailActivity.class).putExtra(EXTRA_REPORT_ID, report.id));
                 });
             } else if (item instanceof MyReport.Message) {
                 MyReport.Message message = (MyReport.Message)item;
-                String user = message.user_id <= 0 ? "系统" : message.username == null || message.username.isEmpty() ? "用户 #"+message.user_id : message.username;
-                TextView author = text(row,user+" · "+date(message.created_at),12,false);
+                String user = message.user_id <= 0 ? getString(R.string.inbox_system) : message.username == null || message.username.isEmpty() ? getString(R.string.profile_user_number, message.user_id) : message.username;
+                TextView author = text(row,getString(R.string.report_message_author, user, date(message.created_at)),12,false);
                 if (message.user_id > 0) author.setOnClickListener(v -> startActivity(new Intent(ReportsActivity.this,SiteActivity.class).putExtra(SiteActivity.EXTRA_PATH,"/user/"+message.user_id)));
                 BbCodeRendering.setText(renderer,text(row,"",15,false),message.content == null ? "" : message.content);
             } else switch ((String)item) {
-                case "login": text(row,"登录后查看我的报告",17,true); button(row,"登录 FimTale",() -> DialogHelper.openLogin(ReportsActivity.this)); break;
+                case "login": text(row,getString(R.string.report_login_message),17,true); button(row,getString(R.string.login_title),() -> DialogHelper.openLogin(ReportsActivity.this)); break;
                 case "loading": ShimmerSkeletonView skeleton = new ShimmerSkeletonView(ReportsActivity.this); skeleton.setSkeletonLayout(ShimmerSkeletonView.Layout.DRAFTS); row.addView(skeleton,new LinearLayout.LayoutParams(-1,dp(model.loaded?160:400))); break;
-                case "error": text(row,model.error,14,false); button(row,"重试",model::retry); break;
-                case "unavailable": text(row,"暂无报告",18,true); text(row,"该报告不存在或当前账户无权查看",14,false); break;
-                case "empty": text(row,"暂无报告",18,true); text(row,"当前筛选条件下没有报告记录",14,false); break;
+                case "error": text(row,model.error,14,false); button(row,getString(R.string.common_retry),model::retry); break;
+                case "unavailable": text(row,getString(R.string.report_empty),18,true); text(row,getString(R.string.report_unavailable),14,false); break;
+                case "empty": text(row,getString(R.string.report_empty),18,true); text(row,getString(R.string.report_empty_filtered),14,false); break;
                 case "pagination":
-                    text(row,"第 "+model.page+" 页",14,false);
+                    text(row,getString(R.string.common_page_number, model.page),14,false);
                     LinearLayout navigation = new LinearLayout(ReportsActivity.this); row.addView(navigation);
-                    if (model.page>1) button(navigation,"上一页",() -> model.goToPage(model.page-1));
-                    if (model.hasNext()) button(navigation,"下一页",() -> model.goToPage(model.page+1));
+                    if (model.page>1) button(navigation,getString(R.string.common_previous_page),() -> model.goToPage(model.page-1));
+                    if (model.hasNext()) button(navigation,getString(R.string.common_next_page),() -> model.goToPage(model.page+1));
                     break;
                 case "detail": detail(row,model.selected); break;
-                case "messages": text(row,"消息记录",16,true); if (model.selected.messages().isEmpty()) text(row,"暂无消息",14,false); break;
-                case "closed": text(row,model.selected.statusLabel()+"，此报告已结束",14,false); break;
+                case "messages": text(row,getString(R.string.report_message_history),16,true); if (model.selected.messages().isEmpty()) text(row,getString(R.string.inbox_no_messages),14,false); break;
+                case "closed": text(row,getString(R.string.report_closed_message, model.selected.statusLabel()),14,false); break;
                 case "debug": debug(row,model.selected); break;
             }
         }
         private void detail(LinearLayout row, MyReport report) {
-            text(row,"报告 #"+report.id+" · "+report.statusLabel(),18,true);
-            text(row,"提交于 "+date(report.created_at)+"\n更新于 "+date(report.updated_at),12,false);
+            text(row,getString(R.string.report_status_heading, report.id, report.statusLabel()),18,true);
+            text(row,getString(R.string.report_timestamps, date(report.created_at), date(report.updated_at)),12,false);
             text(row,report.kindLabel(),14,false);
             if (report.targetPath()!=null) button(row,report.targetLabel(),() -> openTarget(report)); else text(row,report.targetLabel(),14,false);
             if (report.payload != null && report.payload.content_snapshot != null && !report.payload.content_snapshot.isEmpty()) {
-                text(row,"提交时内容快照",16,true); BbCodeRendering.setText(renderer,text(row,"",15,false),report.payload.content_snapshot);
+                text(row,getString(R.string.report_content_snapshot),16,true); BbCodeRendering.setText(renderer,text(row,"",15,false),report.payload.content_snapshot);
             }
         }
         private void debug(LinearLayout row, MyReport report) {
-            button(row,(debugExpanded ? "收起" : "展开")+"调试信息（"+report.failures().size()+" 条失败请求）",() -> { debugExpanded=!debugExpanded; render(); });
+            button(row,getString(debugExpanded ? R.string.report_hide_debug : R.string.report_show_debug, report.failures().size()),() -> { debugExpanded=!debugExpanded; render(); });
             if (!debugExpanded) return;
             List<MyReport.Failure> failures = report.failures();
             for(int i=failures.size()-1;i>=0;i--) {
                 MyReport.Failure failure=failures.get(i); if(failure==null) continue;
-                String time=failure.ts==null?"—":date(Instant.ofEpochMilli(failure.ts).atOffset(ZoneOffset.UTC).toString());
-                TextView description=text(row,time+"\n页面："+value(failure.path)+"\n接口："+value(failure.api_path)+"\nHTTP："+(failure.status==0?"网络错误":failure.status),12,false);
+                String time=failure.ts==null?getString(R.string.common_missing_value):date(Instant.ofEpochMilli(failure.ts).atOffset(ZoneOffset.UTC).toString());
+                TextView description=text(row,getString(R.string.report_debug_request, time, value(failure.path), value(failure.api_path), failure.status == 0 ? getString(R.string.error_network) : failure.status),12,false);
                 description.setTextIsSelectable(true);
-                if(failure.rid!=null&&!failure.rid.isEmpty()) { text(row,"rid："+failure.rid,12,false).setTextIsSelectable(true); button(row,"复制 rid",() -> copy("rid",failure.rid)); }
-                if(failure.trace_id!=null&&!failure.trace_id.isEmpty()) { text(row,"trace："+failure.trace_id,12,false).setTextIsSelectable(true); button(row,"复制 trace",() -> copy("trace",failure.trace_id)); }
+                if(failure.rid!=null&&!failure.rid.isEmpty()) { text(row,getString(R.string.report_debug_request_id, failure.rid),12,false).setTextIsSelectable(true); button(row,getString(R.string.report_copy_request_id),() -> copy(getString(R.string.report_rid_clipboard_label),failure.rid)); }
+                if(failure.trace_id!=null&&!failure.trace_id.isEmpty()) { text(row,getString(R.string.report_debug_trace_id, failure.trace_id),12,false).setTextIsSelectable(true); button(row,getString(R.string.report_copy_trace_id),() -> copy(getString(R.string.report_trace_clipboard_label),failure.trace_id)); }
             }
         }
-        private String value(String text) { return text==null||text.isEmpty()?"—":text; }
+        private String value(String text) { return text==null||text.isEmpty()?getString(R.string.common_missing_value):text; }
         final class Holder extends RecyclerView.ViewHolder {
             final LinearLayout body;
             Holder(MaterialCardView card, LinearLayout body) { super(card); this.body=body; }

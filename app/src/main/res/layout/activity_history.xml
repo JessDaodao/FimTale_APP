@@ -66,7 +66,7 @@
                     app:mdiNavigationIcon="arrow-left"
                     app:navigationIconTint="?attr/colorOnSurface"
                     app:titleCentered="false"
-                    app:title="历史记录" />
+                    app:title="@string/history_title" />
             </com.google.android.material.card.MaterialCardView>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>

@@ -1,4 +1,7 @@
 package com.fimtale.model;
+
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +26,7 @@ public final class ChapterNavigation {
         if (next > 0) {
             TopicDetailResponse.ChapterEdge edge = new TopicDetailResponse.ChapterEdge();
             edge.from = chapterId == 0 ? null : chapterId; edge.to = next;
-            edge.label = chapterId == 0 ? "开始阅读" : "下一章";
+            edge.label = chapterId == 0 ? AppStrings.get(R.string.reader_start_reading) : AppStrings.get(R.string.reader_next_chapter);
             result.add(edge);
         }
         return result;

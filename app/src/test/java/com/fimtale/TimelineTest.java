@@ -10,6 +10,8 @@ import java.util.List;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner.class)
+@org.robolectric.annotation.Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 public class TimelineTest {
     private TimelineItem item(int type, int id, String extra) {
         return new Gson().fromJson("{\"type\":" + type + ",\"entity_id\":" + id

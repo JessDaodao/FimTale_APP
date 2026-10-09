@@ -48,11 +48,11 @@ public final class BbCodeEditorLayout extends FrameLayout implements BbCodeEditT
         blockMode = false;
         beginInput(hit.start(), hit.end(), body.getText().subSequence(hit.start(), hit.end()).toString(), hit.bounds,
                 hit.table.padding, hit.cell.source.node.name.equals("th"), hit.cell.layout.getAlignment(),
-                "第 " + (hit.cell.source.row + 1) + " 行，第 " + (hit.cell.source.column + 1) + " 列");
+                getContext().getString(R.string.editor_table_cell_position, hit.cell.source.row + 1, hit.cell.source.column + 1));
     }
     @Override public void editBlock(BbCodeEditText.BlockHit hit) {
         finishCellEditing(); blockMode = true;
-        beginInput(hit.start, hit.end, hit.content, hit.bounds, 0, false, android.text.Layout.Alignment.ALIGN_NORMAL, "编辑内容");
+        beginInput(hit.start, hit.end, hit.content, hit.bounds, 0, false, android.text.Layout.Alignment.ALIGN_NORMAL, getContext().getString(R.string.reader_edit_content));
     }
     private void beginInput(int start, int end, String content, RectF bounds, int padding, boolean header,
             android.text.Layout.Alignment alignment, String description) {

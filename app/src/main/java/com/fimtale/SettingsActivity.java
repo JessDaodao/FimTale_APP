@@ -32,7 +32,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
-            getSupportActionBar().setTitle("设置");
+            getSupportActionBar().setTitle(getString(R.string.settings_title));
         }
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 

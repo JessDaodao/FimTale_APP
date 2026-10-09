@@ -141,7 +141,7 @@ public class ArticleListFragment extends Fragment {
                     else topicAdapter.notifyItemRangeInserted(start, topicViewItemList.size() - start);
                     finishLoading();
                     if (topicViewItemList.isEmpty()) {
-                        errorTextView.setText("暂无文章，点击刷新"); errorTextView.setVisibility(View.VISIBLE);
+                        errorTextView.setText(getString(R.string.work_empty_tap)); errorTextView.setVisibility(View.VISIBLE);
                     }
                 } else showError(requestedPage);
             }

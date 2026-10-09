@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sessions_active">活跃会话</string>
+    <string name="sessions_explanation">以下是当前账号的活跃登录会话和有效 API Token。</string>
+    <string name="sessions_empty">暂无有效会话</string>
+    <string name="sessions_api_token">API Token</string>
+    <string name="sessions_token_explanation">API Token 是长期有效的会话凭证，新 Token 只会在创建后显示一次。</string>
+    <string name="sessions_create_token">创建 API Token</string>
+    <string name="sessions_new_token">新 API Token</string>
+    <string name="sessions_copy_token">复制 Token</string>
+    <string name="sessions_title">账户与会话</string>
+    <string name="sessions_logout">登出</string>
+    <string name="sessions_logout_failed">登出失败，请重试</string>
+    <string name="sessions_token_failed">API Token 创建失败，请重试</string>
+    <string name="sessions_token_copied">Token 已复制</string>
+    <string name="sessions_load_failed">账户加载失败，请重试</string>
+    <string name="sessions_current_account">当前账户：%1$s</string>
+    <string name="sessions_current_token">"%1$s  · 当前会话"</string>
+    <string name="sessions_last_active">最近活动：%1$s</string>
+    <string name="sessions_logout_description">登出会话 %1$s</string>
+    <string name="sessions_token_clipboard_label" translatable="false">FimTale API Token</string>
+</resources>

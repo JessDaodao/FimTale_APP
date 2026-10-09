@@ -3,10 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_toggle_theme"
-        android:title="切换主题"
+        android:title="@string/settings_toggle_theme"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_settings"
-        android:title="设置"
+        android:title="@string/settings_title"
         app:showAsAction="ifRoom" />
 </menu>

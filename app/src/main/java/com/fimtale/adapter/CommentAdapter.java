@@ -1,5 +1,6 @@
 package com.fimtale.adapter;
 
+
 import com.fimtale.utils.MdiIcons;
 
 import android.view.LayoutInflater;
@@ -43,11 +44,10 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
     @Override
     public void onBindViewHolder(@NonNull CommentViewHolder holder, int position) {
         Comment comment = commentList.get(position);
-        holder.tvUserName.setText((comment.pinned ? "置顶 · " : "") + comment.getUserName());
+        holder.tvUserName.setText(comment.pinned ? holder.itemView.getContext().getString(R.string.comments_pinned_author, comment.getUserName()) : comment.getUserName());
         holder.tvTime.setText(comment.getTime());
         BbCodeRendering.setText(markwon, holder.tvContent, comment.getContent());
-        holder.tvChapter.setText("#" + comment.id + " · 评于：" + comment.getChapterTitle()
-                + (comment.replyCommentId > 0 ? " · 回复 #" + comment.replyCommentId : ""));
+        holder.tvChapter.setText(holder.itemView.getContext().getString(R.string.comments_context, comment.id, comment.getChapterTitle(), comment.replyCommentId > 0 ? holder.itemView.getContext().getString(R.string.comments_reply_to, comment.replyCommentId) : ""));
         View.OnClickListener openUser = v -> {
             if (comment.user == null || comment.getUserName() == null || comment.getUserName().isEmpty()) return;
             v.getContext().startActivity(new Intent(v.getContext(), UserDetailActivity.class)

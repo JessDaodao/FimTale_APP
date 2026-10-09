@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="work_read_label">阅读</string>
+    <string name="work_author_suffix">著</string>
+    <string name="work_like">点赞</string>
+    <string name="work_hp_action">投HP</string>
+    <string name="work_hp_title">投送 HP</string>
+    <string name="work_label">作品</string>
+    <string name="work_recommender_prefix">"推荐者: "</string>
+    <string name="work_author_prefix">"作者: "</string>
+    <string name="work_create_share_image">生成分享图</string>
+    <string name="work_type_post">帖子</string>
+    <string name="work_share_qr_hint">长按或扫描二维码阅读</string>
+    <string name="work_cover_description">作品封面</string>
+    <string name="work_type_article">文章</string>
+    <string name="work_type_gallery">图集</string>
+    <string name="work_length_long">长篇</string>
+    <string name="work_length_medium">中篇</string>
+    <string name="work_length_short">短篇</string>
+    <string name="work_origin_original">原创</string>
+    <string name="work_origin_translation">翻译</string>
+    <string name="work_origin_repost">转载</string>
+    <string name="work_status_ongoing">连载中</string>
+    <string name="work_status_finished">已完结</string>
+    <string name="work_status_paused">已暂停</string>
+    <string name="work_status_abandoned">已弃坑</string>
+    <string name="work_type_announcement">公告</string>
+    <string name="work_list_title">文章列表</string>
+    <string name="work_sort_default">默认排序</string>
+    <string name="work_sort_created">发表时间</string>
+    <string name="work_sort_updated">更新时间</string>
+    <string name="work_sort_commented">最后评论</string>
+    <string name="work_sort_characters">字数排序</string>
+    <string name="work_sort_comments">评论数排序</string>
+    <string name="work_sort_views">阅读数排序</string>
+    <string name="work_sort_rating">总体评分</string>
+    <string name="work_choose_sort">选择排序方式</string>
+    <string name="work_empty_tap">暂无文章，点击刷新</string>
+    <string name="work_share_preview">分享图预览</string>
+    <string name="work_share_saved">分享图已保存至相册</string>
+    <string name="work_detail_title">文章详情</string>
+    <string name="work_empty">暂无文章</string>
+    <string name="work_view">查看作品</string>
+    <string name="work_chapter_label">章节</string>
+    <string name="work_other_tags">其他标签</string>
+    <string name="work_interactions_load_failed">互动状态加载失败，点击重试</string>
+    <string name="work_like_uncertain">未收到点赞结果，正在核对状态</string>
+    <string name="work_favorites_failed">收藏夹加载失败，请重试</string>
+    <string name="work_hp_message">确定要给这篇作品的作者投送 HighPraise 吗？每个 HP 会从你的账户扣除 50 比特，作者获得 100 比特。HP 一经投送无法撤回。</string>
+    <string name="work_hp_one">投 1 个</string>
+    <string name="work_hp_two">投 2 个</string>
+    <string name="work_hp_uncertain">未收到投 HP 结果，正在核对状态</string>
+    <string name="work_default_favorites">默认收藏夹</string>
+    <string name="work_favorite_choose">收藏到（取消勾选可移除）</string>
+    <string name="work_favorites_uncertain">收藏未全部完成，正在核对状态</string>
+    <string name="work_statistics">%1$d 字 · %2$d 阅读 · %3$d 评论 · %4$d 收藏</string>
+    <string name="work_character_count">%1$d 字</string>
+    <string name="work_number">作品 %1$d</string>
+    <string name="work_recommender">推荐者: %1$s</string>
+    <string name="work_author">作者: %1$s</string>
+    <string name="work_unlike_description">取消点赞，%1$d</string>
+    <string name="work_like_description">点赞，%1$d</string>
+    <string name="work_favorited_description">管理收藏夹，已收藏，%1$d</string>
+    <string name="work_favorite_description">收藏到收藏夹，%1$d</string>
+    <string name="work_hp_sent_description">已投 HP，作品收到 %1$d 个</string>
+    <string name="work_hp_description">投送 HP，作品收到 %1$d 个</string>
+    <string name="work_favorite_folder">收藏夹 %1$d</string>
+    <string name="work_chapter_number">章节 %1$d</string>
+    <string name="work_rating_everyone" translatable="false">Everyone</string>
+    <string name="work_rating_teen" translatable="false">Teen</string>
+    <string name="work_rating_restricted" translatable="false">Restricted</string>
+    <string-array name="work_sort_options">
+        <item>@string/work_sort_default</item>
+        <item>@string/work_sort_created</item>
+        <item>@string/work_sort_updated</item>
+        <item>@string/work_sort_commented</item>
+        <item>@string/work_sort_characters</item>
+        <item>@string/work_sort_comments</item>
+        <item>@string/work_sort_views</item>
+        <item>@string/work_sort_rating</item>
+    </string-array>
+    <string-array name="work_type_labels">
+        <item>@string/work_type_article</item>
+        <item>@string/work_type_gallery</item>
+        <item>@string/work_type_post</item>
+        <item>@string/work_type_announcement</item>
+    </string-array>
+    <string-array name="work_origin_labels">
+        <item>@string/work_origin_original</item>
+        <item>@string/work_origin_translation</item>
+        <item>@string/work_origin_repost</item>
+    </string-array>
+    <string-array name="work_rating_labels">
+        <item>@string/work_rating_everyone</item>
+        <item>@string/work_rating_teen</item>
+        <item>@string/work_rating_restricted</item>
+    </string-array>
+    <string-array name="work_length_labels">
+        <item>@string/work_length_long</item>
+        <item>@string/work_length_medium</item>
+        <item>@string/work_length_short</item>
+    </string-array>
+    <string-array name="work_status_labels">
+        <item>@string/work_status_ongoing</item>
+        <item>@string/work_status_finished</item>
+        <item>@string/work_status_paused</item>
+        <item>@string/work_status_abandoned</item>
+    </string-array>
+    <string name="work_link_clipboard_label" translatable="false">FimTale Link</string>
+</resources>

@@ -73,9 +73,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 logoutPref.setVisible(true);
                 logoutPref.setOnPreferenceClickListener(preference -> {
                     new MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("退出登录")
-                            .setMessage("确定要退出登录吗？")
-                            .setPositiveButton("确定", (dialog, which) -> {
+                            .setTitle(getString(R.string.login_logout))
+                            .setMessage(getString(R.string.login_logout_message))
+                            .setPositiveButton(getString(R.string.common_confirm), (dialog, which) -> {
                                 com.fimtale.network.RetrofitClient.getInstance().logout(UserPreferences.getToken(requireContext())).enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
                                     @Override public void onResponse(retrofit2.Call<okhttp3.ResponseBody> call, retrofit2.Response<okhttp3.ResponseBody> response) {
                                         if (response.body() != null) response.body().close();
@@ -84,10 +84,10 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                                 });
                                 UserPreferences.clearSession(requireContext());
                                 CacheManager.getInstance(requireContext()).clearAllCache(null);
-                                Toast.makeText(requireContext(), "已退出登录", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(requireContext(), getString(R.string.login_signed_out), Toast.LENGTH_SHORT).show();
                                 getActivity().finish();
                             })
-                            .setNegativeButton("取消", null)
+                            .setNegativeButton(getString(R.string.common_cancel), null)
                             .show();
                     return true;
                 });
@@ -129,16 +129,16 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         if (clearCachePref != null) {
             clearCachePref.setOnPreferenceClickListener(preference -> {
                 new MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("清除缓存")
-                        .setMessage("确定要清除所有已缓存的章节吗？")
-                        .setPositiveButton("确定", (dialog, which) ->
+                        .setTitle(getString(R.string.settings_clear_cache))
+                        .setMessage(getString(R.string.settings_clear_cache_message))
+                        .setPositiveButton(getString(R.string.common_confirm), (dialog, which) ->
                                 CacheManager.getInstance(requireContext()).clearAllCache(() -> {
                                     if (cacheSizePref != null) {
                                         cacheSizePref.setSummary(formatBytes(0));
                                     }
-                                    Toast.makeText(requireContext(), "缓存已清除", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(requireContext(), getString(R.string.settings_cache_cleared), Toast.LENGTH_SHORT).show();
                                 }))
-                        .setNegativeButton("取消", null)
+                        .setNegativeButton(getString(R.string.common_cancel), null)
                         .show();
                 return true;
             });
@@ -146,10 +146,10 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     }
     
     private String formatBytes(long bytes) {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
-        if (bytes < 1024L * 1024 * 1024) return String.format("%.1f MB", bytes / (1024.0 * 1024));
-        return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+        if (bytes < 1024) return getString(R.string.settings_size_bytes, bytes);
+        if (bytes < 1024 * 1024) return getString(R.string.settings_size_kilobytes, bytes / 1024.0);
+        if (bytes < 1024L * 1024 * 1024) return getString(R.string.settings_size_megabytes, bytes / (1024.0 * 1024));
+        return getString(R.string.settings_size_gigabytes, bytes / (1024.0 * 1024 * 1024));
     }
 
     @Override

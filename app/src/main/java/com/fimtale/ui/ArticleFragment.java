@@ -81,7 +81,7 @@ public class ArticleFragment extends Fragment {
         btnLogin = view.findViewById(R.id.btnLogin);
         tvNoResults = view.findViewById(R.id.tvNoResults);
 
-        tabLayout.addTab(tabLayout.newTab().setText("全部"));
+        tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.common_all)));
         tabLayout.setVisibility(View.GONE);
 
         setupRecyclerView();
@@ -181,7 +181,7 @@ public class ArticleFragment extends Fragment {
     }
 
     private void showFilterDialog() {
-        final String[] options = {"默认排序", "发表时间", "更新时间", "最后评论", "字数排序", "评论数排序", "阅读数排序", "总体评分"};
+        final String[] options = getResources().getStringArray(R.array.work_sort_options);
         final String[] values = {"", "created_at", "last_chapter_at", "commented_at", "count_character", "count_comment", "count_view", "wilson_score"};
         
         int checkedItem = 0;
@@ -193,7 +193,7 @@ public class ArticleFragment extends Fragment {
         }
 
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("选择排序方式")
+                .setTitle(getString(R.string.work_choose_sort))
                 .setSingleChoiceItems(options, checkedItem, (dialog, which) -> {
                     currentSortBy = values[which];
                     dialog.dismiss();
@@ -233,13 +233,13 @@ public class ArticleFragment extends Fragment {
                         adapter.notifyDataSetChanged(); recyclerView.scrollToPosition(0);
                     } else adapter.notifyItemRangeInserted(start, dataList.size() - start);
                     finishLoading();
-                    tvNoResults.setText("未找到搜索结果");
+                    tvNoResults.setText(getString(R.string.search_no_results));
                     tvNoResults.setVisibility(dataList.isEmpty() ? View.VISIBLE : View.GONE);
                 } else loadFailed(requestedPage, com.fimtale.network.ApiErrors.message(response));
             }
             @Override public void onFailure(Call<TopicListResponse> call, Throwable t) {
                 if (!isAdded() || getView() == null || call.isCanceled() || call != topicsCall) return;
-                loadFailed(requestedPage, "加载失败，请重试");
+                loadFailed(requestedPage, getString(R.string.common_load_failed_retry));
             }
         });
     }

@@ -1,5 +1,6 @@
 package com.fimtale.ui;
 
+
 import com.fimtale.utils.MdiIcons;
 
 import android.content.Context;
@@ -93,7 +94,7 @@ public final class FtemojiPicker {
 
         @Override public void onBindViewHolder(Holder holder, int position) {
             String name = NAMES[position];
-            holder.button.setContentDescription("插入表情 " + name);
+            holder.button.setContentDescription(context.getString(R.string.emoji_insert_description, name));
             holder.button.setOnClickListener(v -> onSelected.accept(name));
             if (holder.target != null) Glide.with(context).clear(holder.target);
             holder.button.setIcon(MdiIcons.drawable(context, "emoticon-outline"));

@@ -14,7 +14,7 @@
                 android:textAppearance="?attr/textAppearanceBodyMedium" android:textColor="?attr/colorOnSurfaceVariant" />
             <com.google.android.material.button.MaterialButton android:id="@+id/timelineComposeAction"
                 style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="发帖" />
+                android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/timeline_post" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

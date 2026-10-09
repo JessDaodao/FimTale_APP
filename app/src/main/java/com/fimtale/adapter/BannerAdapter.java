@@ -1,5 +1,6 @@
 package com.fimtale.adapter;
 
+
 import com.fimtale.utils.MdiIcons;
 
 import android.graphics.RenderEffect;
@@ -54,10 +55,10 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
         holder.introTextView.setText(topic.getRecommendWord());
 
         if (holder.recommenderTextView != null) {
-            holder.recommenderTextView.setText("推荐者: " + (topic.getRecommenderName() != null ? topic.getRecommenderName() : "未知"));
+            holder.recommenderTextView.setText(holder.itemView.getContext().getString(R.string.work_recommender, topic.getRecommenderName() != null ? topic.getRecommenderName() : holder.itemView.getContext().getString(R.string.common_unknown)));
         }
         if (holder.authorTextView != null) {
-            holder.authorTextView.setText("作者: " + (topic.getAuthorName() != null ? topic.getAuthorName() : "未知"));
+            holder.authorTextView.setText(holder.itemView.getContext().getString(R.string.work_author, topic.getAuthorName() != null ? topic.getAuthorName() : holder.itemView.getContext().getString(R.string.common_unknown)));
         }
 
         Glide.with(holder.itemView.getContext())

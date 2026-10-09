@@ -62,7 +62,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         private LinearProgressIndicator progressIndicator;
         private TextView tvProgress;
         private TextView tvDate;
-        private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+        private SimpleDateFormat dateFormat = new SimpleDateFormat(itemView.getContext().getString(R.string.common_date_time), Locale.getDefault());
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -77,7 +77,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             int progressPercent = (int) (topic.getProgress() * 100);
             int progressValue = (int) (topic.getProgress() * 1000);
             progressIndicator.setProgress(progressValue);
-            tvProgress.setText(progressPercent + "%");
+            tvProgress.setText(itemView.getContext().getString(R.string.common_percent, progressPercent));
             
             String dateStr = dateFormat.format(new Date(topic.getDateCreated() * 1000L));
             tvDate.setText(dateStr);

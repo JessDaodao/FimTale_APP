@@ -1,5 +1,7 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -26,7 +28,7 @@ final class EditorCollapseSpan implements LeadingMarginSpan {
         this.editor = editor;
         this.node = node;
         String title = node.argument;
-        this.title = title.trim().isEmpty() ? "点击展开" : VisualEditing.decodeEntities(title).replace('\n', ' ');
+        this.title = title.trim().isEmpty() ? editor.getContext().getString(R.string.bbcode_expand_default) : VisualEditing.decodeEntities(title).replace('\n', ' ');
         this.headerOffset = headerOffset;
         padding = Math.max(1, Math.round(12 * editor.getResources().getDisplayMetrics().density));
         titlePaint = new TextPaint(editor.getPaint());
@@ -53,7 +55,7 @@ final class EditorCollapseSpan implements LeadingMarginSpan {
         box.setColor(ColorUtils.setAlphaComponent(editor.getCurrentTextColor(), 12));
         canvas.drawRoundRect(bounds, padding, padding, box);
         titlePaint.setColor(editor.getCurrentTextColor());
-        CharSequence label = TextUtils.ellipsize("▾ " + title, titlePaint,
+        CharSequence label = TextUtils.ellipsize(editor.getContext().getString(R.string.editor_collapse_heading, title), titlePaint,
                 Math.max(1, bounds.width() - padding * 2), TextUtils.TruncateAt.END);
         canvas.drawText(label, 0, label.length(), bounds.left + padding,
                 bounds.top + padding - titlePaint.ascent(), titlePaint);

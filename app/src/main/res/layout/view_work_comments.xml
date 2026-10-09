@@ -6,10 +6,10 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical">
         <TextView android:id="@+id/commentsTitle" android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:text="评论" android:textAppearance="?attr/textAppearanceTitleLarge"
+            android:layout_weight="1" android:text="@string/comments_title" android:textAppearance="?attr/textAppearanceTitleLarge"
             android:accessibilityHeading="true" android:textColor="?attr/colorOnSurface"/>
         <com.google.android.material.button.MaterialButton android:id="@+id/commentsSort" style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="从早到晚"/>
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/comments_oldest_first"/>
     </LinearLayout>
     <androidx.recyclerview.widget.RecyclerView android:id="@+id/commentsList" android:layout_width="match_parent"
         android:layout_height="wrap_content" android:nestedScrollingEnabled="false"/>
@@ -20,11 +20,11 @@
     <LinearLayout android:id="@+id/commentsPager" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:gravity="center_vertical" android:orientation="horizontal" android:visibility="gone">
         <com.google.android.material.button.MaterialButton android:id="@+id/commentsPrevious" style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="上一页"/>
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/common_previous_page"/>
         <TextView android:id="@+id/commentsPage" android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:gravity="center" android:textColor="?attr/colorOnSurfaceVariant"/>
         <com.google.android.material.button.MaterialButton android:id="@+id/commentsNext" style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="下一页"/>
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/common_next_page"/>
     </LinearLayout>
     <LinearLayout
         android:id="@+id/commentComposerBar"
@@ -35,7 +35,7 @@
         <com.fimtale.ui.icons.MdiTextInputLayout
             android:id="@+id/commentComposerInputLayout"
             android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:hint="发表评论" style="@style/Widget.Fimtale.TextInputLayout">
+            android:hint="@string/comments_post_hint" style="@style/Widget.Fimtale.TextInputLayout">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/commentComposerInput"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -45,10 +45,10 @@
         <com.fimtale.ui.icons.MdiButton
             android:id="@+id/commentComposerEmoji" style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="48dp" android:layout_height="48dp" android:layout_marginStart="6dp"
-            android:contentDescription="插入表情" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="emoticon-happy-outline" />
+            android:contentDescription="@string/editor_tool_emoji" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="emoticon-happy-outline" />
         <com.fimtale.ui.icons.MdiButton
             android:id="@+id/commentComposerSend" style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="52dp" android:layout_height="52dp" android:layout_marginStart="8dp"
-            android:contentDescription="发送评论" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="send" />
+            android:contentDescription="@string/comments_send_description" app:iconSize="@dimen/mdi_icon_size" app:mdiIcon="send" />
     </LinearLayout>
 </LinearLayout>

@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34, application = Application.class)
+@Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class InlineTableEditorTest {
     private ActivityController<AppCompatActivity> controller;

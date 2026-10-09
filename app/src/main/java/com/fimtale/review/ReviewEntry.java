@@ -1,5 +1,8 @@
 package com.fimtale.review;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.google.gson.annotations.SerializedName;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -15,7 +18,7 @@ public class ReviewEntry {
     @SerializedName("updated_at") public String updatedAt;
     public Payload payload;
 
-    public String title() { return workTitle == null || workTitle.isEmpty() ? "作品 " + workId : workTitle; }
+    public String title() { return workTitle == null || workTitle.isEmpty() ? AppStrings.get(R.string.work_number, workId) : workTitle; }
     public String reason() { return payload == null || payload.reason == null ? "" : payload.reason; }
     public Long resubmitTime() {
         if (payload == null || payload.resubmitAfter == null || payload.resubmitAfter.trim().isEmpty()) return null;
@@ -31,7 +34,7 @@ public class ReviewEntry {
     public static String date(String value) {
         if (value == null || value.isEmpty() || value.startsWith("0001-")) return "";
         try { return OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")); }
+                .format(DateTimeFormatter.ofPattern(AppStrings.get(R.string.common_date_time))); }
         catch (RuntimeException ignored) { return value; }
     }
     public static class Payload {

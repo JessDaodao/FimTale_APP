@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_works">搜索文章</string>
+    <string name="search_submit_description">提交搜索</string>
+    <string name="search_history">搜索历史</string>
+    <string name="search_clear_all">清除全部</string>
+    <string name="search_title">搜索</string>
+    <string name="search_no_results">未找到搜索结果</string>
+    <string name="search_clear_history_message">是否清除所有搜索历史？</string>
+    <string name="search_query_required">请输入搜索内容</string>
+    <string name="search_empty_hint">输入关键词开始搜索</string>
+</resources>

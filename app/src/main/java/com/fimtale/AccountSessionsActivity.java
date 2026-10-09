@@ -56,7 +56,7 @@ public class AccountSessionsActivity extends AppCompatActivity {
         MaterialToolbar toolbar = findViewById(R.id.accountToolbar);
         toolbar.setTitle("");
         toolbar.setBackground(null);
-        ((TextView) findViewById(R.id.accountToolbarTitle)).setText("账户与会话");
+        ((TextView) findViewById(R.id.accountToolbarTitle)).setText(getString(R.string.sessions_title));
         toolbar.setNavigationOnClickListener(v -> finish());
         ScrollView scroll = findViewById(R.id.accountScroll);
         pageError = com.fimtale.ui.PageErrorView.wrap(scroll);
@@ -86,7 +86,7 @@ public class AccountSessionsActivity extends AppCompatActivity {
             return;
         }
         String username = UserPreferences.getUserName(this);
-        summary.setText(TextUtils.isEmpty(username) ? "当前已登录 FimTale 账户" : "当前账户：" + username);
+        summary.setText(TextUtils.isEmpty(username) ? getString(R.string.profile_logged_in) : getString(R.string.sessions_current_account, username));
         loadSessions();
     }
 
@@ -128,14 +128,14 @@ public class AccountSessionsActivity extends AppCompatActivity {
             row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
             int pad = dp(12); row.setPadding(pad, pad, 0, pad);
             LinearLayout details = new LinearLayout(this); details.setOrientation(LinearLayout.VERTICAL);
-            TextView label = new TextView(this); label.setText(session.tokenPrefix + (current ? "  · 当前会话" : ""));
+            TextView label = new TextView(this); label.setText(current ? getString(R.string.sessions_current_token, session.tokenPrefix) : session.tokenPrefix);
             label.setTypeface(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD);
-            TextView activity = new TextView(this); activity.setText("最近活动：" + formatDate(session.lastActivity));
+            TextView activity = new TextView(this); activity.setText(getString(R.string.sessions_last_active, formatDate(session.lastActivity)));
             activity.setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
             details.addView(label); details.addView(activity);
             row.addView(details, new LinearLayout.LayoutParams(0, -2, 1));
             MaterialButton logout = new MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle);
-            logout.setText("登出"); logout.setContentDescription("登出会话 " + session.tokenPrefix);
+            logout.setText(getString(R.string.sessions_logout)); logout.setContentDescription(getString(R.string.sessions_logout_description, session.tokenPrefix));
             logout.setOnClickListener(v -> logout(session));
             row.addView(logout, new LinearLayout.LayoutParams(-2, -2));
             sessions.addView(row, new LinearLayout.LayoutParams(-1, -2));
@@ -160,7 +160,7 @@ public class AccountSessionsActivity extends AppCompatActivity {
             }
             @Override public void onFailure(@NonNull Call<Void> call, @NonNull Throwable error) {
                 if (!valid(call, logoutCall)) return;
-                logoutCall = null; showError("登出失败，请重试");
+                logoutCall = null; showError(getString(R.string.sessions_logout_failed));
             }
         });
     }
@@ -181,7 +181,7 @@ public class AccountSessionsActivity extends AppCompatActivity {
             @Override public void onFailure(@NonNull Call<String> call, @NonNull Throwable error) {
                 if (!valid(call, createTokenCall)) return;
                 createTokenCall = null; findViewById(R.id.accountCreateToken).setEnabled(true);
-                showError("API Token 创建失败，请重试");
+                showError(getString(R.string.sessions_token_failed));
             }
         });
     }
@@ -190,8 +190,8 @@ public class AccountSessionsActivity extends AppCompatActivity {
         String value = tokenView.input.getText() == null ? "" : tokenView.input.getText().toString();
         if (value.isEmpty()) return;
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        if (clipboard != null) { clipboard.setPrimaryClip(ClipData.newPlainText("FimTale API Token", value));
-            android.widget.Toast.makeText(this, "Token 已复制", android.widget.Toast.LENGTH_SHORT).show(); }
+        if (clipboard != null) { clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.sessions_token_clipboard_label), value));
+            android.widget.Toast.makeText(this, getString(R.string.sessions_token_copied), android.widget.Toast.LENGTH_SHORT).show(); }
     }
 
     private void setLoading(boolean loading) {
@@ -216,9 +216,9 @@ public class AccountSessionsActivity extends AppCompatActivity {
         getTheme().resolveAttribute(attr, value, true); return value.data;
     }
     private String formatDate(String value) {
-        if (TextUtils.isEmpty(value)) return "未知";
+        if (TextUtils.isEmpty(value)) return getString(R.string.common_unknown);
         try { return OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")); }
+                .format(DateTimeFormatter.ofPattern(getString(R.string.common_date_time))); }
         catch (RuntimeException ignored) { return value; }
     }
 

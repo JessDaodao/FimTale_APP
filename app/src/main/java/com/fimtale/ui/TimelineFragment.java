@@ -145,7 +145,7 @@ public final class TimelineFragment extends Fragment {
             @Override public void onFailure(Call<List<TimelineItem>> call, Throwable cause) {
                 calls.remove(call);
                 if (!accepts(request)) { reconcileExpiredSession(request); return; }
-                loading = false; failLoad("动态加载失败，请检查网络后重试");
+                loading = false; failLoad(getString(R.string.timeline_load_failed));
             }
         });
     }
@@ -175,7 +175,7 @@ public final class TimelineFragment extends Fragment {
                 calls.remove(call);
                 if (!accepts(request)) return;
                 loadingAuth = false;
-                authError = "暂时无法加载发帖权限。";
+                authError = getString(R.string.timeline_permission_failed);
                 render();
             }
         });
@@ -194,14 +194,14 @@ public final class TimelineFragment extends Fragment {
                     calls.remove(call);
                     if (!accepts(request)) { reconcileExpiredSession(request); return; }
                     activating = false;
-                    if (response.isSuccessful()) { toast("空间已开通"); loadAuth(); }
+                    if (response.isSuccessful()) { toast(getString(R.string.timeline_space_opened)); loadAuth(); }
                     else toast(ApiErrors.message(response));
                     render();
                 }
                 @Override public void onFailure(Call<Void> call, Throwable cause) {
                     calls.remove(call);
                     if (!accepts(request)) return;
-                    activating = false; toast("暂时无法确认开通结果，请下拉刷新后重试"); render();
+                    activating = false; toast(getString(R.string.timeline_open_space_uncertain)); render();
                 }
             });
         }
@@ -244,13 +244,13 @@ public final class TimelineFragment extends Fragment {
                 calls.remove(call);
                 if (!accepts(request)) { reconcileExpiredSession(request); return; }
                 reposting.remove(item.key()); adapter.notifyDataSetChanged();
-                toast(response.isSuccessful() ? "已转发" : ApiErrors.message(response));
+                toast(response.isSuccessful() ? getString(R.string.timeline_shared) : ApiErrors.message(response));
             }
             @Override public void onFailure(Call<Void> call, Throwable cause) {
                 calls.remove(call);
                 if (!accepts(request)) return;
                 reposting.remove(item.key()); adapter.notifyDataSetChanged();
-                toast("未能确认转发结果，请稍后查看动态");
+                toast(getString(R.string.timeline_share_uncertain));
             }
         });
     }
@@ -269,22 +269,22 @@ public final class TimelineFragment extends Fragment {
         skeleton.setVisibility(replacing ? View.VISIBLE : View.GONE);
         list.setVisibility(guest || replacing ? View.INVISIBLE : View.VISIBLE);
         state.setVisibility(guest ? View.VISIBLE : View.GONE);
-        stateTitle.setText(guest ? "登录后查看关注动态" : error);
-        stateAction.setText(guest ? "登录" : "重试");
+        stateTitle.setText(guest ? getString(R.string.timeline_login_message) : error);
+        stateAction.setText(guest ? getString(R.string.common_login) : getString(R.string.common_retry));
         boolean canPost = !guest && auth != null && auth.canPost();
         boolean needsSpace = !guest && auth != null && auth.needsSpace();
         composeCard.setVisibility(canPost || needsSpace ? View.VISIBLE : View.GONE);
-        composeHint.setText(canPost ? "发个帖子，分享此刻……" : "开通空间后即可发帖");
-        composeAction.setText(canPost ? "发帖" : activating ? "开通中…" : "开通空间");
+        composeHint.setText(canPost ? getString(R.string.timeline_post_hint) : getString(R.string.timeline_space_required));
+        composeAction.setText(canPost ? getString(R.string.timeline_post) : activating ? getString(R.string.timeline_opening_space) : getString(R.string.timeline_open_space));
         composeAction.setEnabled(!activating && !loadingAuth);
         composeCard.setEnabled(!activating && !loadingAuth);
-        footerText.setText(error != null ? error : loading ? "正在加载…"
-                : feed.items.isEmpty() ? "暂无动态\n关注更多用户/频道，最新动态不错过"
-                : feed.finished ? "到底了" : "");
+        footerText.setText(error != null ? error : loading ? getString(R.string.common_loading_active)
+                : feed.items.isEmpty() ? getString(R.string.timeline_empty)
+                : feed.finished ? getString(R.string.common_list_end) : "");
         footerText.setVisibility(footerText.length() > 0 ? View.VISIBLE : View.GONE);
         loadMore.setVisibility(!guest && (error != null || !feed.finished) ? View.VISIBLE : View.GONE);
         loadMore.setEnabled(!loading);
-        loadMore.setText(error != null ? "重试" : loading ? "加载中…" : "加载更多");
+        loadMore.setText(error != null ? getString(R.string.common_retry) : loading ? getString(R.string.common_loading) : getString(R.string.common_load_more));
     }
     private void toast(String message) { Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show(); }
 

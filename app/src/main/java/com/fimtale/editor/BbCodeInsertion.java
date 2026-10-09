@@ -1,5 +1,8 @@
 package com.fimtale.editor;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.fimtale.utils.BbCode;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -53,7 +56,7 @@ public final class BbCodeInsertion {
         return new Fragment(text, first, first + lines[0].length(), true);
     }
     public static Fragment table(int rows, int columns, boolean header, String selected) {
-        if (rows < 1 || rows > 20 || columns < 1 || columns > 10) throw new IllegalArgumentException("表格支持 1–20 行、1–10 列");
+        if (rows < 1 || rows > 20 || columns < 1 || columns > 10) throw new IllegalArgumentException(AppStrings.get(R.string.editor_table_size_invalid));
         StringBuilder text = new StringBuilder("[table]\n"); int start = 0, end = 0;
         for (int r = 0; r < rows; r++) {
             text.append("[tr]");
@@ -84,27 +87,27 @@ public final class BbCodeInsertion {
             int size = Integer.parseInt(value.trim());
             if (size > 0 && size <= 4096) return " " + name + "=" + size;
         } catch (NumberFormatException ignored) {}
-        throw new IllegalArgumentException("图片宽高需为 1–4096 的整数，或留空");
+        throw new IllegalArgumentException(AppStrings.get(R.string.editor_image_dimensions_invalid));
     }
     public static String validUrl(String input, boolean image) {
         String url = input.trim(), checked = BbCode.safeUrl(url, image);
-        if (checked == null) throw new IllegalArgumentException("请输入有效的 http(s) 网址或站内路径");
+        if (checked == null) throw new IllegalArgumentException(AppStrings.get(R.string.editor_url_invalid));
         return checked;
     }
     public static Fragment mention(int userId, String username) {
-        if (userId <= 0 || username.trim().isEmpty()) throw new IllegalArgumentException("未找到此用户");
+        if (userId <= 0 || username.trim().isEmpty()) throw new IllegalArgumentException(AppStrings.get(R.string.editor_user_not_found));
         return atom("[mention=" + userId + "]" + literal(username.trim()) + "[/mention]", false);
     }
     public static Fragment reference(int type, int id, String description) {
-        if (id <= 0 || !(type == 1 || type == 3 || type == 4 || type == 5 || type == 7)) throw new IllegalArgumentException("请输入有效的引用 ID");
+        if (id <= 0 || !(type == 1 || type == 3 || type == 4 || type == 5 || type == 7)) throw new IllegalArgumentException(AppStrings.get(R.string.editor_reference_id_invalid));
         return atom("[ref type=" + type + " id=" + id + "]" + literal(description) + "[/ref]", true);
     }
     public static String literal(String text) { return text.replace("[", "&#91;").replace("]", "&#93;"); }
     public static String attribute(String text) {
         String value = literal(text);
-        if (value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0) throw new IllegalArgumentException("名称或说明请使用单行文字");
+        if (value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0) throw new IllegalArgumentException(AppStrings.get(R.string.editor_single_line_required));
         if (!value.contains("\"")) return "\"" + value + "\"";
         if (!value.contains("'")) return "'" + value + "'";
-        throw new IllegalArgumentException("名称或说明中请只使用一种引号");
+        throw new IllegalArgumentException(AppStrings.get(R.string.editor_quotes_invalid));
     }
 }

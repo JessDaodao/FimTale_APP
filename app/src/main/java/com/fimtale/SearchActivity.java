@@ -95,7 +95,7 @@ public class SearchActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeAsUpIndicator(MdiIcons.drawable(this, "arrow-left"));
-            getSupportActionBar().setTitle("搜索");
+            getSupportActionBar().setTitle(getString(R.string.search_title));
         }
         toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -152,13 +152,13 @@ public class SearchActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) {}
         });
         clearHistoryButton.setOnClickListener(v -> new MaterialAlertDialogBuilder(this)
-                .setTitle("确认清除")
-                .setMessage("是否清除所有搜索历史？")
-                .setPositiveButton("清除", (dialog, which) -> {
+                .setTitle(getString(R.string.common_confirm_clear))
+                .setMessage(getString(R.string.search_clear_history_message))
+                .setPositiveButton(getString(R.string.common_clear), (dialog, which) -> {
                     UserPreferences.clearSearchHistory(this);
                     showHistory();
                 })
-                .setNegativeButton("取消", null)
+                .setNegativeButton(getString(R.string.common_cancel), null)
                 .show());
         loadingStatus.setOnClickListener(v -> submitSearch());
         swipeRefreshLayout.setOnChildScrollUpCallback((parent, child) -> isLoading
@@ -199,7 +199,7 @@ public class SearchActivity extends AppCompatActivity {
     private void submitSearch() {
         String query = searchInput.getText() == null ? "" : searchInput.getText().toString().trim();
         if (query.isEmpty()) {
-            MdiIcons.setError(searchInput, "请输入搜索内容");
+            MdiIcons.setError(searchInput, getString(R.string.search_query_required));
             showHistory();
             return;
         }
@@ -221,7 +221,7 @@ public class SearchActivity extends AppCompatActivity {
         List<String> history = UserPreferences.getSearchHistory(this);
         historyAdapter.updateData(history);
         historyPanel.setVisibility(history.isEmpty() ? View.GONE : View.VISIBLE);
-        loadingStatus.setText("输入关键词开始搜索");
+        loadingStatus.setText(getString(R.string.search_empty_hint));
         loadingStatus.setVisibility(history.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
@@ -258,7 +258,7 @@ public class SearchActivity extends AppCompatActivity {
                     finishLoading();
                     recyclerView.scrollToPosition(requestedPage == 1 ? 0 : start);
                     if (topicItems.isEmpty()) {
-                        loadingStatus.setText("未找到搜索结果");
+                        loadingStatus.setText(getString(R.string.search_no_results));
                         loadingStatus.setVisibility(View.VISIBLE);
                     }
                 } else showLoadError(page, ApiErrors.message(response));
@@ -266,7 +266,7 @@ public class SearchActivity extends AppCompatActivity {
 
             @Override public void onFailure(Call<TopicListResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || call.isCanceled() || call != topicsCall) return;
-                showLoadError(page, "暂时无法连接服务器，请检查网络后重试。");
+                showLoadError(page, getString(R.string.error_network_retry));
             }
         });
     }
@@ -286,14 +286,14 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void showFilterDialog() {
-        final String[] options = {"默认排序", "发表时间", "更新时间", "最后评论", "字数排序", "评论数排序", "阅读数排序", "总体评分"};
+        final String[] options = getResources().getStringArray(R.array.work_sort_options);
         final String[] values = {"", "created_at", "last_chapter_at", "commented_at", "count_character", "count_comment", "count_view", "wilson_score"};
         int checkedItem = 0;
         for (int i = 0; i < values.length; i++) {
             if (values[i].equals(currentSortBy)) { checkedItem = i; break; }
         }
         new MaterialAlertDialogBuilder(this)
-                .setTitle("选择排序方式")
+                .setTitle(getString(R.string.work_choose_sort))
                 .setSingleChoiceItems(options, checkedItem, (dialog, which) -> {
                     currentSortBy = values[which];
                     dialog.dismiss();

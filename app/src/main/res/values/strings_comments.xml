@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="comments_order_label">时间：从早到晚</string>
+    <string name="comments_title">评论</string>
+    <string name="comments_oldest_first">从早到晚</string>
+    <string name="comments_view">查看评论</string>
+    <string name="comments_post_hint">发表评论</string>
+    <string name="comments_send_description">发送评论</string>
+    <string name="comments_content_required">评论内容不能为空</string>
+    <string name="comments_sent">评论已发送</string>
+    <string name="comments_send_failed">评论发送失败，请重试</string>
+    <string name="comments_deleted">该评论已删除</string>
+    <string name="comments_newest_first">从晚到早</string>
+    <string name="comments_empty_pull">暂无评论，下拉刷新</string>
+    <string name="comments_load_failed">评论加载失败</string>
+    <string name="comments_empty_tap">暂无评论，点击刷新</string>
+    <string name="comments_pinned_author">置顶 · %1$s</string>
+    <string name="comments_reply_to">" · 回复 #%1$d"</string>
+    <string name="comments_context">#%1$d · 评于：%2$s%3$s</string>
+    <string name="comments_count">评论（%1$d）</string>
+</resources>

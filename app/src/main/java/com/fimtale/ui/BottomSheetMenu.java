@@ -1,5 +1,6 @@
 package com.fimtale.ui;
 
+
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -31,7 +32,7 @@ public final class BottomSheetMenu extends BottomSheetDialog {
         menu = definition.getMenu();
         View surface = findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (surface != null) surface.setBackgroundResource(R.drawable.bg_bottom_sheet_rounded);
-        ViewCompat.setAccessibilityPaneTitle(items, "更多");
+        ViewCompat.setAccessibilityPaneTitle(items, context.getString(R.string.common_more));
         getBehavior().setSkipCollapsed(true);
     }
 

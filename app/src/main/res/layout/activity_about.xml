@@ -26,7 +26,7 @@
                 android:layout_height="?attr/actionBarSize"
                 app:mdiNavigationIcon="arrow-left"
                 app:navigationIconTint="?attr/colorOnSurface"
-                app:title="关于"
+                app:title="@string/about_title"
                 app:titleCentered="false" />
         </com.google.android.material.card.MaterialCardView>
     </com.google.android.material.appbar.AppBarLayout>
@@ -80,7 +80,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="1.0.0"
+                android:text="@string/preview_version"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -98,6 +98,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="32dp"
-        android:text="检查更新" />
+        android:text="@string/update_check" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

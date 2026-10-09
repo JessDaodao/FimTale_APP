@@ -4,6 +4,8 @@ import com.fimtale.utils.BbCode;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner.class)
+@org.robolectric.annotation.Config(sdk = 34, application = com.fimtale.ResourceApplication.class)
 public class BbCodeInsertionTest {
     private String apply(String source, BbCodeInsertion.Edit edit) {
         return source.substring(0, edit.start) + edit.replacement + source.substring(edit.end);

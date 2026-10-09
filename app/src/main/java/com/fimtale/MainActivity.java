@@ -178,17 +178,17 @@ public class MainActivity extends AppCompatActivity {
         if (toolbarIcon == null || toolbarTitle == null) return;
 
         if (itemId == R.id.nav_home) {
-            toolbarTitle.setText("FimTale");
+            toolbarTitle.setText(R.string.app_name);
             toolbarIcon.setImageDrawable(MdiIcons.drawable(this, "home"));
         } else if (itemId == R.id.nav_timeline) {
             toolbarTitle.setText(R.string.nav_timeline);
             toolbarIcon.setImageDrawable(MdiIcons.drawable(this, "rss"));
         } else if (itemId == R.id.nav_article) {
-            toolbarTitle.setText("文章列表");
+            toolbarTitle.setText(getString(R.string.work_list_title));
             toolbarIcon.setImageDrawable(
                     MdiIcons.drawable(this, "book-open-page-variant"));
         } else if (itemId == R.id.nav_profile) {
-            toolbarTitle.setText("我的");
+            toolbarTitle.setText(getString(R.string.profile_title));
             toolbarIcon.setImageDrawable(
                     MdiIcons.drawable(this, "account"));
         }
@@ -230,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
         BottomNavigationView navigation = findViewById(R.id.bottom_navigation);
         // A text count remains visible without an icon to anchor a Material badge to.
         navigation.getMenu().findItem(R.id.nav_timeline).setTitle(count > 0
-                ? "动态 · " + (count > 99 ? "99+" : count) : getString(R.string.nav_timeline));
+                ? getString(R.string.timeline_unread_tab, count > 99 ? getString(R.string.common_count_overflow) : count) : getString(R.string.nav_timeline));
     }
 
     @Override protected void onDestroy() {

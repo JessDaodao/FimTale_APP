@@ -1,5 +1,6 @@
 package com.fimtale.ui;
 
+
 import com.fimtale.utils.MdiIcons;
 
 import android.content.res.ColorStateList;
@@ -78,7 +79,7 @@ public final class WorkActions {
         if (closed || activity.isFinishing() || activity.isDestroyed() || call.isCanceled() || call != activeCall) return false;
         if (!token.equals(UserPreferences.getToken(activity))) {
             onResume();
-            Toast.makeText(activity, "登录状态已变化，请重试", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, activity.getString(R.string.error_session_changed), Toast.LENGTH_SHORT).show();
             return false;
         }
         return true;
@@ -98,7 +99,7 @@ public final class WorkActions {
         int favorites = data == null ? 0 : data.getTopicInfo().getFavoriteCount();
         like.setText(String.valueOf(likes));
         favorite.setText(String.valueOf(favorites));
-        highPraise.setText("投HP");
+        highPraise.setText(activity.getString(R.string.work_hp_action));
         boolean enabled = !busy && data != null && (known || !UserPreferences.isLoggedIn(activity));
         like.setEnabled(enabled); favorite.setEnabled(enabled); highPraise.setEnabled(enabled);
         like.setChecked(liked); favorite.setChecked(faved);
@@ -106,15 +107,15 @@ public final class WorkActions {
         like.setIcon(MdiIcons.drawable(activity, liked ? "thumb-up" : "thumb-up-outline"));
         favorite.setIcon(MdiIcons.drawable(activity, faved ? "bookmark" : "bookmark-outline"));
         highPraise.setIcon(MdiIcons.drawable(activity, hpGiven > 0 ? "star" : "star-outline"));
-        like.setContentDescription((liked ? "取消点赞，" : "点赞，") + likes);
-        favorite.setContentDescription((faved ? "管理收藏夹，已收藏，" : "收藏到收藏夹，") + favorites);
+        like.setContentDescription(activity.getString(liked ? R.string.work_unlike_description : R.string.work_like_description, likes));
+        favorite.setContentDescription(activity.getString(faved ? R.string.work_favorited_description : R.string.work_favorite_description, favorites));
         int hpTotal = data == null ? 0 : data.getTopicInfo().getHighPraise();
-        highPraise.setContentDescription((hpGiven > 0 ? "已投 HP，" : "投送 HP，") + "作品收到 " + hpTotal + " 个");
+        highPraise.setContentDescription(activity.getString(hpGiven > 0 ? R.string.work_hp_sent_description : R.string.work_hp_description, hpTotal));
         // Mutations can take a moment, but the action row should remain quiet while
         // the server state is being reconciled. Only expose the retry affordance
         // when the initial interaction state could not be loaded.
         status.setVisibility(!busy && !known ? View.VISIBLE : View.GONE);
-        status.setText(!busy && !known ? "互动状态加载失败，点击重试" : "");
+        status.setText(!busy && !known ? activity.getString(R.string.work_interactions_load_failed) : "");
     }
 
     private void vote() {
@@ -132,7 +133,7 @@ public final class WorkActions {
             @Override public void onFailure(Call<Void> call, Throwable error) {
                 if (!valid(call, token)) return;
                 // Vote toggles. Never repeat a POST whose response might have been lost.
-                Toast.makeText(activity, "未收到点赞结果，正在核对状态", Toast.LENGTH_LONG).show();
+                Toast.makeText(activity, activity.getString(R.string.work_like_uncertain), Toast.LENGTH_LONG).show();
                 refresh();
             }
         });
@@ -180,7 +181,7 @@ public final class WorkActions {
             @Override public void onFailure(Call<List<WorkInteractions.Folder>> call, Throwable error) {
                 if (!valid(call, token)) return;
                 busy = false; render();
-                Toast.makeText(activity, "收藏夹加载失败，请重试", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, activity.getString(R.string.work_favorites_failed), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -190,11 +191,11 @@ public final class WorkActions {
         String token = stateToken;
         boolean reprint = data != null && data.getTopicInfo() != null && data.getTopicInfo().getOrigin() == 3;
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(activity)
-                .setTitle("投送 HP")
-                .setMessage("确定要给这篇作品的作者投送 HighPraise 吗？每个 HP 会从你的账户扣除 50 比特，作者获得 100 比特。HP 一经投送无法撤回。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("投 1 个", (d, which) -> sendHighPraise(1, token));
-        if (!reprint) dialog.setNeutralButton("投 2 个", (d, which) -> sendHighPraise(2, token));
+                .setTitle(activity.getString(R.string.work_hp_title))
+                .setMessage(activity.getString(R.string.work_hp_message))
+                .setNegativeButton(activity.getString(R.string.common_cancel), null)
+                .setPositiveButton(activity.getString(R.string.work_hp_one), (d, which) -> sendHighPraise(1, token));
+        if (!reprint) dialog.setNeutralButton(activity.getString(R.string.work_hp_two), (d, which) -> sendHighPraise(2, token));
         dialog.show();
     }
 
@@ -212,7 +213,7 @@ public final class WorkActions {
             }
             @Override public void onFailure(Call<Void> call, Throwable error) {
                 if (!valid(call, token)) return;
-                Toast.makeText(activity, "未收到投 HP 结果，正在核对状态", Toast.LENGTH_LONG).show();
+                Toast.makeText(activity, activity.getString(R.string.work_hp_uncertain), Toast.LENGTH_LONG).show();
                 refresh();
             }
         });
@@ -220,27 +221,27 @@ public final class WorkActions {
 
     private void showFolders(List<WorkInteractions.Folder> remote, String token) {
         List<WorkInteractions.Folder> folders = new ArrayList<>();
-        folders.add(new WorkInteractions.Folder(0, "默认收藏夹"));
+        folders.add(new WorkInteractions.Folder(0, activity.getString(R.string.work_default_favorites)));
         Set<Integer> ids = new LinkedHashSet<>(); ids.add(0);
         if (remote != null) for (WorkInteractions.Folder folder : remote) {
             if (folder != null && folder.id > 0 && ids.add(folder.id)) folders.add(folder);
         }
         Set<Integer> initial = data.viewer == null ? new LinkedHashSet<>() : data.viewer.folderIds();
         // Keep existing memberships even if a folder is absent from the returned list.
-        for (int id : initial) if (ids.add(id)) folders.add(new WorkInteractions.Folder(id, "收藏夹 " + id));
+        for (int id : initial) if (ids.add(id)) folders.add(new WorkInteractions.Folder(id, activity.getString(R.string.work_favorite_folder, id)));
         Set<Integer> selected = new LinkedHashSet<>(initial);
         if (selected.isEmpty()) selected.add(0);
         String[] labels = new String[folders.size()]; boolean[] checked = new boolean[folders.size()];
         for (int i = 0; i < folders.size(); i++) {
             labels[i] = folders.get(i).name; checked[i] = selected.contains(folders.get(i).id);
         }
-        foldersDialog = new MaterialAlertDialogBuilder(activity).setTitle("收藏到（取消勾选可移除）")
+        foldersDialog = new MaterialAlertDialogBuilder(activity).setTitle(activity.getString(R.string.work_favorite_choose))
                 .setMultiChoiceItems(labels, checked, (dialog, index, value) -> {
                     int id = folders.get(index).id;
                     if (value) selected.add(id); else selected.remove(id);
                 })
-                .setNegativeButton("取消", null)
-                .setPositiveButton("保存", (dialog, which) -> {
+                .setNegativeButton(activity.getString(R.string.common_cancel), null)
+                .setPositiveButton(activity.getString(R.string.common_save), (dialog, which) -> {
                     if (!token.equals(UserPreferences.getToken(activity))) { onResume(); return; }
                     List<WorkInteractions.Change> changes = WorkInteractions.changes(initial, selected);
                     if (changes.isEmpty()) return;
@@ -269,7 +270,7 @@ public final class WorkActions {
             }
             @Override public void onFailure(Call<Void> call, Throwable error) {
                 if (!valid(call, token)) return;
-                Toast.makeText(activity, "收藏未全部完成，正在核对状态", Toast.LENGTH_LONG).show();
+                Toast.makeText(activity, activity.getString(R.string.work_favorites_uncertain), Toast.LENGTH_LONG).show();
                 refresh();
             }
         });

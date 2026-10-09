@@ -53,17 +53,17 @@ public class UpdateChecker {
                             showUpdateDialog(context, update);
                         }
                     } else if (manual) {
-                        Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, context.getString(R.string.update_latest), Toast.LENGTH_SHORT).show();
                     }
                 } else if (manual) {
-                    Toast.makeText(context, "检查更新失败", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, context.getString(R.string.update_check_failed), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<UpdateResponse> call, @NonNull Throwable t) {
                 if (manual) {
-                    Toast.makeText(context, "网络错误", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, context.getString(R.string.error_network), Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -85,15 +85,15 @@ public class UpdateChecker {
 
     private static void showUpdateDialog(Context context, UpdateResponse update) {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
-                .setTitle("发现新版本: " + update.getVersionName())
+                .setTitle(context.getString(R.string.update_new_version, update.getVersionName()))
                 .setMessage(update.getUpdateLog())
                 .setCancelable(!update.isForceUpdate())
-                .setPositiveButton("立即更新", (dialog, which) -> {
+                .setPositiveButton(context.getString(R.string.update_now), (dialog, which) -> {
                     downloadAndInstallApk(context, update.getDownloadUrl());
                 });
 
         if (!update.isForceUpdate()) {
-            builder.setNegativeButton("稍后再说", null);
+            builder.setNegativeButton(context.getString(R.string.update_later), null);
         }
 
         builder.show();
@@ -101,7 +101,7 @@ public class UpdateChecker {
 
     private static void downloadAndInstallApk(Context context, String downloadUrl) {
         if (!(context instanceof Activity) || !isTrustedDownloadUrl(downloadUrl)) {
-            Toast.makeText(context, "更新地址无效", Toast.LENGTH_LONG).show();
+            Toast.makeText(context, context.getString(R.string.update_invalid_url), Toast.LENGTH_LONG).show();
             return;
         }
         Activity activity = (Activity) context;
@@ -111,7 +111,7 @@ public class UpdateChecker {
             TextView tvPercent = dialogView.findViewById(R.id.tv_progress_percent);
 
             AlertDialog progressDialog = new MaterialAlertDialogBuilder(context)
-                    .setTitle("正在下载更新")
+                    .setTitle(context.getString(R.string.update_downloading))
                     .setView(dialogView)
                     .setCancelable(false)
                     .create();
@@ -127,12 +127,12 @@ public class UpdateChecker {
                     connection.setInstanceFollowRedirects(false);
                     connection.connect();
                     if (connection.getResponseCode() < 200 || connection.getResponseCode() >= 300) {
-                        throw new java.io.IOException("服务器返回 HTTP " + connection.getResponseCode());
+                        throw new java.io.IOException(context.getString(R.string.error_http_status, connection.getResponseCode()));
                     }
 
                     int fileLength = connection.getContentLength();
                     File externalFilesDir = context.getExternalFilesDir(null);
-                    if (externalFilesDir == null) throw new java.io.IOException("无法访问应用存储");
+                    if (externalFilesDir == null) throw new java.io.IOException(context.getString(R.string.drafts_storage_unavailable));
                     File apkFile = new File(externalFilesDir, "update.apk");
 
                     byte[] buffer = new byte[4096];
@@ -146,7 +146,7 @@ public class UpdateChecker {
                                 int progress = (int) (total * 100 / fileLength);
                                 activity.runOnUiThread(() -> {
                                     progressIndicator.setProgress(progress);
-                                    tvPercent.setText(progress + "%");
+                                    tvPercent.setText(context.getString(R.string.common_percent, progress));
                                 });
                             }
                             outputStream.write(buffer, 0, len);
@@ -160,7 +160,7 @@ public class UpdateChecker {
                 } catch (Exception e) {
                     activity.runOnUiThread(() -> {
                         progressDialog.dismiss();
-                        Toast.makeText(context, "下载失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(context, context.getString(R.string.update_download_failed, e.getMessage()), Toast.LENGTH_LONG).show();
                     });
                 } finally {
                     if (connection != null) connection.disconnect();

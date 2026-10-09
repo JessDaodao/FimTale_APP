@@ -1,0 +1,67 @@
+<resources>
+    <string name="report_work">举报文章</string>
+    <string name="report_user">举报用户</string>
+    <string name="report_work_target">文章《%1$s》</string>
+    <string name="report_user_target">用户 @%1$s</string>
+    <string name="report_content_label">举报说明</string>
+    <string name="report_content_hint">请说明举报原因，可附上相关链接，帮助站务核实。</string>
+    <string name="report_content_required">请填写举报说明</string>
+    <string name="report_submit">提交举报</string>
+    <string name="report_submitting">正在提交…</string>
+    <string name="report_cancel">取消</string>
+    <string name="report_login">登录</string>
+    <string name="report_login_required">请先登录后提交举报，已填写的说明会保留。</string>
+    <string name="report_invalid_target">无法确定举报对象，请返回详情页重试。</string>
+    <string name="report_success">举报已提交，等待站务处理</string>
+    <string name="report_uncertain">未能确认举报是否提交成功，请稍后重试，避免重复提交。</string>
+    <string name="report_session_changed">登录状态已更改，未能确认刚才的举报是否提交成功。</string>
+    <string name="my_reports_title">我的报告</string>
+    <string name="report_reply_hint">消息 / 补充说明</string>
+    <string name="report_send_message">发送消息</string>
+    <string name="report_status_pending">待处理</string>
+    <string name="report_status_resolved">已处理</string>
+    <string name="report_status_rejected">已驳回</string>
+    <string name="report_message_preview">消息预览</string>
+    <string name="report_login_message">登录后查看我的报告</string>
+    <string name="report_empty">暂无报告</string>
+    <string name="report_unavailable">该报告不存在或当前账户无权查看</string>
+    <string name="report_empty_filtered">当前筛选条件下没有报告记录</string>
+    <string name="report_message_history">消息记录</string>
+    <string name="report_content_snapshot">提交时内容快照</string>
+    <string name="report_copy_request_id">复制 rid</string>
+    <string name="report_copy_trace_id">复制 trace</string>
+    <string name="report_target_channel">频道</string>
+    <string name="report_kind_content">内容报告</string>
+    <string name="report_kind_recovery">恢复请求</string>
+    <string name="report_kind_feedback">反馈</string>
+    <string name="report_label">报告</string>
+    <string name="report_target_site">站点</string>
+    <string name="report_target_channel_comment">频道评论</string>
+    <string name="report_target_entity">实体</string>
+    <string name="report_send_uncertain">发送结果未确认，请刷新报告核对消息记录</string>
+    <string name="report_invalid_data">报告数据异常，请重试</string>
+    <string name="report_load_failed">报告加载失败，请重试</string>
+    <string name="report_message_required">请填写消息内容</string>
+    <string name="report_message_sent">消息已发送</string>
+    <string name="report_number">报告 #%1$d</string>
+    <string name="report_status_heading">报告 #%1$d · %2$s</string>
+    <string name="report_closed_message">%1$s，此报告已结束</string>
+    <string name="report_timestamps">"提交于 %1$s\n更新于 %2$s"</string>
+    <string name="report_hide_debug">收起调试信息（%1$d 条失败请求）</string>
+    <string name="report_show_debug">展开调试信息（%1$d 条失败请求）</string>
+    <string name="report_debug_request">"%1$s\n页面：%2$s\n接口：%3$s\nHTTP：%4$s"</string>
+    <string name="report_debug_request_id">rid：%1$s</string>
+    <string name="report_debug_trace_id">trace：%1$s</string>
+    <string name="report_kind_target">%1$s · %2$s</string>
+    <string name="report_message_author">%1$s · %2$s</string>
+    <string-array name="report_status_options">
+        <item>@string/common_all</item>
+        <item>@string/report_status_pending</item>
+        <item>@string/report_status_resolved</item>
+        <item>@string/report_status_rejected</item>
+    </string-array>
+    <string name="report_rid_clipboard_label" translatable="false">rid</string>
+    <string name="report_trace_clipboard_label" translatable="false">trace</string>
+    <string name="report_target_invalid" translatable="false">Invalid report target</string>
+    <string name="report_empty_content" translatable="false">Empty report</string>
+</resources>

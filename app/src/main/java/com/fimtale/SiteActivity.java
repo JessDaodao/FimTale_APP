@@ -59,7 +59,7 @@ public class SiteActivity extends AppCompatActivity {
         String path = getIntent().getStringExtra(EXTRA_PATH);
         if (path == null || !path.startsWith("/") || path.startsWith("//")) path = "/";
         startPath = path;
-        toolbar.setTitle("FimTale");
+        toolbar.setTitle(R.string.app_name);
         webView = findViewById(R.id.site_webview);
         com.fimtale.ui.PullToRefresh.attach(webView, webView::reload, () -> !loginOpening);
         pageError = com.fimtale.ui.PageErrorView.wrap(webView);
@@ -105,12 +105,12 @@ public class SiteActivity extends AppCompatActivity {
             @Override public void onReceivedHttpError(WebView view, WebResourceRequest request,
                     android.webkit.WebResourceResponse error) {
                 if (request.isForMainFrame()) showPageError(request.getUrl().toString(),
-                        "服务器暂时无法显示此页面（" + error.getStatusCode() + "）。");
+                        getString(R.string.site_http_error, error.getStatusCode()));
             }
             @Override public void onReceivedSslError(WebView view, android.webkit.SslErrorHandler handler,
                     android.net.http.SslError error) {
                 handler.cancel();
-                if (error.getUrl().equals(view.getUrl())) showPageError(error.getUrl(), "无法建立安全连接，请稍后重试。");
+                if (error.getUrl().equals(view.getUrl())) showPageError(error.getUrl(), getString(R.string.site_ssl_error));
             }
         });
         if (isLoginUrl(SiteUrls.SITE + startPath)) { startPath = "/"; openNativeLogin(); }
@@ -174,7 +174,7 @@ public class SiteActivity extends AppCompatActivity {
                         CookieManager.getInstance().flush();
                     } else {
                         lastRejectedToken = token;
-                        Toast.makeText(SiteActivity.this, "登录状态无效，请重新登录", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SiteActivity.this, getString(R.string.error_invalid_session), Toast.LENGTH_SHORT).show();
                     }
                 }
                 @Override public void onFailure(Call<CurrentUser> call, Throwable t) { verifying = false; }

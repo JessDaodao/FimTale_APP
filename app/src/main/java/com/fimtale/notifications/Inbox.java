@@ -1,5 +1,8 @@
 package com.fimtale.notifications;
 
+import com.fimtale.R;
+import com.fimtale.utils.AppStrings;
+
 import com.fimtale.model.AuthorInfo;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -9,7 +12,7 @@ import java.util.*;
 public final class Inbox {
     private Inbox() {}
     public static final String[] KEYS = {"reply", "mention", "interaction", "message", "system"};
-    public static final String[] TITLES = {"回复", "提到", "互动", "私信", "系统"};
+    public static final int[] TITLES = {R.string.inbox_replies, R.string.inbox_mentions, R.string.inbox_interactions, R.string.inbox_private_messages, R.string.inbox_system};
     public static class Notice {
         public long id, entity_id;
         public int type;
@@ -25,22 +28,19 @@ public final class Inbox {
             return string(object(), "content");
         }
         public String action() {
-            String[] actions = {"发来了通知", "评论了", "在评论中提到了你", "回复了你的评论", "赞了你的评论", "给你的评论点了SH",
-                "发布了作品", "发布了章节", "在频道中添加了作品", "在作品中提到了你", "在章节中提到了你", "赞了你的作品", "给你的作品HP",
-                "赞了频道", "评论了频道", "在频道评论中提到了你", "赞了你的频道评论", "推荐了你的作品", "关注了你", "发来了私信",
-                "邀请你成为频道协作者", "发送了审核通知", "发送了报告", "发布了系统通知", "希望将你的作品设为其前作"};
+            String[] actions = AppStrings.array(R.array.inbox_notice_actions);
             return actions[type > 0 && type < actions.length ? type : 0];
         }
         public String label() {
             JsonObject e = object();
             for (String key : new String[]{"context_title", "title", "name", "work_title"}) if (!string(e, key).isEmpty()) return string(e, key);
-            return type == 21 ? "查看审核" : type == 22 ? "查看报告" : "查看详情";
+            return type == 21 ? AppStrings.get(R.string.inbox_view_review) : type == 22 ? AppStrings.get(R.string.inbox_view_report) : AppStrings.get(R.string.common_view_details);
         }
         public String action(String self) {
             if (type != 22) return action();
-            if (!String.valueOf(number(object(), "source_user_id")).equals(self)) return "提交/更新了报告";
+            if (!String.valueOf(number(object(), "source_user_id")).equals(self)) return AppStrings.get(R.string.inbox_action_report_updated);
             long status = number(object(), "status");
-            return status == 3 ? "驳回了你的报告" : status == 2 ? "处理了你的报告" : "回复了你的报告";
+            return status == 3 ? AppStrings.get(R.string.inbox_action_report_rejected) : status == 2 ? AppStrings.get(R.string.inbox_action_report_resolved) : AppStrings.get(R.string.inbox_action_report_reply);
         }
         public String path(String self, boolean manager) {
             if (type == 22 && manager && !String.valueOf(number(object(), "source_user_id")).equals(self)
@@ -78,7 +78,7 @@ public final class Inbox {
             List<String> names = new ArrayList<>();
             if (participants != null) for (AuthorInfo user : participants)
                 if (user != null && !String.valueOf(user.getId()).equals(self)) names.add(user.getUserName());
-            return names.isEmpty() ? "私信" : String.join("、", names);
+            return names.isEmpty() ? AppStrings.get(R.string.inbox_private_messages) : String.join(AppStrings.get(R.string.inbox_participant_separator), names);
         }
     }
     public static class Read {
