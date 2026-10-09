@@ -27,6 +27,7 @@ public class EditorFormatDialogTest {
             setTheme(R.style.Theme_Fimtale); super.onCreate(state);
             body = new BbCodeEditText(this, null); body.setId(R.id.editorBody);
             body.setLinkClickListener((editor, link) -> EditorFormatDialog.editLink(this, link).showNow(getSupportFragmentManager(), EditorFormatDialog.TAG));
+            body.setMarkdownClickListener((editor, markdown) -> EditorFormatDialog.editMarkdown(this, markdown).showNow(getSupportFragmentManager(), EditorFormatDialog.TAG));
             setContentView(body); body.setText("前正文🐴后"); body.setSelection(1, 5);
         }
         @Override public BbCodeEditText formatBody() { return body; }
@@ -64,6 +65,80 @@ public class EditorFormatDialogTest {
             activity.body.dispatchTouchEvent(event); event.recycle();
         }
         shadowOf(Looper.getMainLooper()).idle();
+    }
+    private void tapMarkdown(int index, long duration, boolean drag) {
+        BbCodeEditText body = activity.body;
+        body.setSourceVisible(false);
+        body.measure(android.view.View.MeasureSpec.makeMeasureSpec(500, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(900, android.view.View.MeasureSpec.EXACTLY));
+        body.layout(0, 0, 500, 900);
+        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(500, 900, android.graphics.Bitmap.Config.ARGB_8888);
+        body.draw(new android.graphics.Canvas(bitmap)); bitmap.recycle();
+        BbCodeBlockPreview preview = body.getText().getSpans(0, body.length(), BbCodeBlockPreview.class)[index];
+        float x = preview.bounds.centerX() + body.getTotalPaddingLeft() - body.getScrollX();
+        float y = preview.bounds.centerY() + body.getTotalPaddingTop() - body.getScrollY();
+        for (int action : drag ? new int[]{0, 2, 1} : new int[]{0, 1}) {
+            android.view.MotionEvent event = android.view.MotionEvent.obtain(0, action == 0 ? 0 : duration, action, x,
+                    y + (action != 0 && drag ? 100 : 0), 0);
+            body.dispatchTouchEvent(event); event.recycle();
+        }
+        shadowOf(Looper.getMainLooper()).idle();
+    }
+    @Test public void markdownInsertionUsesASourceFormAndLeavesTheCaretOutsideTheBlock() {
+        open(EditorFormat.MARKDOWN);
+        assertEquals("正文🐴", input(R.id.editorFormatInput0).getText().toString());
+        assertEquals("前正文🐴后", activity.body.getText().toString());
+        String markdown = "## 标题\n\n**粗体** 和 *斜体*\n\n- 一\n- 二\n\n[b]字面[/b]";
+        input(R.id.editorFormatInput0).setText(markdown); insert();
+        String expected = "前\n[markdown]" + markdown + "[/markdown]\n后";
+        assertEquals(expected, activity.body.getText().toString());
+        assertEquals(expected.indexOf("\n后"), activity.body.getSelectionStart());
+        activity.body.setSourceVisible(false);
+        assertEquals(1, activity.body.getText().getSpans(0, activity.body.length(), BbCodeBlockPreview.class).length);
+    }
+    @Test public void tappingMarkdownEditsOnlyItsSourceAndKeepsTheOriginalDelimiters() {
+        String first = "[markdown]**first**[/markdown]";
+        String original = first + "\n前[MARKDOWN]\n# 标题\n\n[b]字面[/b]\n[/MARKDOWN]后";
+        activity.body.setText(original); tapMarkdown(1, 20, false);
+        assertNotNull(dialog());
+        assertEquals("\n# 标题\n\n[b]字面[/b]\n", input(R.id.editorFormatInput0).getText().toString());
+        assertEquals("编辑 Markdown", ((android.widget.TextView) dialog().requireDialog().findViewById(R.id.editorFormatTitle)).getText().toString());
+        input(R.id.editorFormatInput0).setText("**中文🐴**\n\n`[/markdown]`\n"); insert();
+        String expected = first + "\n前[MARKDOWN]**中文🐴**\n\n`&#91;/markdown&#93;`\n[/MARKDOWN]后";
+        assertEquals(expected, activity.body.getText().toString());
+        assertEquals(2, BbCodeSyntax.parse(expected).size());
+        assertEquals(expected.length() - 1, activity.body.getSelectionStart());
+    }
+    @Test public void markdownCancellationAndSavingWithoutChangesPreserveSourceExactly() {
+        String source = "before[MARKDOWN]\n\n**keep** &amp; &#91;b&#93;\n\n[/MARKDOWN]after";
+        activity.body.setText(source); tapMarkdown(0, 20, false);
+        input(R.id.editorFormatInput0).setText("discard this");
+        dialog().requireDialog().cancel(); shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(source, activity.body.getText().toString());
+        tapMarkdown(0, 20, false); insert();
+        assertEquals(source, activity.body.getText().toString());
+    }
+    @Test public void markdownDraftSurvivesRotationAndRejectsChangesToItsTarget() {
+        String source = "[markdown]**original**[/markdown]";
+        activity.body.setText(source); tapMarkdown(0, 20, false);
+        input(R.id.editorFormatInput0).setText("## 新标题\n\n*内容*");
+        Configuration next = new Configuration(activity.getResources().getConfiguration()); next.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        controller.configurationChange(next); activity = controller.get(); shadowOf(Looper.getMainLooper()).idle();
+        assertEquals("## 新标题\n\n*内容*", input(R.id.editorFormatInput0).getText().toString());
+        String changed = source.replace("original", "replaced");
+        activity.body.setText(changed); insert();
+        assertEquals(changed, activity.body.getText().toString());
+        assertNotNull(dialog());
+        assertEquals(android.view.View.VISIBLE, dialog().requireDialog().findViewById(R.id.editorFormatError).getVisibility());
+    }
+    @Test public void anEmptyMarkdownBlockCanBeReopenedButScrollingAndLongPressDoNotOpenIt() {
+        activity.body.setText("[markdown][/markdown]");
+        tapMarkdown(0, 20, true); assertNull(dialog());
+        tapMarkdown(0, android.view.ViewConfiguration.getLongPressTimeout() + 20L, false); assertNull(dialog());
+        tapMarkdown(0, 20, false); assertNotNull(dialog());
+        assertEquals("", input(R.id.editorFormatInput0).getText().toString());
+        input(R.id.editorFormatInput0).setText("**内容**"); insert();
+        assertEquals("[markdown]**内容**[/markdown]", activity.body.getText().toString());
     }
     @Test public void tappingExistingLinkPrefillsTheWholeLinkAndUpdatesOnlyThatLink() {
         String original = "前[url=\"https://example.org/old?a=1&amp;b=2\"][b]完整文字[/b][/url]后 [url]https://second.org/[/url]";

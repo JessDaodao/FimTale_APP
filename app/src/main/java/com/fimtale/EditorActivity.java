@@ -123,6 +123,11 @@ public class EditorActivity extends AppCompatActivity implements EditorFormatDia
                     && getSupportFragmentManager().findFragmentByTag(EditorFormatDialog.TAG) == null)
                 EditorFormatDialog.editLink(this, link).showNow(getSupportFragmentManager(), EditorFormatDialog.TAG);
         });
+        body.setMarkdownClickListener((editor, markdown) -> {
+            if (canInsertFormat() && editor == formatBody() && !getSupportFragmentManager().isStateSaved()
+                    && getSupportFragmentManager().findFragmentByTag(EditorFormatDialog.TAG) == null)
+                EditorFormatDialog.editMarkdown(this, markdown).showNow(getSupportFragmentManager(), EditorFormatDialog.TAG);
+        });
         body.setSourceVisible(state != null && state.getBoolean("source_visible"));
         updateSourceButton();
         intro = findViewById(R.id.editorIntro); cover = findViewById(R.id.editorCover);

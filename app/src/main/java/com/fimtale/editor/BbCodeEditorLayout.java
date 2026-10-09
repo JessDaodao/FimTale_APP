@@ -62,6 +62,7 @@ public final class BbCodeEditorLayout extends FrameLayout implements BbCodeEditT
         source.setSpan(cellRange, start, end, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
         cell = new BbCodeEditText(getContext(), null);
         cell.setLinkClickListener(body.getLinkClickListener());
+        cell.setMarkdownClickListener(body.getMarkdownClickListener());
         cell.setParagraphIndentEnabled(blockMode && body.isParagraphIndentEnabled());
         cell.setId(R.id.editorTableCell);
         cell.setContentDescription(description);

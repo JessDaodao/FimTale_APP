@@ -84,6 +84,12 @@ public final class BbCodeEditText extends AppCompatEditText {
     private LinkClickListener linkClickListener;
     public void setLinkClickListener(LinkClickListener listener) { linkClickListener = listener; scheduleRender(); }
     LinkClickListener getLinkClickListener() { return linkClickListener; }
+    public interface MarkdownClickListener {
+        void edit(BbCodeEditText editor, BbCodeSyntax.Node markdown);
+    }
+    private MarkdownClickListener markdownClickListener;
+    public void setMarkdownClickListener(MarkdownClickListener listener) { markdownClickListener = listener; }
+    MarkdownClickListener getMarkdownClickListener() { return markdownClickListener; }
     static final class TableHit {
         final EditableTableSpan table;
         final EditableTableSpan.Cell cell;
@@ -98,6 +104,7 @@ public final class BbCodeEditText extends AppCompatEditText {
     private TableHit pressedCell;
     private BlockHit pressedBlock;
     private EditableLinkSpan pressedLink;
+    private BbCodeSyntax.Node pressedMarkdown;
     private float downX, downY;
     static final class BlockHit {
         final int start, end;
@@ -534,6 +541,16 @@ public final class BbCodeEditText extends AppCompatEditText {
         }
         return null;
     }
+    private BbCodeSyntax.Node markdownAt(float x, float y) {
+        if (getText() == null || !getText().toString().equals(parsedSource)) return null;
+        x += getScrollX() - getTotalPaddingLeft(); y += getScrollY() - getTotalPaddingTop();
+        for (BbCodeBlockPreview preview : getText().getSpans(0, length(), BbCodeBlockPreview.class)) {
+            if (!preview.markdown || !preview.bounds.contains(x, y)) continue;
+            int start = getText().getSpanStart(preview);
+            for (BbCodeSyntax.Node node : nodes) if (node.start == start && node.name.equals("markdown")) return node;
+        }
+        return null;
+    }
     RectF blockBounds(int start, int end) {
         for (BbCodeBlockPreview preview : getText().getSpans(start, Math.min(length(), start + 1), BbCodeBlockPreview.class)) {
             RectF bounds = new RectF(preview.bounds);
@@ -566,6 +583,22 @@ public final class BbCodeEditText extends AppCompatEditText {
         return offset;
     }
     @Override public boolean onTouchEvent(MotionEvent event) {
+        if (!sourceVisible && markdownClickListener != null && isEnabled()) {
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                pressedMarkdown = markdownAt(event.getX(), event.getY());
+                downX = event.getX(); downY = event.getY();
+            } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+                int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                if (Math.abs(event.getX() - downX) > slop || Math.abs(event.getY() - downY) > slop) pressedMarkdown = null;
+            } else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+                BbCodeSyntax.Node markdown = pressedMarkdown; pressedMarkdown = null;
+                if (markdown != null && event.getEventTime() - event.getDownTime() < ViewConfiguration.getLongPressTimeout()
+                        && getText() != null && getText().toString().equals(parsedSource)) {
+                    super.onTouchEvent(event);
+                    markdownClickListener.edit(this, markdown); return true;
+                }
+            } else if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) pressedMarkdown = null;
+        }
         if (!sourceVisible && linkClickListener != null && isEnabled()) {
             if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                 pressedLink = linkAt(event.getX(), event.getY());

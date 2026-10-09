@@ -130,12 +130,36 @@ public class BbCodeEditTextRenderingTest {
         assertEquals(source, text.toString());
     }
     @Test public void hiddenSourceLinesDoNotLeaveBlankSpaceBehindThePreview() {
+        render("[markdown]\n**正文**\n[/markdown]");
+        drawEditor().recycle();
+        int compactHeight = editor.getLayout().getHeight();
         String source = "[markdown]" + "\n".repeat(30) + "**正文**\n[/markdown]";
         render(source);
-        editor.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.AT_MOST));
-        editor.layout(0, 0, 400, editor.getMeasuredHeight());
-        assertTrue("Collapsed source height=" + editor.getLayout().getHeight(), editor.getLayout().getHeight() < 100);
+        drawEditor().recycle();
+        assertEquals("Hidden source lines must not add space below the Markdown block", compactHeight, editor.getLayout().getHeight());
         assertEquals(source, editor.getText().toString());
+    }
+    @Test public void markdownRendersWithinItsPaddedBlock() throws Exception {
+        String source = "前文\n[markdown]## 标题\n\n**粗体**\n\n| A | B |\n| --- | --- |\n| 一 | 二 |[/markdown]\n后文";
+        Editable text = render(source);
+        Bitmap bitmap = drawEditor();
+        BbCodeBlockPreview preview = text.getSpans(0, text.length(), BbCodeBlockPreview.class)[0];
+        assertTrue(preview.markdown);
+        assertNull("Markdown must not be converted into an inline BBCode editor", preview.editableSource());
+        java.lang.reflect.Field field = BbCodeBlockPreview.class.getDeclaredField("layout"); field.setAccessible(true);
+        android.text.StaticLayout content = (android.text.StaticLayout) field.get(preview);
+        assertTrue(content.getText().toString().contains("标题"));
+        assertFalse(content.getText().toString().contains("**粗体**"));
+        assertTrue(content.getWidth() < preview.bounds.width());
+        assertTrue(content.getHeight() < preview.bounds.height());
+        assertTrue(preview.bounds.right <= editor.getWidth() - editor.getTotalPaddingRight());
+        int x = Math.round(preview.bounds.left + editor.getTotalPaddingLeft());
+        int y = Math.round(preview.bounds.centerY() + editor.getTotalPaddingTop());
+        assertNotEquals("The block background should be visible against the document", Color.WHITE, bitmap.getPixel(x, y));
+        bitmap.recycle();
+        assertEquals(source, editor.getText().toString());
+        editor.setSourceVisible(true);
+        assertEquals(0, text.getSpans(0, text.length(), BbCodeBlockPreview.class).length);
     }
     @Test public void mentionsAndHashtagsHaveInlinePreviewsAndRemainEditable() {
         String source = "hi [mention=7]seven[/mention] [hash]火星[/hash]";

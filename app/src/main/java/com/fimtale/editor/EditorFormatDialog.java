@@ -76,11 +76,22 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         args.putString("link_url", link.argument.isEmpty() ? args.getString("link_text") : VisualEditing.decodeEntities(link.argument));
         return dialog;
     }
+    public static EditorFormatDialog editMarkdown(Host host, BbCodeSyntax.Node markdown) {
+        EditorFormatDialog dialog = create(host);
+        String source = host.formatBody().getText().toString();
+        Bundle args = dialog.requireArguments();
+        args.putInt("start", markdown.start); args.putInt("end", markdown.end);
+        args.putString("markdown_source", source.substring(markdown.start, markdown.end));
+        args.putString("markdown_content", source.substring(markdown.contentStart, markdown.contentEnd));
+        return dialog;
+    }
     private boolean editingLink() { return requireArguments().containsKey("link_source"); }
+    private boolean editingMarkdown() { return requireArguments().containsKey("markdown_source"); }
     private Host host() { return (Host) requireActivity(); }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     @NonNull @Override public Dialog onCreateDialog(Bundle state) {
         if (editingLink()) format = EditorFormat.LINK;
+        if (editingMarkdown()) format = EditorFormat.MARKDOWN;
         if (state != null) {
             String name = state.getString("format");
             if (name != null) try { format = EditorFormat.valueOf(name); } catch (IllegalArgumentException ignored) {}
@@ -119,10 +130,12 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
     private void render() {
         if (root == null) return;
         content.removeAllViews(); inputs.clear(); choice = null; headerRow = null; error("");
-        root.findViewById(R.id.editorFormatBack).setVisibility(format == null || editingLink() ? View.GONE : View.VISIBLE);
+        boolean editing = editingLink() || editingMarkdown();
+        root.findViewById(R.id.editorFormatBack).setVisibility(format == null || editing ? View.GONE : View.VISIBLE);
         root.findViewById(R.id.editorFormatInsert).setVisibility(format == null ? View.GONE : View.VISIBLE);
-        ((TextView) root.findViewById(R.id.editorFormatInsert)).setText(editingLink() ? R.string.editor_format_save : R.string.editor_format_insert);
+        ((TextView) root.findViewById(R.id.editorFormatInsert)).setText(editing ? R.string.editor_format_save : R.string.editor_format_insert);
         ((TextView) root.findViewById(R.id.editorFormatTitle)).setText(editingLink() ? getString(R.string.editor_edit_link)
+                : editingMarkdown() ? getString(R.string.editor_edit_markdown)
                 : format == null ? getString(R.string.editor_more_formats) : getString(format.label));
         if (format == null) palette(); else form();
         if (restoredValues != null) {
@@ -130,6 +143,15 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
             restoredValues = null;
         }
         ((androidx.core.widget.NestedScrollView) root.findViewById(R.id.editorFormatScroll)).scrollTo(0, 0);
+        if (format == EditorFormat.MARKDOWN) {
+            EditText source = inputs.get(0);
+            source.requestFocus();
+            source.post(() -> {
+                if (source.isAttachedToWindow() && source.hasFocus())
+                    source.getContext().getSystemService(android.view.inputmethod.InputMethodManager.class)
+                            .showSoftInput(source, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            });
+        }
     }
     private void palette() {
         String[] groups = getResources().getStringArray(R.array.editor_format_groups);
@@ -206,6 +228,15 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
             case HASH: field(getString(R.string.editor_hash_name), selected(), text); break;
             case MENTION: field(getString(R.string.editor_full_username), selected().replaceFirst("^@", ""), text); break;
             case COLLAPSE: field(getString(R.string.editor_collapse_title), getString(R.string.reader_expand_content), text); break;
+            case MARKDOWN:
+                field(getString(R.string.editor_format_markdown), editingMarkdown() ? requireArguments().getString("markdown_content") : selected(),
+                        text | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+                EditText markdown = inputs.get(0);
+                markdown.setTypeface(android.graphics.Typeface.MONOSPACE);
+                markdown.setMinLines(6); markdown.setMaxLines(12);
+                markdown.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+                markdown.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+                break;
             case REFERENCE:
                 options(getResources().getStringArray(R.array.editor_reference_types));
                 field(getString(R.string.editor_reference_id), "", InputType.TYPE_CLASS_NUMBER); field(getString(R.string.editor_reference_description), selected(), text); break;
@@ -263,6 +294,18 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
                     apply(BbCodeInsertion.reference(new int[]{1, 3, 4, 5, 7}[choice.getSelectedItemPosition()], Integer.parseInt(value(0)), value(1))); break;
                 case TABLE: apply(BbCodeInsertion.table(Integer.parseInt(value(0)), Integer.parseInt(value(1)), headerRow.isChecked(), selected())); break;
                 case MENTION: mention(); break;
+                case MARKDOWN:
+                    BbCodeInsertion.Fragment markdown = BbCodeInsertion.raw("markdown", value(0));
+                    String source = markdown.text;
+                    if (editingMarkdown()) {
+                        String original = requireArguments().getString("markdown_source");
+                        BbCodeSyntax.Node node = BbCodeSyntax.parse(original).get(0);
+                        source = original.substring(0, node.contentStart)
+                                + markdown.text.substring(markdown.selectionStart, markdown.selectionEnd)
+                                + original.substring(node.contentEnd);
+                    }
+                    // Place the caret after the atom, outside its hidden source.
+                    apply(BbCodeInsertion.atom(source, !editingMarkdown())); break;
                 default: break;
             }
         } catch (NumberFormatException e) { error(getString(R.string.editor_integer_required)); }
@@ -298,6 +341,9 @@ public class EditorFormatDialog extends BottomSheetDialogFragment {
         if (end > body.length()) { error(getString(R.string.editor_insertion_changed)); return; }
         if (editingLink() && !body.getText().subSequence(start, end).toString().equals(requireArguments().getString("link_source"))) {
             error(getString(R.string.editor_link_changed)); return;
+        }
+        if (editingMarkdown() && !body.getText().subSequence(start, end).toString().equals(requireArguments().getString("markdown_source"))) {
+            error(getString(R.string.editor_body_changed)); return;
         }
         applied = true;
         host().applyFormat(BbCodeInsertion.at(body.getText().toString(), start, end, fragment)); dismiss();

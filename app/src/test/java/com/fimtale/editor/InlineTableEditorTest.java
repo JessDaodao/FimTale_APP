@@ -178,8 +178,10 @@ public class InlineTableEditorTest {
         assertEquals(0, body.getText().getSpans(0, body.length(), android.text.style.ReplacementSpan.class).length);
         assertEquals("[b]中文[/b]", body.getText().toString());
     }
-    @Test public void markdownEditsUseRichTextInPlaceAndKeepFormatting() {
+    @Test public void markdownTapsRequestSourceEditingAndKeepTheBlockIntact() {
         String source = "before\n[markdown]**bold** and *italic*[/markdown]\nafter";
+        java.util.List<BbCodeSyntax.Node> requested = new java.util.ArrayList<>();
+        body.setMarkdownClickListener((editor, markdown) -> { assertSame(body, editor); requested.add(markdown); });
         body.setText(source); body.setSourceVisible(false); draw();
         BbCodeBlockPreview preview = body.getText().getSpans(0, body.length(), BbCodeBlockPreview.class)[0];
         for (int action : new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
@@ -188,22 +190,29 @@ public class InlineTableEditorTest {
             body.dispatchTouchEvent(event); event.recycle();
         }
         draw();
-        assertNotSame(body, container.activeEditor());
+        assertSame(body, container.activeEditor());
         assertEquals(source, body.getText().toString());
-        BbCodeEditText input = container.activeEditor();
-        assertEquals("[b]bold[/b] and [i]italic[/i]", input.getText().toString());
-        input.setSelection(3, 7);
-        input.onCreateInputConnection(new EditorInfo()).commitText("中文", 1);
-        draw();
-        assertEquals("before\n[b]中文[/b] and [i]italic[/i]\nafter", body.getText().toString());
+        assertEquals(1, requested.size());
+        assertEquals("**bold** and *italic*", source.substring(requested.get(0).contentStart, requested.get(0).contentEnd));
         body.setSourceVisible(true);
         assertSame(body, container.activeEditor());
     }
-    @Test public void enteringAndLeavingMarkdownWithoutTypingPreservesOriginalSource() {
-        String source = "[markdown]**keep**\n\n*exact*[/markdown]";
+    @Test public void markdownInsideATableCellUsesTheSameSourceEditor() {
+        String source = "[table][tr][td][markdown]**keep**[/markdown][/td][/tr][/table]";
+        java.util.List<BbCodeEditText> requested = new java.util.ArrayList<>();
+        body.setMarkdownClickListener((editor, markdown) -> requested.add(editor));
         body.setText(source); body.setSourceVisible(false); draw();
-        container.editBlock(new BbCodeEditText.BlockHit(0, source.length(), MarkdownBbCode.convert("**keep**\n\n*exact*"),
-                new android.graphics.RectF(10, 12, 490, 150)));
+        tap(body.tableCellAtSource(source.indexOf("[markdown]"))); draw(); draw();
+        BbCodeEditText cell = container.activeEditor();
+        BbCodeBlockPreview preview = cell.getText().getSpans(0, cell.length(), BbCodeBlockPreview.class)[0];
+        android.graphics.RectF visible = new android.graphics.RectF(preview.bounds);
+        visible.offset(cell.getTotalPaddingLeft() - cell.getScrollX(), cell.getTotalPaddingTop() - cell.getScrollY());
+        assertTrue(visible.intersect(0, 0, cell.getWidth(), cell.getHeight()));
+        for (int action : new int[]{MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
+            MotionEvent event = MotionEvent.obtain(0, 20, action, visible.centerX(), visible.centerY(), 0);
+            cell.dispatchTouchEvent(event); event.recycle();
+        }
+        assertEquals(java.util.Collections.singletonList(cell), requested);
         body.setSourceVisible(true);
         assertEquals(source, body.getText().toString());
     }

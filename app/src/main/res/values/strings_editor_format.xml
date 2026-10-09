@@ -3,6 +3,8 @@
     <string name="editor_format_insert">插入</string>
     <string name="editor_format_save">保存</string>
     <string name="editor_edit_link">编辑链接</string>
+    <string name="editor_edit_markdown">编辑 Markdown</string>
+    <string name="editor_markdown_heading" translatable="false">Markdown</string>
     <string name="editor_remove_link">移除链接</string>
     <string name="editor_format_back">返回格式列表</string>
     <item name="editorFormatInput0" type="id" />

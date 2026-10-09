@@ -28,7 +28,7 @@ public enum EditorFormat {
     public final String icon, tag;
     public final int group;
     EditorFormat(@androidx.annotation.StringRes int label, String icon, int group, String tag) { this.label = label; this.icon = icon; this.group = group; this.tag = tag; }
-    public boolean immediate() { return tag != null || this == BULLETS || this == NUMBERS || this == CODE || this == MARKDOWN || this == RULE; }
+    public boolean immediate() { return tag != null || this == BULLETS || this == NUMBERS || this == CODE || this == RULE; }
     public BbCodeInsertion.Fragment fragment(String selected) {
         if (tag != null) return BbCodeInsertion.wrap(tag, selected, group == 1);
         if (this == BULLETS || this == NUMBERS) return BbCodeInsertion.list(selected, this == NUMBERS);
