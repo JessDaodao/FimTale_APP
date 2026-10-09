@@ -97,6 +97,7 @@ public interface FimTaleApiService {
             @Query("per_page") int perPage, @Query("keyword") String keyword, @Query("type_names") List<String> types);
     @Multipart @POST("misc/upload_image") Call<String> uploadImage(@Header("Token") String token, @Part okhttp3.MultipartBody.Part file);
     @GET("user/list_read_progress") Call<HistoryResponse> getHistory(@Query("page") int page);
+    @POST("user/delete_read_progress") Call<Void> deleteReadProgress(@Body DeleteReadProgressRequest request);
     @GET("work/get_favorite_works") Call<FavoritesResponse> getFavorites(@Query("page") int page);
     @GET("user/get_user_page_header") Call<UserDetailResponse> getUserDetail(@Query("username") String username);
     @GET("user/get_user_page_tab") Call<UserWorksResponse> getUserTopics(

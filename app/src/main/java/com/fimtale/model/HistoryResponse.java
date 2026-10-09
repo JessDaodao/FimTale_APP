@@ -15,6 +15,11 @@ public class HistoryResponse {
         @SerializedName("updated_at") private String updatedAt;
         public int getWorkId() { return workId; }
         public int getChapterId() { return chapterId; }
+        public boolean isWorkEntry() { return chapterId == 0; }
+        public String getKey() { return workId + "-" + chapterId; }
+        public boolean isRemovedBy(HistoryTopic deleted) {
+            return workId == deleted.workId && (deleted.isWorkEntry() || chapterId == deleted.chapterId);
+        }
         public String getTitle() { return title; }
         public double getProgress() { return progress; }
         public long getDateCreated() {

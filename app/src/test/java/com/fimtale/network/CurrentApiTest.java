@@ -138,6 +138,20 @@ public class CurrentApiTest {
         assertEquals(42, item.getWorkId()); assertEquals(101, item.getChapterId());
         assertEquals(java.time.Instant.parse("2026-10-03T05:00:00Z").getEpochSecond(), item.getDateCreated());
     }
+    @Test public void historyDeletionUsesWorkAndChapterIdsIncludingWorkLevelZero() throws Exception {
+        for (String chapter : new String[]{"101", "null"}) {
+            HistoryResponse.HistoryTopic item = new Gson().fromJson(
+                    "{\"id\":999,\"work_id\":42,\"chapter_id\":" + chapter + "}", HistoryResponse.HistoryTopic.class);
+            assertTrue(api("null").deleteReadProgress(new DeleteReadProgressRequest(item)).execute().isSuccessful());
+            assertEquals("POST", request.get().method());
+            assertEquals("/api/user/delete_read_progress", request.get().url().encodedPath());
+            Buffer body = new Buffer(); request.get().body().writeTo(body);
+            JsonObject json = new JsonParser().parse(body.readUtf8()).getAsJsonObject();
+            assertEquals(42, json.get("work_id").getAsInt());
+            assertEquals(chapter.equals("null") ? 0 : 101, json.get("chapter_id").getAsInt());
+            assertEquals(2, json.size());
+        }
+    }
     @Test public void userTabsCurationsAndTagGroupsMatchCurrentNesting() throws Exception {
         UserWorksResponse user = api("{\"current_tab\":\"work\",\"content\":{\"items\":[" + WORK + "],\"total\":1}}")
                 .getUserTopics("作者", "work", 1).execute().body();
