@@ -8,7 +8,6 @@
     <string name="history_select_all">全选当前列表</string>
     <string name="history_clear_selection">取消全选</string>
     <string name="history_selected_count">已选 %1$d 项</string>
-    <string name="history_select_entry">选择《%1$s》</string>
     <string name="history_delete_title">删除阅读记录</string>
     <string name="history_delete_batch_message">将删除选中的 %1$d 条阅读记录。</string>
     <string name="history_delete_work_message">将删除《%1$s》及其章节的阅读记录。</string>

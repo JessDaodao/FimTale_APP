@@ -15,7 +15,7 @@ import com.fimtale.network.FimTaleApiService;
 import com.fimtale.network.RetrofitClient;
 import com.fimtale.network.SiteUrls;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.card.MaterialCardView;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -210,7 +210,7 @@ public class HistoryActivityTest {
         assertNotNull(action(R.id.action_history_batch).getIcon());
         assertFalse(action(R.id.action_history_delete).isVisible());
         assertFalse(action(R.id.action_history_select_all).isVisible());
-        assertEquals(View.GONE, row(0).findViewById(R.id.historySelected).getVisibility());
+        assertFalse(row(0).isSelected());
         row(0).performClick();
         Intent reader = shadowOf(activity).getNextStartedActivity();
         assertEquals(ReaderActivity.class.getName(), reader.getComponent().getClassName());
@@ -227,10 +227,11 @@ public class HistoryActivityTest {
         assertNotNull(action(R.id.action_history_select_all).getIcon());
         assertTrue(action(R.id.action_history_delete).isVisible());
         assertTrue(action(R.id.action_history_select_all).isVisible());
-        assertEquals(View.VISIBLE, row(0).findViewById(R.id.historySelected).getVisibility());
         assertFalse(action(R.id.action_history_delete).isEnabled());
-        row(0).performClick(); row(1).findViewById(R.id.historySelected).performClick();
+        row(0).performClick(); row(1).performClick();
         assertEquals(2, adapter.getSelectedCount());
+        assertTrue(row(0).isSelected());
+        assertTrue(((MaterialCardView) row(0)).getStrokeWidth() > 0);
         assertEquals(activity.getString(R.string.history_selected_count, 2),
                 ((MaterialToolbar) activity.findViewById(R.id.toolbar)).getTitle().toString());
         assertNull(shadowOf(activity).getNextStartedActivity());
@@ -239,10 +240,12 @@ public class HistoryActivityTest {
         assertEquals(activity.getString(R.string.history_clear_selection), action(R.id.action_history_select_all).getTitle().toString());
         clickAction(R.id.action_history_select_all);
         assertEquals(0, adapter.getSelectedCount()); assertTrue(adapter.isBatchMode());
+        assertFalse(row(0).isSelected());
+        assertEquals(0, ((MaterialCardView) row(0)).getStrokeWidth());
         assertEquals(activity.getString(R.string.history_select_all), action(R.id.action_history_select_all).getTitle().toString());
         row(0).performClick(); toggleBatch();
         assertFalse(adapter.isBatchMode()); assertEquals(0, adapter.getSelectedCount());
-        toggleBatch(); assertFalse(((MaterialCheckBox) row(0).findViewById(R.id.historySelected)).isChecked());
+        toggleBatch(); assertFalse(row(0).isSelected());
         row(0).performClick(); activity.getOnBackPressedDispatcher().onBackPressed();
         assertFalse(activity.isFinishing()); assertFalse(adapter.isBatchMode()); assertEquals(0, adapter.getSelectedCount());
     }
@@ -267,7 +270,7 @@ public class HistoryActivityTest {
         await(() -> deletions.size() == 1); layout();
         assertFalse(dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled());
         assertFalse(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled());
-        assertFalse(row(0).findViewById(R.id.historySelected).isEnabled());
+        assertFalse(row(0).isEnabled());
         assertFalse(action(R.id.action_history_delete).isEnabled());
         assertFalse(action(R.id.action_history_select_all).isEnabled());
         clickAction(R.id.action_history_delete);
@@ -320,7 +323,8 @@ public class HistoryActivityTest {
         assertEquals(Arrays.asList(1, 2, 1, 2), pages);
         assertEquals(40, adapter.getItemCount()); assertEquals(1, adapter.getSelectedCount());
         assertEquals("42-126", adapter.getSelectedTopics().get(0).getKey());
-        assertTrue(((MaterialCheckBox) row(24).findViewById(R.id.historySelected)).isChecked());
+        assertTrue(row(24).isSelected());
+        assertTrue(((MaterialCardView) row(24)).getStrokeWidth() > 0);
         list.scrollBy(0, 10000); await(() -> adapter.getItemCount() == 44);
         assertEquals(Arrays.asList(1, 2, 1, 2, 3), pages);
         // Select the loaded list to verify that shifted pages contain every remaining key once.

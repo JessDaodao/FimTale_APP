@@ -9,7 +9,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fimtale.R;
 import com.fimtale.model.HistoryResponse;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import java.text.SimpleDateFormat;
@@ -134,12 +133,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         HistoryResponse.HistoryTopic topic = historyTopics.get(position);
         holder.bind(topic);
         boolean selected = selectedKeys.contains(topic.getKey());
-        holder.selected.setOnCheckedChangeListener(null);
-        holder.selected.setVisibility(batchMode ? View.VISIBLE : View.GONE);
-        holder.selected.setChecked(selected);
-        holder.selected.setEnabled(interactionEnabled);
-        holder.selected.setContentDescription(holder.itemView.getContext().getString(R.string.history_select_entry, topic.getTitle()));
-        holder.selected.setOnCheckedChangeListener((button, checked) -> toggleSelection(topic));
+        holder.card.setSelected(selected);
         holder.card.setStrokeWidth(selected ? Math.round(holder.itemView.getResources().getDisplayMetrics().density * 2) : 0);
         holder.itemView.setEnabled(interactionEnabled);
         holder.itemView.setOnClickListener(v -> {
@@ -160,7 +154,6 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         private final TextView tvProgress;
         private final TextView tvDate;
         private final MaterialCardView card;
-        private final MaterialCheckBox selected;
         private final SimpleDateFormat dateFormat = new SimpleDateFormat(itemView.getContext().getString(R.string.common_date_time), Locale.getDefault());
 
         public ViewHolder(@NonNull View itemView) {
@@ -171,7 +164,6 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             tvDate = itemView.findViewById(R.id.tvDate);
             card = (MaterialCardView) itemView;
             card.setStrokeColor(MaterialColors.getColor(itemView, com.google.android.material.R.attr.colorPrimary));
-            selected = itemView.findViewById(R.id.historySelected);
         }
 
         public void bind(HistoryResponse.HistoryTopic topic) {
