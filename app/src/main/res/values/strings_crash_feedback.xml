@@ -18,7 +18,7 @@
     <string name="crash_feedback_startup_screen">启动阶段</string>
     <string name="crash_feedback_native_exit">系统记录了原生崩溃，未获取到 Java 异常堆栈。</string>
     <string name="crash_feedback_java_exit">系统记录了应用崩溃，未获取到 Java 异常堆栈。</string>
-    <string name="crash_feedback_summary">"Android 崩溃反馈\n时间：%1$s\n应用版本：%2$s\n系统：%3$s\n设备：%4$s\n页面：%5$s\n错误类型：%6$s"</string>
+    <string name="crash_feedback_summary">"FimTale APP 崩溃反馈\n时间：%1$s\n应用版本：%2$s\n系统：%3$s\n设备：%4$s\n页面：%5$s\n错误类型：%6$s"</string>
     <string name="crash_feedback_notes">"\n\n用户补充：\n%1$s"</string>
     <string name="crash_feedback_stack_truncated" translatable="false">"  …\n"</string>
     <string name="crash_feedback_stack_cause" translatable="false">"Caused by: "</string>
